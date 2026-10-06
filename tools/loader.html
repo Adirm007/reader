@@ -1,0 +1,37 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><style>html,body{margin:0;padding:0;background:transparent}#dream-loader{font:14px/1.75 KaiTi,楷体,"Noto Serif SC",serif;color:#c59d5f;background:#18100d;border:1px solid rgba(197,157,95,.4);border-radius:8px;padding:14px 18px;margin:4px}#dream-loader-letter{white-space:pre-wrap;color:#eadbc0;margin-top:8px}#dream-loader button{margin-top:10px;background:#2d1f15;color:#e2c48f;border:1px solid #c59d5f;border-radius:5px;padding:6px 14px;font:inherit;cursor:pointer}</style></head><body><template id="dream-letter-src">$1</template><div id="dream-loader"><div id="dream-loader-status" role="status">信笺正在展开……</div><div id="dream-loader-letter" hidden></div><button id="dream-loader-retry" type="button" hidden>再试一次</button></div><script>(()=>{
+ const BASES=__BASES__,PLACEHOLDER='<!--DREAM_LETTER-->',PREFIX='https://reader-cache.invalid/';
+ const $=id=>document.getElementById(id),status=$('dream-loader-status'),retry=$('dream-loader-retry'),plain=$('dream-loader-letter');let busy=false;
+ const subtle=window.isSecureContext&&window.crypto&&window.crypto.subtle;
+ const hex=b=>Array.from(new Uint8Array(b),v=>v.toString(16).padStart(2,'0')).join('');
+ const openCache=async()=>{try{return window.caches?await caches.open('dream-reader-v1'):null;}catch(e){return null;}};
+ const timed=(url,ms,opt)=>{const c=typeof AbortController==='function'?new AbortController():null,t=c?setTimeout(()=>c.abort(),ms):0;return fetch(url,Object.assign({credentials:'omit',signal:c?c.signal:undefined},opt||{})).finally(()=>clearTimeout(t));};
+ const valid=m=>m&&m.schema===1&&m.files&&['reader.css','reader-body.html','reader.js'].every(k=>{const f=m.files[k];return f&&typeof f.path==='string'&&/^dist\/[\w.-]+$/.test(f.path)&&Number.isSafeInteger(f.bytes)&&f.bytes>0&&f.bytes<20000000&&/^[a-f0-9]{64}$/.test(f.sha256);});
+ async function manifest(cache){
+  for(const base of BASES){try{const r=await timed(base+'release-manifest.json?t='+Math.floor(Date.now()/60000),9000,{cache:'no-store'});if(!r.ok)throw Error('HTTP '+r.status);const text=await r.text();const m=JSON.parse(text);if(!valid(m))throw Error('清单无效');if(cache)await cache.put(PREFIX+'manifest',new Response(text,{headers:{'Content-Type':'application/json'}}));return {m,base};}catch(e){}}
+  if(cache){const hit=await cache.match(PREFIX+'manifest');if(hit){const m=JSON.parse(await hit.text());if(valid(m))return {m,base:null};}}
+  throw Error('外链清单加载失败');
+ }
+ async function check(bytes,f){if(bytes.byteLength!==f.bytes)return false;if(!subtle)return true;return hex(await subtle.digest('SHA-256',bytes))===f.sha256;}
+ async function asset(f,first,cache){
+  const key=PREFIX+'sha256/'+f.sha256;
+  if(cache){const hit=await cache.match(key);if(hit){const b=await hit.arrayBuffer();if(await check(b,f))return new TextDecoder().decode(b);}}
+  const order=first?[first].concat(BASES.filter(b=>b!==first)):BASES;
+  for(const base of order){try{const r=await timed(base+f.path,60000);if(!r.ok)throw Error('HTTP '+r.status);const b=await r.arrayBuffer();if(!(await check(b,f)))throw Error('校验失败');if(cache)await cache.put(key,new Response(b,{headers:{'Content-Type':'text/plain; charset=utf-8'}}));return new TextDecoder().decode(b);}catch(e){}}
+  throw Error('外链资源加载失败：'+f.path);
+ }
+ async function start(){if(busy)return;busy=true;retry.hidden=true;status.textContent='信笺正在展开……';
+  try{
+   const cache=await openCache(),{m,base}=await manifest(cache);
+   const [css,body,js]=await Promise.all([asset(m.files['reader.css'],base,cache),asset(m.files['reader-body.html'],base,cache),asset(m.files['reader.js'],base,cache)]);
+   const letter=$('dream-letter-src').innerHTML;
+   const style=document.createElement('style');style.textContent=css;document.head.appendChild(style);
+   document.body.innerHTML=body.split(PLACEHOLDER).join(letter);
+   window.DREAM_READER_RELEASE={version:m.version,base:base||'cache'};
+   const s=document.createElement('script');s.text=js+'\n//# sourceURL=dream-reader-'+m.version+'.js';document.body.appendChild(s);
+  }catch(e){
+   status.textContent='信笺暂时没能展开（'+(e&&e.message||e)+'），以下为信件原文：';
+   plain.textContent=$('dream-letter-src').content.textContent.trim();plain.hidden=false;retry.hidden=false;
+  }finally{busy=false;}
+ }
+ retry.onclick=start;start();
+})();</script></body></html>

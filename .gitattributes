@@ -1,0 +1,3 @@
+dist/** -text
+release-manifest.json -text
+gallery/** -text
