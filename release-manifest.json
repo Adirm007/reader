@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "name": "dream-reader-render",
-  "version": "2026.10.07",
+  "version": "2026.10.07.2",
   "license": "LICENSE",
   "files": {
     "reader.css": {
@@ -10,14 +10,14 @@
       "sha256": "85e8efbf1f44e239e898e8607235fe603cde3c7753482eb563734924a53285f4"
     },
     "reader-body.html": {
-      "path": "dist/reader-body.4a3c38760287.html",
-      "bytes": 16407,
-      "sha256": "4a3c38760287e1418770ee449f158103d7c3a8aa1b529194cc36b094fd6d50c0"
+      "path": "dist/reader-body.c807212bea5d.html",
+      "bytes": 16428,
+      "sha256": "c807212bea5dd2d444343919d859737b509bfac36def51b78dec11405a607f51"
     },
     "reader.js": {
-      "path": "dist/reader.752b462e6a80.js",
-      "bytes": 698277,
-      "sha256": "752b462e6a80498900de2fe35948c80665db78c7dc77e591930b1b3c0eef7c10"
+      "path": "dist/reader.65b723a9604e.js",
+      "bytes": 699142,
+      "sha256": "65b723a9604e36fc4307ffffcabbb03438fd94a0fafff534ef27a4a5f786e14e"
     }
   }
 }

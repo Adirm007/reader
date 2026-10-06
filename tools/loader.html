@@ -1,4 +1,4 @@
-<!doctype html><html lang="zh-CN"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><style>html,body{margin:0;padding:0;background:transparent}#dream-loader{font:14px/1.75 KaiTi,楷体,"Noto Serif SC",serif;color:#c59d5f;background:#18100d;border:1px solid rgba(197,157,95,.4);border-radius:8px;padding:14px 18px;margin:4px}#dream-loader-letter{white-space:pre-wrap;color:#eadbc0;margin-top:8px}#dream-loader button{margin-top:10px;background:#2d1f15;color:#e2c48f;border:1px solid #c59d5f;border-radius:5px;padding:6px 14px;font:inherit;cursor:pointer}</style></head><body><template id="dream-letter-src">$1</template><div id="dream-loader"><div id="dream-loader-status" role="status">信笺正在展开……</div><div id="dream-loader-letter" hidden></div><button id="dream-loader-retry" type="button" hidden>再试一次</button></div><script>(()=>{
+<!doctype html><html lang="zh-CN"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><style>html,body{margin:0;padding:0;background:transparent}#dream-loader{font:14px/1.75 KaiTi,楷体,"Noto Serif SC",serif;color:#c59d5f;background:#18100d;border:1px solid rgba(197,157,95,.4);border-radius:8px;padding:14px 18px;margin:4px}#dream-loader-letter{white-space:pre-wrap;color:#eadbc0;margin-top:8px}#dream-loader button{margin-top:10px;background:#2d1f15;color:#e2c48f;border:1px solid #c59d5f;border-radius:5px;padding:6px 14px;font:inherit;cursor:pointer}</style></head><body><template id="dream-letter-src">$1</template><template id="dream-macro-user">{{user}}</template><template id="dream-macro-char">{{char}}</template><div id="dream-loader"><div id="dream-loader-status" role="status">信笺正在展开……</div><div id="dream-loader-letter" hidden></div><button id="dream-loader-retry" type="button" hidden>再试一次</button></div><script>(()=>{
  const BASES=__BASES__,PLACEHOLDER='<!--DREAM_LETTER-->',PREFIX='https://reader-cache.invalid/';
  const $=id=>document.getElementById(id),status=$('dream-loader-status'),retry=$('dream-loader-retry'),plain=$('dream-loader-letter');let busy=false;
  const subtle=window.isSecureContext&&window.crypto&&window.crypto.subtle;
@@ -22,8 +22,8 @@
  async function start(){if(busy)return;busy=true;retry.hidden=true;status.textContent='信笺正在展开……';
   try{
    const cache=await openCache(),{m,base}=await manifest(cache);
-   const [css,body,js]=await Promise.all([asset(m.files['reader.css'],base,cache),asset(m.files['reader-body.html'],base,cache),asset(m.files['reader.js'],base,cache)]);
-   const letter=$('dream-letter-src').innerHTML;
+   const [css0,body0,js0]=await Promise.all([asset(m.files['reader.css'],base,cache),asset(m.files['reader-body.html'],base,cache),asset(m.files['reader.js'],base,cache)]);
+   const css=macros(css0),body=macros(body0),js=macros(js0),letter=$('dream-letter-src').innerHTML;
    const style=document.createElement('style');style.textContent=css;document.head.appendChild(style);
    document.body.innerHTML=body.split(PLACEHOLDER).join(letter);
    window.DREAM_READER_RELEASE={version:m.version,base:base||'cache'};
@@ -33,5 +33,11 @@
    plain.textContent=$('dream-letter-src').content.textContent.trim();plain.hidden=false;retry.hidden=false;
   }finally{busy=false;}
  }
+ /* 完整版正则的 replaceString 会经酒馆宏替换（用户名、角色名等宏）；外链资源不经过酒馆，这里按同样规则补做。宏名用拼接写出，避免加载器自身被酒馆提前替换。 */
+ const ctxName=k=>{for(const w of [window,window.parent]){try{const c=w&&w.SillyTavern&&w.SillyTavern.getContext&&w.SillyTavern.getContext();if(c&&c[k])return String(c[k]);}catch(e){}}return '';};
+ const macroVal=(id,k)=>{const t=$(id),v=t?t.content.textContent.trim():'';return v&&v.indexOf('{'+'{')<0?v:ctxName(k);};
+ const L='<',O='{'+'{',C='}'+'}';
+ const MACROS=[[new RegExp(L+'user>','gi'),'dream-macro-user','name1'],[new RegExp(O+'user'+C,'gi'),'dream-macro-user','name1'],[new RegExp(L+'(?:bot|char)>','gi'),'dream-macro-char','name2'],[new RegExp(O+'char'+C,'gi'),'dream-macro-char','name2']];
+ const macros=text=>{for(const [re,id,k] of MACROS){if(!re.test(text))continue;re.lastIndex=0;const v=macroVal(id,k);if(v)text=text.replace(re,()=>v);}return text;};
  retry.onclick=start;start();
 })();</script></body></html>
