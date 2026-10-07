@@ -22,8 +22,8 @@
 ## 作者更新流程
 
 ```bash
-python tools/build_release.py "<完整版读者对话渲染.json>" 2026.10.07.5
-git add -A && git commit -m "Release reader 2026.10.07.5" && git push
+python tools/build_release.py "<完整版读者对话渲染.json>" 2026.10.07.6
+git add -A && git commit -m "Release reader 2026.10.07.6" && git push
 ```
 
 `dist/` 中的文件以内容哈希命名，旧文件可以保留，避免 CDN 缓存期间清单与文件不一致。
