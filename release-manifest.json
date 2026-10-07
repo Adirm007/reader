@@ -1,8 +1,7 @@
 {
   "schema": 1,
   "name": "dream-reader-render",
-  "version": "2026.10.08.1",
-  "content": 0,
+  "version": "2026.10.07.6",
   "license": "LICENSE",
   "files": {
     "reader.css": {
@@ -16,10 +15,9 @@
       "sha256": "04c14fdfca6ad6b2b2cc148edf30c9cd0d915e21d92ccfd077df06d8c8544c25"
     },
     "reader.js": {
-      "path": "dist/reader.1aa45a056973.js",
-      "bytes": 756424,
-      "sha256": "1aa45a05697318460eb30fed6442a3e13dbbee09911bd361e79905424ccc9860"
+      "path": "dist/reader.835c15e51bcb.js",
+      "bytes": 740328,
+      "sha256": "835c15e51bcbc598d76333d93c0da9f39176a1c73a9c131935967d5e7aadb4ff"
     }
-  },
-  "notes": "外链改为固定 Commit SHA，新增旧版本提醒与一键替换"
+  }
 }
