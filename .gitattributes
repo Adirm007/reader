@@ -1,3 +1,5 @@
 dist/** -text
 release-manifest.json -text
 gallery/** -text
+personas/** -text
+worldbook/** -text

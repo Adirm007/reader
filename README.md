@@ -22,8 +22,8 @@
 ## 作者更新流程
 
 ```bash
-python tools/build_release.py "<完整版读者对话渲染.json>" 2026.10.07
-git add -A && git commit -m "Release reader 2026.10.07" && git push
+python tools/build_release.py "<完整版读者对话渲染.json>" 2026.10.07.5
+git add -A && git commit -m "Release reader 2026.10.07.5" && git push
 ```
 
 `dist/` 中的文件以内容哈希命名，旧文件可以保留，避免 CDN 缓存期间清单与文件不一致。
@@ -31,6 +31,18 @@ git add -A && git commit -m "Release reader 2026.10.07" && git push
 ## 相册（CG 鉴赏）
 
 在 `gallery/` 中上传图片，或在 `gallery/links.txt` 中逐行写入图片外链，酒馆内「相册 · CG鉴赏」即会同步显示，支持翻页、大图浏览与下载原图。详见 [`gallery/README.md`](gallery/README.md)。
+
+## 额外人格库（DLC）
+
+与相册同一原理：把「人格管理」导出的人格 JSON 放进 `personas/`，酒馆内「彩蛋服务 → 额外人格库」就会列出；玩家选中一位并启用，她会作为自定义人格进入玩家自己的人格库并立即启用。修改文件后玩家端显示「有更新」，删除文件即下架（已启用的副本不受影响）。详见 [`personas/README.md`](personas/README.md)。
+
+## 世界书更新
+
+读者核心条目第一行写有版本标记（EJS 注释，正文模型读不到）。读者正则打开时（每 6 小时最多一次）对照 `worldbook/manifest.json` 检查当前角色绑定的世界书；有新版时弹窗提示，确认后把旧条目改名为「备份·v旧版本号」并关闭，再写入并启用新条目（同一世界书只保留最近一次备份）。也可在「彩蛋服务 → 世界书更新」手动检查。发布新版只需修改 `worldbook/读者核心本体.txt` 并调高第一行的版本号，GitHub Actions 会自动重算清单。详见 [`worldbook/README.md`](worldbook/README.md)。
+
+## 独立API
+
+「彩蛋服务 → 独立API」可保存多套方案（地址、密钥、模型）一键切换，拉取模型列表后可直接下拉选择，也可手动填写模型名；人格创作、缘加强、书架定调、条目模仿，以及《书海》的技能整备、补给员对话可以分别指定方案。密钥只保存在本浏览器，正文回复仍走酒馆当前插头。
 
 ## 许可
 

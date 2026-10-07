@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "name": "dream-reader-worldbook",
+  "version": "2026.10.07.5",
+  "notes": "v2026.10.07.5\n· 新增《书海》正文模式：在迷宫里点“正文模式”后，聊天会接着迷宫的进度用正文继续；正文末尾的面板可以切回迷宫、进入下一层或离开迷宫。\n· 正文模式期间迷宫资料常驻，本层主题、场景与敌怪资料自动触发；补给员、宝箱怪、「?」不会在正文里出现。\n· 条目第一行加入版本标记（不会发给模型），以后有新版会自动提示。",
+  "entries": [
+    {
+      "id": "reader-core",
+      "name": "命定系统-读者核心(Angtuck)",
+      "file": "worldbook/读者核心本体.txt",
+      "legacy": {
+        "names": [
+          "命定系统-读者核心"
+        ],
+        "contains": [
+          "BOOKSEA_READER_HANDOFF_BEGIN"
+        ]
+      },
+      "settings": {
+        "enabled": true,
+        "strategy": {
+          "type": "constant",
+          "keys": [],
+          "keys_secondary": {
+            "logic": "and_any",
+            "keys": []
+          },
+          "scan_depth": "same_as_global"
+        },
+        "position": {
+          "type": "at_depth",
+          "role": "system",
+          "depth": 1,
+          "order": 1100
+        },
+        "probability": 100
+      },
+      "version": "2026.10.07.5",
+      "bytes": 313468,
+      "sha256": "3f8f7321cf0810ce5edc3d621892532651f148e4ec5a69d72999b96a90b90e55"
+    }
+  ]
+}

@@ -1,29 +1,36 @@
-name: Update gallery index
+name: Update content indexes
 on:
   push:
     branches: [main]
     paths:
       - 'gallery/**'
+      - 'personas/**'
+      - 'worldbook/**'
       - '!gallery/index.json'
+      - '!personas/index.json'
+      - '!worldbook/manifest.json'
   workflow_dispatch:
 permissions:
   contents: write
 concurrency:
-  group: gallery-index
+  group: content-index
   cancel-in-progress: false
 jobs:
   index:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Build gallery/index.json
-        run: python3 tools/gallery_index.py
-      - name: Commit index if changed
+      - name: Build gallery/index.json, personas/index.json and worldbook/manifest.json
         run: |
-          if git diff --quiet -- gallery/index.json; then echo "index unchanged"; exit 0; fi
+          python3 tools/gallery_index.py
+          python3 tools/personas_index.py
+          python3 tools/worldbook_manifest.py
+      - name: Commit indexes if changed
+        run: |
+          if git diff --quiet -- gallery/index.json personas/index.json worldbook/manifest.json; then echo "indexes unchanged"; exit 0; fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add gallery/index.json
-          git commit -m "Update gallery index [skip ci]"
+          git add gallery/index.json personas/index.json worldbook/manifest.json
+          git commit -m "Update content indexes [skip ci]"
           git pull --rebase origin main
           git push origin HEAD:main

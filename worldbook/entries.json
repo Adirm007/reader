@@ -1,0 +1,20 @@
+{
+  "name": "dream-reader-worldbook",
+  "entries": [
+    {
+      "id": "reader-core",
+      "name": "命定系统-读者核心(Angtuck)",
+      "file": "worldbook/读者核心本体.txt",
+      "legacy": {
+        "names": ["命定系统-读者核心"],
+        "contains": ["BOOKSEA_READER_HANDOFF_BEGIN"]
+      },
+      "settings": {
+        "enabled": true,
+        "strategy": {"type": "constant", "keys": [], "keys_secondary": {"logic": "and_any", "keys": []}, "scan_depth": "same_as_global"},
+        "position": {"type": "at_depth", "role": "system", "depth": 1, "order": 1100},
+        "probability": 100
+      }
+    }
+  ]
+}
