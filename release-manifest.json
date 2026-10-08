@@ -1,23 +1,23 @@
 {
   "schema": 1,
   "name": "dream-reader-render",
-  "version": "2026.10.07.6",
+  "version": "2026.10.09.1",
   "license": "LICENSE",
   "files": {
     "reader.css": {
-      "path": "dist/reader.85e8efbf1f44.css",
-      "bytes": 41401,
-      "sha256": "85e8efbf1f44e239e898e8607235fe603cde3c7753482eb563734924a53285f4"
+      "path": "dist/reader.35758e4ba8be.css",
+      "bytes": 70769,
+      "sha256": "35758e4ba8beece01c754bd4fdfcd1d5f70e06e4d05b3d65c3d8caa52b5d6eeb"
     },
     "reader-body.html": {
-      "path": "dist/reader-body.04c14fdfca6a.html",
-      "bytes": 17162,
-      "sha256": "04c14fdfca6ad6b2b2cc148edf30c9cd0d915e21d92ccfd077df06d8c8544c25"
+      "path": "dist/reader-body.75e43241c771.html",
+      "bytes": 17251,
+      "sha256": "75e43241c7719613f17a73de2bc29e73a4504bb96322894d1c42eb58a6a80350"
     },
     "reader.js": {
-      "path": "dist/reader.835c15e51bcb.js",
-      "bytes": 740328,
-      "sha256": "835c15e51bcbc598d76333d93c0da9f39176a1c73a9c131935967d5e7aadb4ff"
+      "path": "dist/reader.1394ed9513fb.js",
+      "bytes": 756582,
+      "sha256": "1394ed9513fb2964d79e2ffcdfe96cf5cb89cfe36863a2b22e02f5b5abb1fef8"
     }
   }
 }
