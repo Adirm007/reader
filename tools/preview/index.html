@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>读者对话渲染 · 本地预览</title>
+<style>
+:root{--col:920px}
+html,body{margin:0;background:#16171b;color:#d8d5cc;font:14px/1.6 system-ui,"Noto Sans SC",sans-serif}
+#bar{position:sticky;top:0;z-index:5;display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;padding:10px 14px;background:#202228ee;border-bottom:1px solid #ffffff14;backdrop-filter:blur(6px)}
+#bar label{display:inline-flex;gap:6px;align-items:center}
+#bar select,#bar button{font:inherit;color:inherit;background:#2b2e36;border:1px solid #ffffff22;border-radius:6px;padding:3px 8px}
+#bar small{opacity:.6}
+body.bare #bar{display:none}
+#sheld{width:min(100%,var(--col));margin:0 auto}
+#chat{padding:6px 0 30px}
+.mes{display:flex;gap:10px;padding:12px 15px 16px;border-bottom:1px solid #ffffff0d}
+.mesAvatarWrapper{flex:0 0 50px}
+.avatar{width:50px;height:50px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#8d7a66,#3b2f27)}
+.mes_block{flex:1;min-width:0}
+.ch_name{font-weight:600;color:#ebe6d9;margin-bottom:6px}
+.ch_name small{font-weight:400;opacity:.55;margin-left:8px}
+.mes_text>p{margin:0 0 10px;color:#c9c5bb}
+.mes_text iframe{display:block;width:100%;border:0;overflow:hidden}
+#form_sheld{width:min(100%,var(--col));margin:0 auto 20px;padding:0 15px;box-sizing:border-box}
+#send_textarea{width:100%;min-height:42px;box-sizing:border-box;background:#22242a;color:inherit;border:1px solid #ffffff1a;border-radius:8px;padding:8px}
+@media(max-width:600px){.mesAvatarWrapper{display:none}.mes{padding:10px 15px 14px}}
+</style>
+</head>
+<body>
+<div id="bar">
+  <label>主题 <select id="q-theme"><option value="cafe">咖啡馆 cafe</option><option value="summer">盛夏 summer</option><option value="ink">古风 ink</option></select></label>
+  <label>来信 <select id="q-letters"><option value="short,long">短 + 长</option><option value="short">短</option><option value="letter">普通</option><option value="long">长</option></select></label>
+  <label>加载方式 <select id="q-mode"><option value="full">完整版正则</option><option value="loader">外链版（读取本仓库 dist）</option></select></label>
+  <label>聊天栏宽 <select id="q-col"><option value="920">920px</option><option value="640">640px（酒馆默认 50%）</option><option value="1100">1100px</option></select></label>
+  <button id="q-fail" type="button" hidden>恢复网络</button>
+  <small>?bare=1 隐藏工具栏 · ?unseal=1 自动拆信 · ?fail=1 外链加载失败</small>
+</div>
+<div id="sheld"><div id="chat"></div></div>
+<div id="form_sheld"><textarea id="send_textarea" placeholder="（模拟酒馆输入框：点单会写到这里）"></textarea></div>
+<script src="letters.js"></script>
+<script>
+(async () => {
+  const q = new URLSearchParams(location.search);
+  const theme = ['cafe', 'summer', 'ink'].includes(q.get('theme')) ? q.get('theme') : 'cafe';
+  const letters = (q.get('letters') || 'short,long').split(',').filter(k => window.DREAM_PREVIEW_LETTERS[k] != null);
+  const mode = q.get('mode') === 'loader' ? 'loader' : 'full';
+  const repo = new URL('../../', location.href).href;
+  const src = q.get('src') || repo + 'source/读者对话渲染.json';
+  const user = q.get('user') || '旅人', char = '九十九夜梦';
+  if (q.get('bare') === '1') document.body.classList.add('bare');
+  if (q.get('col')) document.documentElement.style.setProperty('--col', parseInt(q.get('col'), 10) + 'px');
+
+  const sync = (id, v) => { const el = document.getElementById(id); el.value = v; el.onchange = () => { q.set(id.slice(2), el.value); location.search = q.toString(); }; };
+  sync('q-theme', theme); sync('q-letters', letters.join(',')); sync('q-mode', mode); sync('q-col', q.get('col') || '920');
+
+  /* 预览之间互不干扰：清掉读者自己的本地设置，再按参数写入 */
+  if (q.get('keep') !== '1') Object.keys(localStorage).filter(k => /^dream_/.test(k)).forEach(k => localStorage.removeItem(k));
+  localStorage.setItem('dream_visual_theme', theme);
+  if (q.get('unseal') === '1') localStorage.setItem('dream_auto_unseal', 'on');
+  if (q.get('float') === '1') localStorage.setItem('dream_render_mode', 'float');
+
+  const ctx = {
+    name1: user, name2: char, characterId: '0', chatId: 'preview',
+    chatMetadata: { variables: { dream_visual_theme: theme } },
+    saveMetadata() {}, executeSlashCommandsWithOptions: async () => ({})
+  };
+  window.SillyTavern = { getContext: () => ctx };
+
+  /* 外链版：模拟网络故障，验证「信件原文 + 再试一次」兜底 */
+  window.__previewFail = q.get('fail') === '1';
+  const failBtn = document.getElementById('q-fail');
+  if (window.__previewFail) { failBtn.hidden = false; failBtn.onclick = () => { window.__previewFail = false; failBtn.textContent = '网络已恢复，点信中的「再试一次」'; }; }
+  if (mode === 'loader' && (q.get('nocache') === '1' || window.__previewFail) && window.caches) await caches.delete('dream-reader-v1');
+
+  let template;
+  if (mode === 'full') {
+    template = (await (await fetch(src, { cache: 'no-store' })).json()).replaceString;
+  } else {
+    template = (await (await fetch(repo + 'regex/读者对话渲染-外链版.json', { cache: 'no-store' })).json()).replaceString;
+    template = template.replace(/const BASES=\[[^\]]*\]/, 'const BASES=' + JSON.stringify([q.get('base') || repo]));
+  }
+  let html = template.replace(/^```html\n/, '').replace(/\s*```\s*$/, '');
+  /* SillyTavern 对 replaceString 做宏替换（substituteParams） */
+  html = html.replace(/\{\{user\}\}|<user>/gi, user).replace(/\{\{char\}\}|<(?:char|bot)>/gi, char);
+  if (mode === 'loader') {
+    const failShim = '<script>(()=>{const f=window.fetch.bind(window);window.fetch=(...a)=>parent.__previewFail?Promise.reject(new TypeError("Failed to fetch (preview)")):f(...a);})();<\/script>';
+    html = html.replace('<head>', '<head>' + failShim);
+  }
+
+  const chat = document.getElementById('chat');
+  letters.forEach((key, i) => {
+    const mes = document.createElement('div');
+    mes.className = 'mes'; mes.setAttribute('mesid', String(i)); mes.setAttribute('ch_name', char);
+    mes.innerHTML = '<div class="mesAvatarWrapper"><div class="avatar"></div></div><div class="mes_block"><div class="ch_name">' + char + '<small>' + key + '</small></div><div class="mes_text"><p>（正文略）她把信纸折好，压在了咖啡杯下。</p></div></div>';
+    chat.appendChild(mes);
+    const ifr = document.createElement('iframe');
+    ifr.setAttribute('scrolling', 'no');
+    ifr.srcdoc = html.split('$1').join(window.DREAM_PREVIEW_LETTERS[key]);
+    mes.querySelector('.mes_text').appendChild(ifr);
+    /* 与酒馆助手相同：iframe 高度跟随内容 */
+    const fit = () => { try { const b = ifr.contentDocument && ifr.contentDocument.body; if (!b) return; const h = Math.ceil(Math.max(b.scrollHeight, b.getBoundingClientRect().height)); if (h && Math.abs(h - ifr.offsetHeight) > 1) ifr.style.height = h + 'px'; } catch (e) {} };
+    ifr.addEventListener('load', () => {
+      const d = ifr.contentDocument;
+      try { new ResizeObserver(fit).observe(d.body); new MutationObserver(fit).observe(d.documentElement, { subtree: true, childList: true, attributes: true }); } catch (e) {}
+      ['transitionend', 'animationend', 'toggle', 'load'].forEach(t => d.addEventListener(t, fit, true));
+      fit();
+    });
+    setInterval(fit, 250);
+  });
+  window.__previewReady = true;
+})();
+</script>
+</body>
+</html>
