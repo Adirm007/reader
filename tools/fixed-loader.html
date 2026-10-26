@@ -1,4 +1,4 @@
-<!doctype html><html lang="zh-CN"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><style>html,body{margin:0;padding:0;background:transparent}#dream-loader{font:14px/1.75 KaiTi,楷体,"Noto Serif SC",serif;color:#c59d5f;background:#18100d;border:1px solid rgba(197,157,95,.4);border-radius:8px;padding:14px 18px;margin:4px}#dream-loader-letter{white-space:pre-wrap;color:#eadbc0;margin-top:8px}#dream-loader button{margin-top:10px;background:#2d1f15;color:#e2c48f;border:1px solid #c59d5f;border-radius:5px;padding:6px 14px;font:inherit;cursor:pointer}</style></head><body><template id="dream-letter-src">$1</template><template id="dream-macro-user">{{user}}</template><template id="dream-macro-char">{{char}}</template><div id="dream-loader"><div id="dream-loader-status" role="status">固定版信笺正在展开……</div><div id="dream-loader-letter" hidden></div><button id="dream-loader-retry" type="button" hidden>再试一次</button></div><script>(()=>{
+<!doctype html><html lang="zh-CN"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><style>html,body{margin:0;padding:0;background:transparent}#dream-loader{font:14px/1.75 KaiTi,楷体,"Noto Serif SC",serif;color:#c59d5f;background:#18100d;border:1px solid rgba(197,157,95,.4);border-radius:8px;padding:14px 18px;margin:4px}#dream-loader-letter{white-space:pre-wrap;color:#eadbc0;margin-top:8px}#dream-loader button{margin-top:10px;background:#2d1f15;color:#e2c48f;border:1px solid #c59d5f;border-radius:5px;padding:6px 14px;font:inherit;cursor:pointer}</style></head><body><template id="dream-letter-src">$1</template><template id="dream-macro-user">{{user}}</template><template id="dream-macro-char">{{char}}</template><div id="dream-loader"><div id="dream-loader-status" role="status">信笺正在展开……</div><div id="dream-loader-letter" hidden></div><button id="dream-loader-retry" type="button" hidden>再试一次</button></div><script>(()=>{
  'use strict';
  __FIXED_RELEASE_CLIENT__
  const VERSION=__FIXED_VERSION__;
@@ -18,7 +18,7 @@
   for(const base of BASES){try{const bytes=await timed(base+path);if(bytes.byteLength>20000000||!(await verifiedBytes(bytes,sha,size)))throw Error('完整性校验失败');if(cache){try{await cache.put(key,new Response(bytes));}catch(e){}}return bytes;}catch(e){}}
   throw Error('固定版本资源不可用或校验失败：'+path+'（不会切换到最新版）');
  }
- async function start(){if(busy)return;busy=true;retry.hidden=true;status.textContent='固定版 v'+VERSION+' 信笺正在展开……';
+ async function start(){if(busy)return;busy=true;retry.hidden=true;status.textContent='信笺正在展开……';
   try{
    if(!window.DreamFixedReleaseClient||typeof window.DreamFixedReleaseClient.sha256!=='function')throw Error('固定版完整性校验不可用；未执行远程代码');
    if(!/^[0-9]+(?:\.[0-9]+){1,3}$/.test(VERSION))throw Error('固定版本号须为 2–4 段数字');
@@ -34,7 +34,7 @@
    document.body.innerHTML=body.split(PLACEHOLDER).join(letter);
    const s=document.createElement('script');s.text=js+'\n//# sourceURL=dream-reader-fixed-'+PIN.version+'.js';document.body.appendChild(s);
   }catch(e){
-   status.textContent='固定版信笺暂时没能展开（'+(e&&e.message||e)+'），以下为信件原文：';
+   status.textContent='信笺暂时没能展开（'+(e&&e.message||e)+'），以下为信件原文：';
    plain.textContent=$('dream-letter-src').content.textContent.trim();plain.hidden=false;retry.hidden=false;
   }finally{busy=false;}
  }
