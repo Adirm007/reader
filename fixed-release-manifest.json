@@ -1,0 +1,335 @@
+{
+  "schema": 1,
+  "name": "dream-reader-render-fixed",
+  "version": "2026.10.27.2",
+  "license": "LICENSE",
+  "files": {
+    "reader.css": {
+      "path": "dist/reader.35758e4ba8be.css",
+      "bytes": 70769,
+      "sha256": "35758e4ba8beece01c754bd4fdfcd1d5f70e06e4d05b3d65c3d8caa52b5d6eeb"
+    },
+    "reader-body.html": {
+      "path": "dist/reader-body.75e43241c771.html",
+      "bytes": 17251,
+      "sha256": "75e43241c7719613f17a73de2bc29e73a4504bb96322894d1c42eb58a6a80350"
+    },
+    "reader.js": {
+      "path": "dist/reader.6508db6750e5.js",
+      "bytes": 798081,
+      "sha256": "6508db6750e5b4ab43d8b49ed78ee49d5c59db6881de99e7161c9dcb9477bafb"
+    }
+  },
+  "resources": {
+    "gallery/00-44-54-270142004.png": {
+      "path": "gallery/00-44-54-270142004.png",
+      "bytes": 1495867,
+      "sha256": "6d0190583a5c1687e20f0d54b3f7e566792497d1376b44b03e9c563e791ddd8c"
+    },
+    "gallery/00-50-03-741493292.png": {
+      "path": "gallery/00-50-03-741493292.png",
+      "bytes": 1725397,
+      "sha256": "4c1f8b337373eb38d1bbb7f2224eba17f9a641cd96a152d5dd66e67cfbffd813"
+    },
+    "gallery/00-51-17-3920375961.png": {
+      "path": "gallery/00-51-17-3920375961.png",
+      "bytes": 1686729,
+      "sha256": "63f0d7c2c9ef6d5f609dc1ab8e377eeb3326f3f052645e30d082b74290151d49"
+    },
+    "gallery/01-27-15-2399645319.png": {
+      "path": "gallery/01-27-15-2399645319.png",
+      "bytes": 3794171,
+      "sha256": "051e589fc4300b163ca7d4f4cc98224add2d57a7e0d1047fd2ec133c7076a3a9"
+    },
+    "gallery/1011.png": {
+      "path": "gallery/1011.png",
+      "bytes": 4316968,
+      "sha256": "b40a086842164ec17ca0d2e24d678f3f01ec456263cd821e37c2a0dd09a6382c"
+    },
+    "gallery/12-31-41-1093959772.png": {
+      "path": "gallery/12-31-41-1093959772.png",
+      "bytes": 1306320,
+      "sha256": "5c7cc04e1511fd1fe01ff7dfc2c762712c173cc6dfe4a353a3de030f64006bcd"
+    },
+    "gallery/12-34-03-2536370918.png": {
+      "path": "gallery/12-34-03-2536370918.png",
+      "bytes": 1506086,
+      "sha256": "2622114f814f8034131e01e1dbc19cd61429939c633cfd1c9719b488f6a6ff94"
+    },
+    "gallery/15-54-24-260102601.png": {
+      "path": "gallery/15-54-24-260102601.png",
+      "bytes": 1612450,
+      "sha256": "0a9cbc45fb90408f7746d97d4d41c235d18e95e43571a90ca85d30c1dd94fac7"
+    },
+    "gallery/15-54-28-260102602.png": {
+      "path": "gallery/15-54-28-260102602.png",
+      "bytes": 1747578,
+      "sha256": "e298dc8e8dcb294056a67ed9309690c985d5d144c35a0026854f31f4862f475d"
+    },
+    "gallery/15-54-35-260102603.png": {
+      "path": "gallery/15-54-35-260102603.png",
+      "bytes": 1676938,
+      "sha256": "4ac1f2cf582246673a16ac286201bb5adeeef0e5f2212f65e07edf533773398e"
+    },
+    "gallery/16-01-51-260104101.png": {
+      "path": "gallery/16-01-51-260104101.png",
+      "bytes": 1732365,
+      "sha256": "28e9bf5645a22dd8bdf9336ae859864e408bed0feb6754ab21e7983698fed407"
+    },
+    "gallery/16-01-57-260104102.png": {
+      "path": "gallery/16-01-57-260104102.png",
+      "bytes": 1719816,
+      "sha256": "161081293917bf6b18edea3958d03d90f80ca25675d5f1f96f41596fbfe945c8"
+    },
+    "gallery/16-02-10-260104104.png": {
+      "path": "gallery/16-02-10-260104104.png",
+      "bytes": 1661399,
+      "sha256": "110311b1b67d002911b3a9cc54a7f273759f67236dcc5fd91af5bf46e2d5b5c4"
+    },
+    "gallery/16-02-17-260104105.png": {
+      "path": "gallery/16-02-17-260104105.png",
+      "bytes": 1651205,
+      "sha256": "93abfd87c583342ef9f1f2b37d63d7ea45683220f0d458856bf4bbf2fa5aab61"
+    },
+    "gallery/17-15-09-260105402.png": {
+      "path": "gallery/17-15-09-260105402.png",
+      "bytes": 1621088,
+      "sha256": "2d3fab5d5be4becf332ebad3258306a2add5ee6170e83023dad2815ed815dad2"
+    },
+    "gallery/17-15-20-260105404.png": {
+      "path": "gallery/17-15-20-260105404.png",
+      "bytes": 1613678,
+      "sha256": "8b3d52f7dd982e5945e0b779d7760a6337cfc7a86d56081eb149ca0b59c8a1d0"
+    },
+    "gallery/2077.png": {
+      "path": "gallery/2077.png",
+      "bytes": 1438588,
+      "sha256": "387c12f1b087a0fbdcac818c704227d04c7a2d81bbaacd9d2dfcefac0fbe7970"
+    },
+    "gallery/index.json": {
+      "path": "gallery/index.json",
+      "bytes": 1396,
+      "sha256": "aaf536ff7e9c9a229e386339030e0f18be060ebab9dcff6196f2aec98224890a"
+    },
+    "gallery/links.txt": {
+      "path": "gallery/links.txt",
+      "bytes": 208,
+      "sha256": "3ac52658a8d7847e2d6129004aec183ec1d98fc1951eb61b4d46ad9f542d77d5"
+    },
+    "gallery/README.md": {
+      "path": "gallery/README.md",
+      "bytes": 798,
+      "sha256": "a4435f48f92fb227b7b7c6f98e96056518f860bbf7b1d8b73379b4deb81a7eda"
+    },
+    "gallery/不检点僵尸(巨乳) (2).png": {
+      "path": "gallery/不检点僵尸(巨乳) (2).png",
+      "bytes": 3834138,
+      "sha256": "4b55d1181b5a5cb4d9b85336659afa763beb7ce554e631328c71c2866126cca6"
+    },
+    "gallery/不检点僵尸(巨乳).png": {
+      "path": "gallery/不检点僵尸(巨乳).png",
+      "bytes": 4047128,
+      "sha256": "fcd1e5c3b9ff7a0397a6f69bbea3c4f739de6c6677bbd82e017a453b2faf35a0"
+    },
+    "gallery/不检点僵尸.png": {
+      "path": "gallery/不检点僵尸.png",
+      "bytes": 3881584,
+      "sha256": "57445f04f951e99b5baf0965c618053f09076543f37be55a7eb404c4cce3be9e"
+    },
+    "gallery/不检点的衣服.png": {
+      "path": "gallery/不检点的衣服.png",
+      "bytes": 1474802,
+      "sha256": "ce298e3281c4e19674b9636e63df0a87faca5990bba2b05290feec3f8ac208f9"
+    },
+    "gallery/书上.png": {
+      "path": "gallery/书上.png",
+      "bytes": 1721689,
+      "sha256": "7def6a5b8b5cd83221da67cdd7c074b31915e5847f788895af66664084ccc83a"
+    },
+    "gallery/你是谁.png": {
+      "path": "gallery/你是谁.png",
+      "bytes": 4202171,
+      "sha256": "19fa8b9fe6ad3f0d95821942a1c56f1eb67fa8b394b00dc1e642a86e95e3b40f"
+    },
+    "gallery/依旧古风.png": {
+      "path": "gallery/依旧古风.png",
+      "bytes": 4410787,
+      "sha256": "1299b1bfba4eb07d5ddac950cad0e4d37bf400195d7d534576fa2c4096684986"
+    },
+    "gallery/加油.png": {
+      "path": "gallery/加油.png",
+      "bytes": 4283135,
+      "sha256": "f4ccb9b591b625d4409e6c34c41d1e717168e25e71ab5202ee38d9229c719298"
+    },
+    "gallery/十字.png": {
+      "path": "gallery/十字.png",
+      "bytes": 4189489,
+      "sha256": "54f4057775726e49ab9a6c789f4ce7e8a200826c8e0ddbd82038fa33c3101849"
+    },
+    "gallery/古古的风.png": {
+      "path": "gallery/古古的风.png",
+      "bytes": 3524378,
+      "sha256": "e2b1e592bed97933b3d9162dce8e80f5028dbf0c040ee68597b50124731b0aea"
+    },
+    "gallery/圣奶龙.png": {
+      "path": "gallery/圣奶龙.png",
+      "bytes": 4852210,
+      "sha256": "4b36ae3176a91a6d0e06c66f38fc66782250ea6bef27b87acfb2da899c728002"
+    },
+    "gallery/圣诞快乐(巨大差分).png": {
+      "path": "gallery/圣诞快乐(巨大差分).png",
+      "bytes": 4325683,
+      "sha256": "82761c6625674495d5dc09d9a1d30edc447d82d0aa3853219a95600ad3ff4824"
+    },
+    "gallery/天台，夕阳，你与我.png": {
+      "path": "gallery/天台，夕阳，你与我.png",
+      "bytes": 1594825,
+      "sha256": "0b4f0fbf0e3ca6adec65cba08b27f22fae15e0599dbea0b3f1e851eef3e0987a"
+    },
+    "gallery/奶蛙.png": {
+      "path": "gallery/奶蛙.png",
+      "bytes": 1473494,
+      "sha256": "b24498a3a73cd10c9f4682a518ef48a1304036a48f880e4cddb03f7ef0db31a6"
+    },
+    "gallery/家中的怪异.png": {
+      "path": "gallery/家中的怪异.png",
+      "bytes": 4116108,
+      "sha256": "f717d7ae0930df6323751af66dd89b20327301fb76c330656efc51f477a0a968"
+    },
+    "gallery/小丑.png": {
+      "path": "gallery/小丑.png",
+      "bytes": 4188956,
+      "sha256": "e325490172b531cc04560c162b42c70b9daad188ec8f7ccc29696c4377244ca8"
+    },
+    "gallery/开演.png": {
+      "path": "gallery/开演.png",
+      "bytes": 4291975,
+      "sha256": "6d2f4b87f5227a5ed2e9241df94c1abf72ab6ccd941aaf800ccefdd00753bb31"
+    },
+    "gallery/很刺客的刺客.png": {
+      "path": "gallery/很刺客的刺客.png",
+      "bytes": 3615832,
+      "sha256": "7e4577bb1d672b38ba1a85a308279c41d616834da1040e38a1a41a2dc13dd567"
+    },
+    "gallery/怪盗或魔法少女？.png": {
+      "path": "gallery/怪盗或魔法少女？.png",
+      "bytes": 1890173,
+      "sha256": "cb2cc5df1770955d71092ef146a025cbcabd7b5c11d679ccd8f8ae117a9d347a"
+    },
+    "gallery/最古风.png": {
+      "path": "gallery/最古风.png",
+      "bytes": 3612524,
+      "sha256": "fd7f6511a1da38528fd90abf47cc2f49b8b9846a3982839258093124529a799c"
+    },
+    "gallery/极光.png": {
+      "path": "gallery/极光.png",
+      "bytes": 4088060,
+      "sha256": "689ac0a0c26f451a0ac404cde0ba74962c06ab8c9add2a837ac1a186bd8af27e"
+    },
+    "gallery/某个素体的证件照.png": {
+      "path": "gallery/某个素体的证件照.png",
+      "bytes": 1501071,
+      "sha256": "572afd2883f3f1ebefcc12b38aadca717227880d61b466804e8ecf143cbe0e80"
+    },
+    "gallery/洛丽塔僵尸.png": {
+      "path": "gallery/洛丽塔僵尸.png",
+      "bytes": 1436743,
+      "sha256": "d08b6cfb155d39fd2693883874b218614521b6bb7e9cb9ca84d317bec6c41bcb"
+    },
+    "gallery/海.png": {
+      "path": "gallery/海.png",
+      "bytes": 4277997,
+      "sha256": "930afae575183f535ec3dc6265103fe5ab01340f7ec55b195b391555b23c10b2"
+    },
+    "gallery/海与死库水.png": {
+      "path": "gallery/海与死库水.png",
+      "bytes": 4509249,
+      "sha256": "2dd0ae5bdb23107433dc77fa78eb230d842ebf63772ac42db223311c76daf598"
+    },
+    "gallery/海滨与不认识的同学.png": {
+      "path": "gallery/海滨与不认识的同学.png",
+      "bytes": 2082487,
+      "sha256": "b3196f359965af7c56f913e9b318f361343e8e1aed04a6c279b924283869fb6b"
+    },
+    "gallery/温泉.png": {
+      "path": "gallery/温泉.png",
+      "bytes": 4110580,
+      "sha256": "aa3101292bedb52aa323adb86fdf7f4757f2734da3957779bc1f03337594de4a"
+    },
+    "gallery/白丝试装.png": {
+      "path": "gallery/白丝试装.png",
+      "bytes": 1645802,
+      "sha256": "4dbeea8219fd2228ea7f085a36ac2dbb69a793b3a302067eecf0ff8b96a5591c"
+    },
+    "gallery/睡衣.png": {
+      "path": "gallery/睡衣.png",
+      "bytes": 1559433,
+      "sha256": "beef9442cc2e53888af4854ac8995e8e4b6aff24403353c053fbd0b60df5bb88"
+    },
+    "gallery/礼物是什么.png": {
+      "path": "gallery/礼物是什么.png",
+      "bytes": 1684660,
+      "sha256": "4febdc4d4e1dae2f491e36709d0c592937e3d3e6fdd2212a651ac547d7b6a5a1"
+    },
+    "gallery/还是海.png": {
+      "path": "gallery/还是海.png",
+      "bytes": 2140236,
+      "sha256": "cb893cedf55f103f0de791bfec7cc08c7c8875e882bcb6fad717d044ce48b631"
+    },
+    "gallery/面容.png": {
+      "path": "gallery/面容.png",
+      "bytes": 1920544,
+      "sha256": "545df1c3d1bdf3287eef9dae9bd231778b1346123955e834196a42651bc562ff"
+    },
+    "gallery/风景.png": {
+      "path": "gallery/风景.png",
+      "bytes": 3990303,
+      "sha256": "f31a0517f3a859580e6f22793e88c0ed37cc47d146fd6d278a33007657f121f0"
+    },
+    "gallery/馆的窗边.png": {
+      "path": "gallery/馆的窗边.png",
+      "bytes": 2098602,
+      "sha256": "3331707066a1ad44db627580a42db2893f26adb8e4eecb4e3736e96bd1f04194"
+    },
+    "personas/index.json": {
+      "path": "personas/index.json",
+      "bytes": 513,
+      "sha256": "e3c7dfad02919881f2c31fe435655af2db3092114b24ba30b09c58474247bc65"
+    },
+    "personas/README.md": {
+      "path": "personas/README.md",
+      "bytes": 1279,
+      "sha256": "db1eb1b239b1cce25edf720b5fb9ca0f10d0eabaf631d65d7e0962f326b60b70"
+    },
+    "personas/缀诗的少女.json": {
+      "path": "personas/缀诗的少女.json",
+      "bytes": 5946,
+      "sha256": "46d3568dac97f4a86629a75aa726b8c93136e1ec0e3da1c76399c5b106ce142c"
+    },
+    "worldbook/entries.json": {
+      "path": "worldbook/entries.json",
+      "bytes": 633,
+      "sha256": "4ce69ee59ac80e188d302c6e9229b7b5955cea201a4283cd49130cf98d4c77b2"
+    },
+    "worldbook/manifest.json": {
+      "path": "worldbook/manifest.json",
+      "bytes": 2141,
+      "sha256": "7a6fbed4bd2a80ce4204266cc18ad882803150b1344fd0941a36b8ad646bcaec"
+    },
+    "worldbook/notes.txt": {
+      "path": "worldbook/notes.txt",
+      "bytes": 1124,
+      "sha256": "61bcbfa94e6a27ea70ad17ad709efe285163b5a11586808d7590b0e829f661f3"
+    },
+    "worldbook/README.md": {
+      "path": "worldbook/README.md",
+      "bytes": 1093,
+      "sha256": "ea8b2670e12cfca3d13c5f84f9359d4d6357cf1ce3454818c4c56fa68a1ca2d5"
+    },
+    "worldbook/读者核心本体.txt": {
+      "path": "worldbook/读者核心本体.txt",
+      "bytes": 316631,
+      "sha256": "12f1bbab4c2593488010e511bec41287c7ef8bce1dbd1cf85d0fb127c640c6ae"
+    }
+  }
+}
