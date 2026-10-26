@@ -80,6 +80,11 @@ def publish(result):
     final = github(f"repos/{repository}/releases/tags/{tag}")
     if final.get("immutable") is not True:
         raise ValueError("发布后未确认 immutable=true；请检查 GitHub 设置，客户端会拒绝该版本")
+    # Publication freezes the attachment first; only then can GitHub sign its release proof.
+    # A catalog failure never rewrites the release: rerun the catalog command alone.
+    from publish_update_catalog import credential, fetch_proof, publish_catalog
+    bundle, _ = fetch_proof(repository, result["metadata"]["version"], credential())
+    publish_catalog(repository, {result["metadata"]["version"]: bundle})
     return final["html_url"]
 
 

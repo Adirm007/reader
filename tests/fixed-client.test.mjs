@@ -3,39 +3,41 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { createHash, webcrypto } from 'node:crypto';
 import vm from 'node:vm';
-
 const source = await readFile(new URL('../source/fixed-release-client.js', import.meta.url), 'utf8');
 const repository = 'Adirm007/reader';
 const commit = '1234567890abcdef1234567890abcdef12345678';
+const distributionCommit = 'b'.repeat(40);
 const digest = bytes => createHash('sha256').update(bytes).digest('hex');
-
-function fixture({ repo = repository, version = '1.0.0', marker = {}, replaceString } = {}) {
-  const metadata = { schema: 1, repository: repo, version, sourceCommit: commit, manifestSha256: 'a'.repeat(64), ...marker };
-  const regex = {
-    id: 'fixed-reader-test', scriptName: 'Reader fixed test', findRegex: '<dream>(.*?)</dream>',
-    replaceString: replaceString ?? `<!-- FIXED_RELEASE:${JSON.stringify(metadata)} -->\n<script>const VERSION="${version}"; window.__downloadedCodeExecuted = true; throw Error('Downloaded code must never execute');</script>`,
-  };
-  const bytes = Buffer.from(JSON.stringify(regex));
-  const asset = {
-    name: 'reader-fixed.regex.json', size: bytes.length, digest: `sha256:${digest(bytes)}`,
-    browser_download_url: `https://github.com/${repo}/releases/download/v${version}/reader-fixed.regex.json`,
-  };
-  const release = { tag_name: `v${version}`, immutable: true, draft: false, prerelease: false, assets: [asset] };
-  return { metadata, regex, bytes, asset, release, selected: { repository: repo, version, release } };
+function fixture({repo=repository,version='1.0.0',marker={},replaceString}={}) {
+  const metadata={schema:1,repository:repo,version,sourceCommit:commit,manifestSha256:'a'.repeat(64),...marker};
+  const regex={id:'fixed-reader-test',scriptName:'Reader fixed test',findRegex:'<dream>(.*?)</dream>',
+    replaceString:replaceString??`<!-- FIXED_RELEASE:${JSON.stringify(metadata)} -->\n<script>const VERSION="${version}";window.__downloadedCodeExecuted=true;throw Error('Downloaded code must never execute');</script>`};
+  const bytes=Buffer.from(JSON.stringify(regex));
+  return {metadata,regex,bytes,proof:{valid:true,verified:{repository:repo,version,distributionCommit,digest:digest(bytes)}},selected:{repository:repo,version}};
 }
-
-function client({ crypto = webcrypto, network = async () => { throw Error('Unexpected network access'); } } = {}) {
-  const requests = [];
-  const window = { crypto, __downloadedCodeExecuted: false };
-  const context = vm.createContext({
-    window, TextDecoder, TextEncoder, Uint8Array, ArrayBuffer, DataView, AbortController, setTimeout, clearTimeout,
-    fetch: async (url, options) => {
-      requests.push({ url, options });
-      return network(url, options);
-    },
-  });
-  vm.runInContext(source, context, { timeout: 1000 });
-  return { api: window.DreamFixedReleaseClient, window, requests };
+function staticNetwork(fixtures,{versions=fixtures.map(f=>f.selected.version),index,override}={}) {
+  return async(url,options)=>{
+    if(override){const r=await override(url,options);if(r!==undefined)return r;}
+    if(url.endsWith('/fixed-updates/index.json')||url.endsWith('@fixed-updates/index.json'))return Response.json(index??{schema:1,repository,versions});
+    for(const f of fixtures){
+      if(url.endsWith(`/releases/v${f.selected.version}.json`))return Response.json(f.proof);
+      if(url.includes('/releases/download/')||url.includes(`/${distributionCommit}/`)||url.includes(`@${distributionCommit}/`))return new Response(f.bytes);
+    }
+    throw Error('Unexpected URL '+url);
+  };
+}
+function storage(){const map=new Map();return {getItem:key=>map.get(key)??null,setItem:(key,value)=>map.set(key,value)};}
+function client({crypto=webcrypto,network=async()=>{throw Error('Unexpected network access');},localStorage}={}) {
+  const requests=[],verifications=[];
+  const window={crypto,localStorage,__downloadedCodeExecuted:false};
+  // Transport tests substitute the cryptographic boundary; real signature verification is covered separately.
+  window.__testVerifyBundle=async(bundle,repo,version)=>{verifications.push({bundle,repo,version});if(!bundle||bundle.valid!==true)throw Error('发布证明签名无效');return bundle.verified;};
+  const context=vm.createContext({window,TextDecoder,TextEncoder,Uint8Array,ArrayBuffer,DataView,AbortController,setTimeout,clearTimeout,
+    fetch:async(url,options)=>{requests.push({url,options});return network(url,options);}});
+  const script=source.replace(/  \/\* GITHUB_RELEASE_VERIFY_BEGIN \*\/[\s\S]*?  \/\* GITHUB_RELEASE_VERIFY_END \*\//,
+    '  async function verifyBundle(bundle,repository,version) { return root.__testVerifyBundle(bundle,repository,version); }');
+  vm.runInContext(script,context,{timeout:1000});
+  return {api:window.DreamFixedReleaseClient,window,requests,verifications};
 }
 
 for (const mode of ['native', 'software']) {
@@ -63,66 +65,6 @@ test('numeric version comparison supports patch, calendar and trailing zero segm
     assert.equal(api.compare(b, a), -expected || 0);
   }
   for (const invalid of ['latest', 'v1.0.0', '1', '1.0-beta', '1.0/evil', '1.0\n', '123456789.0']) assert.throws(() => api.compare(invalid, '1.0.0'));
-});
-
-test('latest uses immutable stable releases and chooses numeric maximum rather than array order', async () => {
-  const releases = [fixture({ version: '0.9.0' }).release, fixture({ version: '0.10.0' }).release];
-  releases.push({ ...fixture({ version: '9.0.0' }).release, immutable: false });
-  releases.push({ ...fixture({ version: '10.0.0' }).release, draft: true });
-  releases.push({ ...fixture({ version: '11.0.0' }).release, prerelease: true });
-  const f = client({ network: async () => Response.json(releases) });
-  const selected = await f.api.latest(repository);
-  assert.equal(selected.version, '0.10.0');
-  assert.equal(f.requests.length, 1);
-  assert.match(f.requests[0].url, /releases\?per_page=100&page=1$/);
-  assert.equal(f.window.__downloadedCodeExecuted, false);
-});
-
-test('latest follows pagination before claiming which version is newest', async () => {
-  const f = client({ network: async url => url.endsWith('page=1')
-    ? Response.json([fixture({ version: '1.0.0' }).release], { headers: { link: '<https://api.github.com/repos/Adirm007/reader/releases?per_page=100&page=2>; rel="next"' } })
-    : Response.json([fixture({ version: '2.0.0' }).release]) });
-  assert.equal((await f.api.latest(repository)).version, '2.0.0');
-  assert.equal(f.requests.length, 2);
-});
-
-test('mutable, draft, prerelease, missing digest and ambiguous asset are rejected before download', async () => {
-  for (const change of [
-    f => { f.release.immutable = false; }, f => { f.release.immutable = undefined; },
-    f => { f.release.draft = true; }, f => { f.release.prerelease = true; },
-    f => { delete f.asset.digest; }, f => { f.asset.digest = `sha256:${'a'.repeat(63)}`; },
-    f => { f.release.assets.push({ ...f.asset }); }, f => { f.asset.size = 4000001; },
-  ]) {
-    const release = fixture(); change(release);
-    const f = client();
-    await assert.rejects(f.api.download(release.selected));
-    assert.equal(f.requests.length, 0);
-    assert.equal(f.window.__downloadedCodeExecuted, false);
-  }
-});
-
-test('repository allowlist rejects unknown and inherited object property names', async () => {
-  const f = client();
-  for (const repo of ['Adirm007/other', '__proto__', 'toString', 'constructor']) {
-    const release = fixture({ repo });
-    assert.throws(() => f.api.metadata(release.regex, repo), /仓库/);
-    await assert.rejects(f.api.download(release.selected), /仓库/);
-  }
-  assert.equal(f.requests.length, 0);
-});
-
-test('asset URL must match the exact project, release tag and stable attachment name', async () => {
-  for (const url of [
-    'https://github.com/attacker/reader/releases/download/v1.0.0/reader-fixed.regex.json',
-    'https://github.com/Adirm007/reader/releases/download/v2.0.0/reader-fixed.regex.json',
-    'https://github.com/Adirm007/reader/releases/download/v1.0.0/another.regex.json',
-    'https://example.invalid/reader-fixed.regex.json',
-  ]) {
-    const release = fixture(); release.asset.browser_download_url = url;
-    const f = client();
-    await assert.rejects(f.api.download(release.selected), /指定仓库/);
-    assert.equal(f.requests.length, 0);
-  }
 });
 
 test('marker is parsed only as data and rejects missing, duplicated and incompatible fields', () => {
@@ -161,69 +103,84 @@ test('installed version honors the one edited VERSION number without evaluating 
   assert.equal(f.window.__downloadedCodeExecuted, false);
 });
 
-test('a valid digest does not authorize a marker for another repository or requested version', async () => {
-  for (const marker of [{ repository: 'Adirm007/Protelysion' }, { version: '2.0.0' }]) {
-    const release = fixture({ marker });
-    const f = client({ network: async () => new Response(release.bytes) });
-    await assert.rejects(f.api.download(release.selected), /标记与发布版本不一致/);
-    assert.equal(f.requests.length, 3);
-    assert.equal(f.window.__downloadedCodeExecuted, false);
-  }
-});
 
-test('same-size tampering fails SHA-256 on every mirror before JSON is interpreted', async () => {
-  const release = fixture();
-  const changed = Buffer.alloc(release.bytes.length, 0x20);
-  const f = client({ network: async () => new Response(changed) });
-  await assert.rejects(f.api.download(release.selected), /SHA-256 校验失败/);
-  assert.equal(f.requests.length, 3);
-  assert.equal(f.window.__downloadedCodeExecuted, false);
+test('latest verifies the numeric maximum using static JSON, without REST or downloaded regex execution',async()=>{
+ const releases=[fixture({version:'0.9.0'}),fixture({version:'0.10.0'})],f=client({network:staticNetwork(releases)});
+ const selected=await f.api.latest(repository);assert.equal(selected.version,'0.10.0');assert.equal(selected.distributionCommit,distributionCommit);
+ assert.equal(f.requests.length,2);assert.equal(f.verifications.length,1);
+ assert.ok(f.requests.every(r=>r.url.startsWith('https://raw.githubusercontent.com/Adirm007/reader/fixed-updates/')&&r.options.cache==='no-store'&&r.options.credentials==='omit'));
+ assert.ok(f.requests.every(r=>!r.url.includes('api.github.com')));assert.equal(f.window.__downloadedCodeExecuted,false);
 });
-
-test('release attachment CORS failure uses its exact tag raw mirror with the API digest', async () => {
-  const release = fixture();
-  const f = client({ network: async url => {
-    if (url === release.asset.browser_download_url) throw new TypeError('Failed to fetch (CORS)');
-    assert.equal(url, 'https://raw.githubusercontent.com/Adirm007/reader/v1.0.0/regex/reader-fixed.regex.json');
-    return new Response(release.bytes);
-  } });
-  const result = await f.api.download(release.selected);
-  assert.equal(result.metadata.version, '1.0.0');
-  assert.equal(result.regex.replaceString, release.regex.replaceString);
-  assert.equal(f.requests.length, 2);
-  assert.ok(f.requests.every(request => request.options.credentials === 'omit'));
-  assert.ok(f.requests.every(request => !/\/main\/|@main|github\.io|\/latest\//.test(request.url)));
-  assert.equal(f.window.__downloadedCodeExecuted, false);
+test('bad newest proof fails instead of choosing an older version',async()=>{
+ const old=fixture(),current=fixture({version:'2.0.0'});current.proof.valid=false;
+ const f=client({network:staticNetwork([old,current])});await assert.rejects(f.api.latest(repository),/签名无效/);
+ assert.equal(f.verifications.length,1);assert.equal(f.verifications[0].version,'2.0.0');assert.equal(f.requests.length,2);
 });
-
-test('a corrupt raw mirror cannot bypass digest validation through jsDelivr fallback', async () => {
-  const release = fixture();
-  const f = client({ crypto: {}, network: async url => {
-    if (url === release.asset.browser_download_url) throw new TypeError('CORS');
-    if (url.startsWith('https://raw.')) return new Response(Buffer.alloc(release.bytes.length, 0x20));
-    assert.equal(url, 'https://cdn.jsdelivr.net/gh/Adirm007/reader@v1.0.0/regex/reader-fixed.regex.json');
-    return new Response(release.bytes);
-  } });
-  assert.equal((await f.api.download(release.selected)).metadata.version, '1.0.0');
-  assert.equal(f.requests.length, 3);
-  assert.equal(f.window.__downloadedCodeExecuted, false);
+test('wrong repository, malformed, duplicate, equivalent and nonnumeric catalog versions fail',async()=>{
+ const indexes=[null,[],{},{schema:2,repository,versions:[]},{schema:1,repository:'Adirm007/Protelysion',versions:['1.0']},
+ {schema:1,repository,versions:['1.0','1.0']},{schema:1,repository,versions:['1.2','1.2.0']},
+ ...['v1.0','latest','../evil','1.0/../evil',1.2,['1.0']].map(v=>({schema:1,repository,versions:[v]}))];
+ for(const index of indexes){const f=client({network:async()=>Response.json(index)});await assert.rejects(f.api.latest(repository));assert.equal(f.requests.length,1);assert.equal(f.verifications.length,0);}
 });
-
-test('403 or 429 is a failed check, never an empty/latest-null result', async () => {
-  for (const status of [403, 429]) {
-    const f = client({ network: async () => Response.json({ message: 'rate limit exceeded' }, { status }) });
-    await assert.rejects(f.api.latest(repository), /限流.*无法确认更新/);
-    await assert.rejects(f.api.resolve(repository, '1.0.0'), /限流/);
-    assert.equal(f.requests.length, 2);
-    assert.equal(f.window.__downloadedCodeExecuted, false);
-  }
+test('verified proof fields must match repository and version with exact digest types',async()=>{
+ for(const change of [{repository:'Adirm007/Protelysion'},{version:'2.0.0'},{distributionCommit:'main'},{distributionCommit:[distributionCommit]},{digest:'sha256:'+'c'.repeat(64)},{digest:['c'.repeat(64)]}]){
+ const r=fixture();Object.assign(r.proof.verified,change);const f=client({network:staticNetwork([r])});await assert.rejects(f.api.latest(repository),/发布证明与指定版本不一致/);assert.equal(f.requests.length,2);}
 });
-
-test('a complete empty release list is distinct from a broken API response', async () => {
-  const empty = client({ network: async () => Response.json([]) });
-  assert.equal(await empty.api.latest(repository), null);
-  const malformed = client({ network: async () => Response.json({ message: 'unexpected response' }) });
-  await assert.rejects(malformed.api.latest(repository), /列表格式异常/);
-  const invalidJson = client({ network: async () => new Response('this is not JSON') });
-  await assert.rejects(invalidJson.api.latest(repository));
+test('repository allowlist rejects unknown and inherited object names before network access',async()=>{
+ const f=client();for(const repo of ['Adirm007/other','__proto__','toString','constructor']){const r=fixture({repo});assert.throws(()=>f.api.metadata(r.regex,repo),/仓库/);await assert.rejects(f.api.latest(repo),/仓库/);await assert.rejects(f.api.resolve(repo,'1.0'),/仓库/);await assert.rejects(f.api.download(r.selected),/仓库/);}assert.equal(f.requests.length,0);
+});
+test('manual VERSION must exist in catalog and permits an explicitly selected older release',async()=>{
+ const old=fixture(),current=fixture({version:'2.0.0'}),f=client({localStorage:storage(),network:staticNetwork([old,current])});
+ await f.api.latest(repository);assert.equal((await f.api.resolve(repository,'1.0.0')).metadata.version,'1.0.0');
+ await assert.rejects(f.api.resolve(repository,'9.0.0'),/清单中没有该版本/);const count=f.requests.length;
+ for(const bad of ['v1.0','../evil',1.2,['1.0']])await assert.rejects(f.api.resolve(repository,bad),/版本号格式无效/);
+ assert.equal(f.requests.length,count);assert.equal(f.window.__downloadedCodeExecuted,false);
+});
+test('network failure falls back to the same catalog and proof on jsDelivr',async()=>{
+ const r=fixture(),f=client({network:staticNetwork([r],{override:async url=>{if(url.startsWith('https://raw.'))throw Error('unavailable');}})});
+ assert.equal((await f.api.latest(repository)).version,'1.0.0');assert.equal(f.requests.length,4);
+ assert.equal(f.requests[1].url,'https://cdn.jsdelivr.net/gh/Adirm007/reader@fixed-updates/index.json');
+ assert.equal(f.requests[3].url,'https://cdn.jsdelivr.net/gh/Adirm007/reader@fixed-updates/releases/v1.0.0.json');
+});
+test('HTTP failures or malformed JSON are failed checks, never an empty catalog',async()=>{
+ for(const status of [403,404,429,500]){const f=client({network:async()=>new Response('failed',{status})});await assert.rejects(f.api.latest(repository),new RegExp('HTTP '+status));assert.equal(f.requests.length,2);}
+ const f=client({network:async()=>new Response('bad json')});await assert.rejects(f.api.latest(repository));assert.equal(f.requests.length,1);
+ const r=fixture(),g=client({network:staticNetwork([r],{override:async url=>{if(url.includes('/releases/'))return new Response('missing',{status:404});}})});
+ await assert.rejects(g.api.latest(repository),/HTTP 404/);assert.equal(g.verifications.length,0);
+});
+test('empty valid catalog differs from failures and cannot roll back a previously verified higher version',async()=>{
+ let fixtures=[];const f=client({localStorage:storage(),network:(url,options)=>staticNetwork(fixtures)(url,options)});
+ assert.equal(await f.api.latest(repository),null);fixtures=[fixture({version:'2.0.0'})];assert.equal((await f.api.latest(repository)).version,'2.0.0');
+ fixtures=[fixture()];await assert.rejects(f.api.latest(repository),/早于已验证版本/);fixtures=[];await assert.rejects(f.api.latest(repository),/早于已验证版本/);
+});
+test('blocked or full localStorage does not prevent valid verification',async()=>{
+ const r=fixture();for(const localStorage of [{getItem(){throw Error('blocked');},setItem(){throw Error('blocked');}},{getItem:()=>null,setItem(){throw Error('quota');}}]){
+ const f=client({localStorage,network:staticNetwork([r])});assert.equal((await f.api.latest(repository)).version,'1.0.0');}
+});
+test('download rechecks proof and ignores snapshot digests or external addresses',async()=>{
+ const r=fixture(),selected={...r.selected,digest:'f'.repeat(64),distributionCommit:'main',url:'https://attacker.invalid/evil'},f=client({network:staticNetwork([r])});
+ const result=await f.api.download(selected);assert.equal(result.metadata.version,'1.0.0');assert.equal(f.verifications.length,1);assert.equal(f.requests[0].url,'https://raw.githubusercontent.com/Adirm007/reader/fixed-updates/releases/v1.0.0.json');assert.ok(f.requests.every(x=>!x.url.includes('attacker.invalid')));
+ r.proof.valid=false;await assert.rejects(f.api.download(selected),/签名无效/);assert.equal(f.window.__downloadedCodeExecuted,false);
+});
+test('a valid digest cannot authorize a marker for another repository or version',async()=>{
+ for(const marker of [{repository:'Adirm007/Protelysion'},{version:'2.0.0'}]){const r=fixture({marker}),f=client({network:staticNetwork([r])});await assert.rejects(f.api.download(r.selected),/标记与发布版本不一致/);assert.equal(f.requests.length,4);assert.equal(f.window.__downloadedCodeExecuted,false);}
+});
+test('same-size tampering fails SHA-256 on every mirror before JSON parsing',async()=>{
+ const r=fixture(),f=client({network:staticNetwork([r],{override:async url=>{if(!url.includes('/fixed-updates/')&&!url.includes('@fixed-updates/'))return new Response(Buffer.alloc(r.bytes.length,0x20));}})});
+ await assert.rejects(f.api.download(r.selected),/SHA-256 校验失败/);assert.equal(f.requests.length,4);assert.equal(f.window.__downloadedCodeExecuted,false);
+});
+test('attachment CORS failure uses the signed distribution commit raw mirror',async()=>{
+ const r=fixture(),f=client({network:staticNetwork([r],{override:async url=>{if(url.startsWith('https://github.com/'))throw new TypeError('CORS');}})});
+ const result=await f.api.download(r.selected);assert.equal(result.regex.replaceString,r.regex.replaceString);assert.equal(f.requests.length,3);
+ assert.equal(f.requests[2].url,`https://raw.githubusercontent.com/${repository}/${distributionCommit}/regex/reader-fixed.regex.json`);assert.equal(f.window.__downloadedCodeExecuted,false);
+});
+test('corrupt raw artifact cannot bypass digest validation through jsDelivr fallback',async()=>{
+ const r=fixture(),f=client({crypto:{},network:staticNetwork([r],{override:async url=>{if(url.startsWith('https://github.com/'))throw new TypeError('CORS');if(url.includes(`/${distributionCommit}/`))return new Response(Buffer.alloc(r.bytes.length,0x20));}})});
+ assert.equal((await f.api.download(r.selected)).metadata.version,'1.0.0');assert.equal(f.requests.length,4);
+ assert.equal(f.requests[3].url,`https://cdn.jsdelivr.net/gh/${repository}@${distributionCommit}/regex/reader-fixed.regex.json`);
+});
+test('oversize catalogs, proofs and artifacts fail before parsing or execution',async()=>{
+ const r=fixture();for(const [match,limit] of [['index.json',1000000],['/releases/v',2000000],['/releases/download/',4000000]]){
+ const f=client({network:staticNetwork([r],{override:async url=>{if(url.includes(match))return new Response('x',{headers:{'content-length':String(limit+1)}});if(match==='/releases/download/'&&!url.includes('/fixed-updates/')&&!url.includes('@fixed-updates/'))return new Response(Buffer.alloc(4000001));}})});
+ await assert.rejects(match==='/releases/download/'?f.api.download(r.selected):f.api.latest(repository),/大小限制/);assert.equal(f.window.__downloadedCodeExecuted,false);}
 });

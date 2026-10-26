@@ -168,3 +168,37 @@ func TestInputLimits(t *testing.T) {
 	r.Trust = nil
 	check(t, r, false)
 }
+
+func TestRealBookseaRelease(t *testing.T) {
+	data, err := os.ReadFile("testdata/protelysion-v0.42.2.bundle.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	r := check(t, request{Bundle: data, Repository: "Adirm007/Protelysion", Version: "0.42.2", Trust: trustFixture(t)}, true)
+	if r.DistributionCommit != "7dea1c06de0a9cc8d8e34dbc0cf929da902116bc" || r.Digest != "df5f81163cf423f64ea7bd89854be58dd6e1396bf5a823e6ab4e9bf1efe11ba2" {
+		t.Fatal(r)
+	}
+}
+func TestInputCannotOverrideVerificationClock(t *testing.T) {
+	r := fixture(t)
+	data, err := json.Marshal(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var input map[string]any
+	if err = json.Unmarshal(data, &input); err != nil {
+		t.Fatal(err)
+	}
+	input["now"] = "2026-10-27T00:00:00Z"
+	input["time"] = "2026-10-27T00:00:00Z"
+	input["currentTime"] = "2026-10-27T00:00:00Z"
+	data, err = json.Marshal(input)
+	if err != nil {
+		t.Fatal(err)
+	}
+	future := time.Date(2028, 1, 1, 0, 0, 0, 0, time.UTC)
+	out := verifyRequestAt(string(data), future)
+	if out.OK || !strings.Contains(out.Error, "expired") {
+		t.Fatalf("input overrode verification clock: %+v", out)
+	}
+}

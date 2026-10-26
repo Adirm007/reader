@@ -37,8 +37,8 @@ test('equal or older versions are not updates; missing fixed installations are n
   const f=fixture();f.latest=async repository=>({repository,version:repository===repositories[0]?'1.0.0':'0.9.9',release:{}});assert.ok((await f.updates.check()).projects.every(p=>!p.updatable));
   assert.ok((await fixture({installed:false}).updates.check()).projects.every(p=>!p.updatable));
 });
-test('a rate-limited repository fails independently instead of reporting no update',async()=>{
-  const f=fixture();f.latest=async repository=>{if(repository===repositories[1])throw Error('GitHub 暂时限流');return {repository,version:'1.1.0',release:{}};};const result=await f.updates.check();assert.equal(result.projects[0].updatable,true);assert.match(result.projects[1].error,/限流/);assert.equal(f.writes.length,0);
+test('one invalid release proof fails independently instead of reporting no update',async()=>{
+  const f=fixture();f.latest=async repository=>{if(repository===repositories[1])throw Error('发布证明校验失败');return {repository,version:'1.1.0',release:{}};};const result=await f.updates.check();assert.equal(result.projects[0].updatable,true);assert.match(result.projects[1].error,/发布证明校验失败/);assert.equal(f.writes.length,0);
 });
 test('duplicate and malformed fixed installations cannot be automatically selected',async()=>{
   const f=fixture();f.ctx.characters[0].data.extensions.regex_scripts.push(raw(0));let result=await f.updates.check();assert.equal(result.projects[0].installed.length,2);assert.equal(result.projects[0].updatable,false);
