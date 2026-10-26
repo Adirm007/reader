@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "name": "dream-reader-render-fixed",
-  "version": "2026.10.27.3",
+  "version": "2026.10.27.4",
   "license": "LICENSE",
   "files": {
     "reader.css": {
@@ -15,9 +15,9 @@
       "sha256": "75e43241c7719613f17a73de2bc29e73a4504bb96322894d1c42eb58a6a80350"
     },
     "reader.js": {
-      "path": "dist/reader.6508db6750e5.js",
-      "bytes": 798081,
-      "sha256": "6508db6750e5b4ab43d8b49ed78ee49d5c59db6881de99e7161c9dcb9477bafb"
+      "path": "dist/reader.cf335a96ba1c.js",
+      "bytes": 797955,
+      "sha256": "cf335a96ba1cafcce9007dbd7c940c20f789a13388b0c61f215f6035a33b1118"
     }
   },
   "resources": {

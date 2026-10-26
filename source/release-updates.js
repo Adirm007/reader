@@ -92,7 +92,7 @@
   }
   async function receiptStatus(){
     var current=scan(),raw=current.host.window.localStorage.getItem(RECEIPT);if(!raw)return null;
-    var receipt=JSON.parse(raw);if(receipt.schema!==1||!Array.isArray(receipt.expected))throw Error('更新收据格式异常');
+    var receipt=JSON.parse(raw);if(receipt.schema!==1||!Array.isArray(receipt.expected))throw Error('更新记录无法读取');
     var verified=[];
     for(var i=0;i<receipt.expected.length;i++){
       var e=receipt.expected[i],scope=current.lists.find(function(g){return JSON.stringify(g.option)===JSON.stringify(e.scope);});
@@ -114,7 +114,7 @@
   root.DreamReleaseUpdates=Object.freeze({scan:scan,check:check,apply:apply,receiptStatus:receiptStatus,exportBackup:exportBackup});
   root.openDreamReleaseUpdates=function(e,toastFn){
     if(e&&e.stopPropagation)e.stopPropagation();
-    var doc=getCustomPersonaHostDocument(),shell=createCustomPersonaLibraryShell(doc,'检查正则更新','固定版由你选择版本；检查只读取发布信息，点击更新后才替换正则。');
+    var doc=getCustomPersonaHostDocument(),shell=createCustomPersonaLibraryShell(doc,'检查正则更新','');
     dreamAddonCss(doc);
     var box=doc.createElement('div');box.className='dad-form';var status=doc.createElement('div');status.className='dad-status';status.setAttribute('aria-live','polite');
     var info=doc.createElement('div');info.style.whiteSpace='pre-wrap';info.style.lineHeight='1.8';var buttons=doc.createElement('div');buttons.className='dad-row';box.appendChild(info);box.appendChild(status);box.appendChild(buttons);shell.card.appendChild(box);
@@ -123,7 +123,7 @@
     function addButton(label,fn,primary){var b=customPersonaButton(doc,label,primary?'cpl-btn-primary':'',fn);buttons.appendChild(b);return b;}
     PROJECTS.forEach(function(p){var link=doc.createElement('a');link.href='https://github.com/'+p.repository+'/releases';link.target='_blank';link.rel='noopener noreferrer';link.textContent=p.label+'发布页';link.style.marginRight='16px';box.appendChild(link);});
     async function run(){
-      if(busy)return;busy=true;buttons.textContent='';info.textContent='';setStatus('正在检查读者和书海的固定版本……');
+      if(busy)return;busy=true;buttons.textContent='';info.textContent='';setStatus('正在检查…');
       try{
         var checked=await check(), lines=[];
         checked.projects.forEach(function(p){
