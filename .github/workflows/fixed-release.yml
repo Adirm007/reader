@@ -1,0 +1,39 @@
+name: Publish immutable fixed regex
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Prepared numeric version; never reuse a published version'
+        required: true
+        type: string
+permissions:
+  contents: write
+concurrency:
+  group: reader-fixed-release
+  cancel-in-progress: false
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Verify reader and fixed distribution
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm test
+      - name: Package source C and publish distribution D
+        env:
+          FIXED_VERSION: ${{ inputs.version }}
+          GH_TOKEN: ${{ secrets.FIXED_RELEASE_TOKEN }}
+        run: |
+          test -n "$GH_TOKEN" || { echo 'Configure FIXED_RELEASE_TOKEN (Contents write and Administration read).'; exit 1; }
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          gh auth setup-git
+          python tools/publish_fixed_release.py "$FIXED_VERSION" "$GITHUB_SHA" --publish

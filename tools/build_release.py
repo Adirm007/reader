@@ -33,6 +33,25 @@ def install_profile_cache(src):
     return src
 
 
+def install_release_tools(src):
+    """Keep fixed-version resource hooks and consented update helpers in full imports."""
+    html = src['replaceString']
+    scripts = []
+    for name, marker in [('fixed-release-client.js', 'DREAM_FIXED_RELEASE_CLIENT'),
+                         ('fixed-runtime.js', 'DREAM_FIXED_RUNTIME'),
+                         ('regex-update-guard.js', 'DREAM_REGEX_UPDATE_GUARD'),
+                         ('release-updates.js', 'DREAM_RELEASE_UPDATES')]:
+        code = open(os.path.join(ROOT, 'source', name), encoding='utf-8').read().rstrip()
+        code = code.replace(f'/* {marker}_BEGIN */', '').replace(f'/* {marker}_END */', '').strip()
+        if '</script' in code.lower():
+            raise SystemExit(f'{name} 包含不安全的 HTML 脚本结束标签')
+        html = re.sub(r'\s*/\* ' + marker + r'_BEGIN \*/.*?/\* ' + marker + r'_END \*/\s*',
+                      '\n', html, flags=re.S)
+        scripts.append(f'/* {marker}_BEGIN */\n{code}\n/* {marker}_END */')
+    src['replaceString'] = re.sub(r'\s*</script>', lambda match: '\n' + '\n'.join(scripts) + '\n</script>', html, count=1)
+    return src
+
+
 def split_render(html):
     if html.startswith('```html\n'):
         html = html[len('```html\n'):]
@@ -66,7 +85,7 @@ def write_asset(name, ext, text):
 def main():
     if len(sys.argv) < 2:
         raise SystemExit(__doc__)
-    src = install_profile_cache(json.load(open(sys.argv[1], encoding='utf-8')))
+    src = install_release_tools(install_profile_cache(json.load(open(sys.argv[1], encoding='utf-8'))))
     with open(sys.argv[1], 'w', encoding='utf-8', newline='\n') as f:
         json.dump(src, f, ensure_ascii=False, indent=2)
         f.write('\n')
