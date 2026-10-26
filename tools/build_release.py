@@ -18,6 +18,21 @@ BASES = ['https://adirm007.github.io/reader/', 'https://raw.githubusercontent.co
 PLACEHOLDER = '<!--DREAM_LETTER-->'
 
 
+def install_profile_cache(src):
+    """Ship pure prompt data inside the existing, hash-verified reader download."""
+    profile = json.load(open(os.path.join(ROOT, 'source', 'black-author.prompt.json'), encoding='utf-8'))
+    cache = open(os.path.join(ROOT, 'source', 'black-author-cache.js'), encoding='utf-8').read()
+    payload = json.dumps(profile, ensure_ascii=False, separators=(',', ':'))
+    # Keep full-regex imports and the external release behavior identical.
+    cache = cache.replace('__DREAM_AUTHOR_PROFILE__', payload.replace('<', '\\u003c'))
+    html = re.sub(r'\s*/\* DREAM_AUTHOR_CACHE_BEGIN \*/.*?/\* DREAM_AUTHOR_CACHE_END \*/\s*',
+                  '', src['replaceString'], flags=re.S)
+    if html.count('<script>') != 1:
+        raise SystemExit('需要唯一的主脚本来加入聊天资料初始化')
+    src['replaceString'] = html.replace('<script>', '<script>\n' + cache + '\n', 1)
+    return src
+
+
 def split_render(html):
     if html.startswith('```html\n'):
         html = html[len('```html\n'):]
@@ -51,7 +66,10 @@ def write_asset(name, ext, text):
 def main():
     if len(sys.argv) < 2:
         raise SystemExit(__doc__)
-    src = json.load(open(sys.argv[1], encoding='utf-8'))
+    src = install_profile_cache(json.load(open(sys.argv[1], encoding='utf-8')))
+    with open(sys.argv[1], 'w', encoding='utf-8', newline='\n') as f:
+        json.dump(src, f, ensure_ascii=False, indent=2)
+        f.write('\n')
     version = sys.argv[2] if len(sys.argv) > 2 else datetime.date.today().strftime('%Y.%m.%d')
     css, body, js = split_render(src['replaceString'])
     files = {'reader.css': write_asset('reader', 'css', css), 'reader-body.html': write_asset('reader-body', 'html', body),

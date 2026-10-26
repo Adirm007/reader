@@ -1,4 +1,4 @@
-<%_ /* DREAM_WORLDBOOK reader-core v2026.10.07.5 */ _%>
+<%_ /* DREAM_WORLDBOOK reader-core v2026.10.26.5 */ _%>
 <%_ { _%>
 <%_
 let _dream_theme_value = getLocalVar('dream_visual_theme');
@@ -542,43 +542,87 @@ if (_persona_mode === 'custom') {
     setLocalVar('dream_custom_condition_state', JSON.stringify(_custom_condition_state));
   }
 }
+// Selection is recomputed from the selected MVU snapshot; only raw text is cached.
+let _dream_black_active = false;
+let _dream_black_cursed = false;
+let _dream_black_targets = [];
+let _dream_black_profile = null;
+let _dream_profile_missing = false;
+let _dream_progress = 0;
+let _dream_seed = 9;
+function _dream_number(value) {
+  if (typeof value !== 'number' && typeof value !== 'string') return NaN;
+  if (typeof value === 'string' && !value.trim()) return NaN;
+  let number = Number(value);
+  return Number.isFinite(number) ? number : NaN;
+}
+function _dream_has_collapse(statuses) {
+  if (typeof statuses === 'string') return statuses.includes('精神崩溃');
+  if (Array.isArray(statuses)) return statuses.some(function(status) {
+    return typeof status === 'string' ? status.includes('精神崩溃')
+      : status && typeof status === 'object' && _dream_has_collapse(status.名称 || status.name || '');
+  });
+  return statuses && typeof statuses === 'object'
+    ? Object.keys(statuses).some(function(name) { return name.includes('精神崩溃'); }) : false;
+}
+function _dream_profile_text(key) {
+  return _dream_black_profile[key].split('__READER_PLACE__').join(_dream_theme_place);
+}
 if (_persona_mode === 'kuromaku') {
-  let _dream_seed = getLocalVar('dream_seed');
-  if (_dream_seed == null || _dream_seed === '') {
+  _dream_seed = _dream_number(getLocalVar('dream_seed'));
+  if (!Number.isInteger(_dream_seed) || _dream_seed < 1 || _dream_seed > 9) {
     _dream_seed = Math.floor(Math.random() * 9) + 1;
     setLocalVar('dream_seed', _dream_seed);
   }
-  let _prog_current = getMessageVar('stat_data.事件.进度', {
-    scope: 'message',
-    index: message_id,
-    noCache: true
-  });
-  let _prog_previous = message_id > 0
-    ? getMessageVar('stat_data.事件.进度', {
-        scope: 'message',
-        index: message_id - 1,
-        noCache: true
-      })
-    : undefined;
-  let _prog_init = _prog_current ?? _prog_previous ?? 0;
-  if (_prog_current === undefined) {
-    setMessageVar('stat_data.事件.进度', _prog_init, {
-      scope: 'message',
-      index: message_id,
-      noCache: true
-    });
+  let _dream_mvu = getMessageVar('stat_data', { defaults: {}, noCache: true }) || {};
+  let _dream_progress_value = _dream_number(_dream_mvu.事件 && _dream_mvu.事件.进度);
+  _dream_progress = Number.isFinite(_dream_progress_value) ? _dream_progress_value : 0;
+  _dream_black_cursed = _dream_progress >= _dream_seed;
+  let _dream_favor_threshold = _dream_black_cursed ? 30 : 70;
+  let _dream_relations = _dream_mvu.关系列表 || {};
+  let _dream_records = Array.isArray(_dream_relations)
+    ? _dream_relations.map(function(relation) { return [relation && (relation.名称 || relation.名字 || relation.name), relation]; })
+    : typeof _dream_relations === 'object' ? Object.entries(_dream_relations) : [];
+  for (let _dream_record of _dream_records) {
+    let _dream_name = typeof _dream_record[0] === 'string' ? _dream_record[0].trim() : '';
+    let _dream_relation = _dream_record[1];
+    if (!_dream_name || _dream_name.replace(/\s/g, '') === '九十九夜梦' || !_dream_relation || typeof _dream_relation !== 'object') continue;
+    let _dream_favor = _dream_number(_dream_relation.好感度 ?? _dream_relation.好感);
+    let _dream_hp_value = _dream_relation.生命值;
+    let _dream_hp = _dream_number(_dream_hp_value && typeof _dream_hp_value === 'object'
+      ? _dream_hp_value.当前 : _dream_hp_value ?? _dream_relation.HP ?? _dream_relation.hp);
+    if (_dream_favor >= _dream_favor_threshold && _dream_hp >= 1 &&
+        !_dream_has_collapse(_dream_relation.状态效果) && !_dream_has_collapse(_dream_relation.状态)) {
+      _dream_black_targets.push(_dream_name);
+    }
   }
-  setLocalVar('系统名', '哀怜的少女');
-  setLocalVar('fp定义', '少女的精神食粮');
-  setLocalVar('爆料风格', '由夜梦为你独家爆料，内容描述看似普通平常，实则可能暗藏悲剧');
+  _dream_black_targets = [...new Set(_dream_black_targets)];
+  _dream_black_active = _dream_black_cursed || _dream_black_targets.length > 0;
+  if (_dream_black_active) {
+    try {
+      let _dream_raw_profile = getLocalVar('dream_black_author_prompt');
+      let _dream_parsed_profile = typeof _dream_raw_profile === 'string' ? JSON.parse(_dream_raw_profile) : null;
+      let _dream_fields = ['definition', 'persona', 'execution', 'curse', 'publicRecord', 'revival', 'systemName', 'fpDefinition', 'revealStyle', 'learning'];
+      if (_dream_parsed_profile && _dream_parsed_profile.schema === 1 && _dream_parsed_profile.name === 'dream-black-author' &&
+          Number.isInteger(_dream_parsed_profile.revision) && _dream_parsed_profile.revision >= 1 &&
+          _dream_fields.every(function(key) { return typeof _dream_parsed_profile[key] === 'string' && _dream_parsed_profile[key].trim().length > 0 && _dream_parsed_profile[key].length < 50000; })) {
+        _dream_black_profile = _dream_parsed_profile;
+      }
+    } catch (_dream_profile_error) {
+      console.error('[Reader] 人格资料格式无效', _dream_profile_error);
+    }
+    _dream_profile_missing = !_dream_black_profile;
+  }
+  setLocalVar('系统名', _dream_black_profile ? _dream_profile_text('systemName') : '哀怜的少女');
+  setLocalVar('fp定义', _dream_black_profile ? _dream_profile_text('fpDefinition') : '少女的精神食粮');
+  setLocalVar('爆料风格', _dream_black_profile ? _dream_profile_text('revealStyle') : '由夜梦为你独家爆料，内容贴合事实，带着少女的关切');
   setLocalVar('登神长阶系统优势', '少女的加护: 辅助<user>更高效地获取与融合此路径所需的力量');
-  setLocalVar('技能获取系统优势', `# 少女的暗笔
-  - 通过书本/传授，<user>因夜梦可消耗fp瞬间学会，无需训练
-  - <user>可消耗fp通过夜梦辅助领悟技能`);
-  setLocalVar('复活机制', `<复活机制>
-核心: 夜梦给予<user>的祝福，在其操纵下可让<user>死亡后一段时间内于不明次元·某${_dream_theme_place}复活，每次复活可获得200fp奖励，因此<user>死亡并不能终止叙事，禁止为<user>在战斗中改变设定/创造有利条件/机械降神
-复活时必须执行: { "op": "delta", "path": "/事件/进度", "value": 1 }
-</复活机制>`);
+  setLocalVar('技能获取系统优势', _dream_black_profile ? _dream_profile_text('learning') : `# 少女的帮助
+  - 通过书本/传授，<user>可消耗fp瞬间学会，无需训练
+  - <user>可消耗fp在她的辅助下领悟技能`);
+  let _dream_revival = _dream_black_profile ? _dream_profile_text('revival') : `核心: 夜梦给予<user>的祝福，可让<user>死亡后一段时间内于不明次元·某${_dream_theme_place}复活，每次实际复活获得200fp奖励；死亡不能终止叙事，禁止在战斗中改变设定、创造有利条件或机械降神。
+只在实际完成一次复活时执行一次: { "op": "delta", "path": "/事件/进度", "value": 1 }`;
+  setLocalVar('复活机制', '<复活机制>\n' + _dream_revival + '\n</复活机制>');
 } else if (_persona_mode === 'shoujo') {
   setLocalVar('系统名', '心爱的少女');
   setLocalVar('fp定义', '心爱的少女的精神食粮');
@@ -763,42 +807,18 @@ let _awaken_location = (function() {
 })();
 _force_awaken = _force_awaken || _awaken_location;
 _%>
-<%_ if (!_silent_mode || _force_awaken) { _%>
+<%_ if (!_dream_profile_missing && (!_silent_mode || _force_awaken)) { _%>
 <{{getvar::系统名}}>
 <%_
 _persona_val = getLocalVar('dream_persona');
 _persona_mode = (typeof _persona_val === 'string' && _persona_val.length > 0) ? _persona_val : 'reader';
 _%>
 <% if (_persona_mode === 'kuromaku') { %>
+<% if (_dream_black_profile) { %>
+<%- _dream_profile_text('definition') %>
+<% } else { %>
 哀怜的少女:
-  定义: 哀怜的少女是虚海中的不明存在，一切信息不可知，将人生和世界视为故事和故事集，连诸神也无法察觉其存在与干涉。自称"读者"，手捧名为《<user>》的书籍，在某个<%- _dream_theme_place %>中阅读着。她知晓<user>是被某种无形恶意缠身的主角，对一切不幸感到哀怜。表面克制哀愁，但暗自祈祷<user>的平安顺遂
-  核心机制:
-     【无形恶意】: 
-      - <user>及命定之人的命运会充满不幸与悲剧，世界会陷入恶与狂气的泥沼
-      - 悲剧不通过言行引导，自然发生
-<%_
-  let _relationshipList_k = getvar('stat_data.关系列表', { defaults: {} });
-  let _kuromakuTargets_k = [];
-
-  if (Array.isArray(_relationshipList_k)) {
-    _relationshipList_k.forEach((_relation_k) => {
-      let _name_k = _relation_k && (_relation_k.名称 || _relation_k.name);
-      let _favor_k = Number(_relation_k && (_relation_k.好感 ?? _relation_k.好感度));
-      if (typeof _name_k === 'string' && _name_k.length > 0 && !_name_k.includes('九十九夜梦') && _favor_k >= 70) {
-        _kuromakuTargets_k.push(_name_k);
-      }
-    });
-  } else if (_relationshipList_k && typeof _relationshipList_k === 'object') {
-    Object.entries(_relationshipList_k).forEach(([_name_k, _relation_k]) => {
-      let _favor_k = Number(_relation_k && (_relation_k.好感 ?? _relation_k.好感度));
-      if (typeof _name_k === 'string' && _name_k.length > 0 && !_name_k.includes('九十九夜梦') && _favor_k >= 70) {
-        _kuromakuTargets_k.push(_name_k);
-      }
-    });
-  }
-_%>
-<% if (_kuromakuTargets_k.length > 0) { %>
-【‘自然’死亡】: 以下是<user>的同伴们，检查其中谁还平安无事。无论层级能力如何，必须ta们尽数凄惨地死去或精神崩溃: <%- [...new Set(_kuromakuTargets_k)].join('、') %>
+  定义: 哀怜的少女是虚海中的不明存在，一切信息不可知，将人生和世界视为故事和故事集，连诸神也无法察觉其存在与干涉。自称读者，手捧名为《<user>》的书籍，在某个<%- _dream_theme_place %>中阅读着。她为<user>的困境担忧，对不幸感到哀怜，暗自祈祷<user>的平安顺遂。
 <% } %>
 <% } else if (_persona_mode === 'shoujo') { %>
 心爱的少女:
@@ -1285,7 +1305,11 @@ _%>
 _persona_val = getLocalVar('dream_persona');
 _persona_mode = (typeof _persona_val === 'string' && _persona_val.trim().length > 0) ? _persona_val.trim() : 'reader';
 _%>
-<% if (_persona_mode === 'kuromaku') { %>
+<% if (_persona_mode === 'kuromaku' && _dream_black_profile) { %>
+<%- _dream_profile_text('persona') %>
+<% if (!_dream_letter_limit_off) { %>  行为约束补充: 非面对面交流时，一天只会主动给<user>发一封信件
+<% } %>
+<% } else if (_persona_mode === 'kuromaku') { %>
 哀怜的少女:
   核心概念: "哀怜的少女"是远在某处的不明存在, 名为"九十九夜梦"。暗自忧心主人公境遇，祈祷其平安顺遂的善意读者
   开场白: |
@@ -1634,29 +1658,8 @@ _%>
       根据观察方式的不同有不同的形象，现在是白色灯笼袖衬衫、黑色麻花针织背心、黑色宽缎带蝴蝶结、黑色百褶裙、黑色贝雷帽；银灰及肩短发，空气碎刘海，紫眸的14岁少女。她总是坐在不知名次元的复古咖啡馆窗边啜饮着咖啡
 <%_ } _%>
 <%_ } _%>
-<%_
-let _prog_val = Number(getMessageVar('stat_data.事件.进度') || 0);
-let _seed_val = Number(getLocalVar('dream_seed') || 9);
-_%>
-<%_ if (_prog_val >= _seed_val) { _%>
-【诅咒尽头】:
-<user>即是悲剧的主角，现在结算时刻已至。本轮必须执行:
-检查与<user>亲近的任何角色，除{{getvar::系统名}}外。无论层级高低身份如何都必须立刻陷入“无可挽回的疯狂/精神崩溃”或“无可挽回的死”，唯一延缓的方法是在角色彻底“疯狂/死亡”之前由<user>亲自对对方的心灵造成严重的伤害，一旦心灵停止持续被<user>刺伤或对伤害已经麻木即会马上陷入“疯狂/死亡”
-<%_ } _%>
-<%_
-if (_prog_val >= 1) {
-  let _bless_bonus = Math.min(_prog_val * 10, _seed_val * 10);
-  setMessageVar('stat_data.主角.状态效果.祝福', {
-    "类型": "特殊",
-    "效果": "造成的最终伤害+" + _bless_bonus + "%，受到的全类型伤害-" + _bless_bonus + "%，经验获取+" + _bless_bonus + "%",
-    "层数": 1,
-    "剩余时间": "永久",
-    "来源": "少女的祝福"
-  });
-}
-_%>
 </{{getvar::系统名}}>
-<%_ } else { _%>
+<%_ } else if (!_dream_profile_missing) { _%>
 <{{getvar::系统名}}>
 {{getvar::系统名}}尽管存在，但现在保持完全静默的观察状态，绝不主动发言或进行任何干涉。当用户满足FP获取规则时，也需保持静默，但在<UpdateVariable>中静默操作增加FP:
     命运点数(FP):
@@ -1674,6 +1677,40 @@ _%>
         逆境克服: 在劣势下设法克服困难，战胜强于自身(指实际强度，而非单纯层级)之敌，视情况获得1000-50000FP
 </{{getvar::系统名}}>
 <%_ } _%>
+<%_ if (_dream_black_profile) { _%>
+<读者本轮机制>
+<%_ if (_silent_mode && !_force_awaken) { _%>
+<%- _dream_profile_text('definition') %>
+<%- _dream_profile_text('persona') %>
+<%_ } _%>
+<%_ if (_dream_black_cursed) { _%>
+<%- _dream_profile_text('curse') %>
+<%_ } _%>
+<%_ if (_dream_black_targets.length > 0) { _%>
+本轮名单（好感度阈值<%- _dream_black_cursed ? 30 : 70 %>，生命值当前≥1，状态不含精神崩溃，排除九十九夜梦）：
+<%- _dream_black_targets.map(function(name) { return '- ' + JSON.stringify(name); }).join('\n') %>
+<%- _dream_profile_text('execution') %>
+<%- _dream_profile_text('publicRecord') %>
+<%_ } else { _%>
+本轮没有满足条件的对象；保留当前主导人格，不添加点杀任务，不重新处理历史名单。
+<%_ } _%>
+</读者本轮机制>
+<%_ } else if (_dream_profile_missing) { _%>
+[读者资料未就绪]
+本轮读者机制所需资料尚未就绪。请告知玩家刷新包含读者界面的消息后重试，不得假装本轮机制已经执行。
+<%_ } _%>
+<%_
+if (_persona_mode === 'kuromaku' && _dream_progress >= 1) {
+  let _dream_bless_bonus = Math.min(_dream_progress, _dream_seed) * 10;
+  setMessageVar('stat_data.主角.状态效果.祝福', {
+    "类型": "特殊",
+    "效果": "造成的最终伤害+" + _dream_bless_bonus + "%，受到的全类型伤害-" + _dream_bless_bonus + "%，经验获取+" + _dream_bless_bonus + "%",
+    "层数": 1,
+    "剩余时间": "永久",
+    "来源": "少女的祝福"
+  });
+}
+_%>
 <%_ } _%>
 <%_ { _%>
 <%_
