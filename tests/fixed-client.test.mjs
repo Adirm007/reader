@@ -169,15 +169,15 @@ test('same-size tampering fails SHA-256 on every mirror before JSON parsing',asy
  const r=fixture(),f=client({network:staticNetwork([r],{override:async url=>{if(!url.includes('/fixed-updates/')&&!url.includes('@fixed-updates/'))return new Response(Buffer.alloc(r.bytes.length,0x20));}})});
  await assert.rejects(f.api.download(r.selected),/SHA-256 校验失败/);assert.equal(f.requests.length,4);assert.equal(f.window.__downloadedCodeExecuted,false);
 });
-test('attachment CORS failure uses the signed distribution commit raw mirror',async()=>{
+test('downloads prefer the signed distribution commit static mirror without attachment CORS',async()=>{
  const r=fixture(),f=client({network:staticNetwork([r],{override:async url=>{if(url.startsWith('https://github.com/'))throw new TypeError('CORS');}})});
- const result=await f.api.download(r.selected);assert.equal(result.regex.replaceString,r.regex.replaceString);assert.equal(f.requests.length,3);
- assert.equal(f.requests[2].url,`https://raw.githubusercontent.com/${repository}/${distributionCommit}/regex/reader-fixed.regex.json`);assert.equal(f.window.__downloadedCodeExecuted,false);
+ const result=await f.api.download(r.selected);assert.equal(result.regex.replaceString,r.regex.replaceString);assert.equal(f.requests.length,2);
+ assert.equal(f.requests[1].url,`https://raw.githubusercontent.com/${repository}/${distributionCommit}/regex/reader-fixed.regex.json`);assert.equal(f.window.__downloadedCodeExecuted,false);
 });
 test('corrupt raw artifact cannot bypass digest validation through jsDelivr fallback',async()=>{
  const r=fixture(),f=client({crypto:{},network:staticNetwork([r],{override:async url=>{if(url.startsWith('https://github.com/'))throw new TypeError('CORS');if(url.includes(`/${distributionCommit}/`))return new Response(Buffer.alloc(r.bytes.length,0x20));}})});
- assert.equal((await f.api.download(r.selected)).metadata.version,'1.0.0');assert.equal(f.requests.length,4);
- assert.equal(f.requests[3].url,`https://cdn.jsdelivr.net/gh/${repository}@${distributionCommit}/regex/reader-fixed.regex.json`);
+ assert.equal((await f.api.download(r.selected)).metadata.version,'1.0.0');assert.equal(f.requests.length,3);
+ assert.equal(f.requests[2].url,`https://cdn.jsdelivr.net/gh/${repository}@${distributionCommit}/regex/reader-fixed.regex.json`);
 });
 test('oversize catalogs, proofs and artifacts fail before parsing or execution',async()=>{
  const r=fixture();for(const [match,limit] of [['index.json',1000000],['/releases/v',2000000],['/releases/download/',4000000]]){

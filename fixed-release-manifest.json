@@ -15,9 +15,9 @@
       "sha256": "75e43241c7719613f17a73de2bc29e73a4504bb96322894d1c42eb58a6a80350"
     },
     "reader.js": {
-      "path": "dist/reader.b18449fd5c06.js",
-      "bytes": 807193,
-      "sha256": "b18449fd5c0636a69d0c1a3fc4308f43984bc6c2aa9e0e68c6a231aa4b69167a"
+      "path": "dist/reader.22bee0c51073.js",
+      "bytes": 807877,
+      "sha256": "22bee0c51073f2289e7a014f5ce19f6815cd790ee782c35eda525955679b4f57"
     }
   },
   "resources": {
