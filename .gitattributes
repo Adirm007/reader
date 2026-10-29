@@ -3,3 +3,5 @@ release-manifest.json -text
 gallery/** -text
 personas/** -text
 worldbook/** -text
+regex/读者对话渲染-脚本版.json -text
+fixed-release-manifest.json -text

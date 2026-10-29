@@ -27,9 +27,15 @@ def install_profile_cache(src):
     cache = cache.replace('__DREAM_AUTHOR_PROFILE__', payload.replace('<', '\\u003c'))
     html = re.sub(r'\s*/\* DREAM_AUTHOR_CACHE_BEGIN \*/.*?/\* DREAM_AUTHOR_CACHE_END \*/\s*',
                   '', src['replaceString'], flags=re.S)
+    html = re.sub(r'\s*/\* DREAM_READER_TRANSACTIONS_BEGIN \*/.*?/\* DREAM_READER_TRANSACTIONS_END \*/\s*',
+                  '', html, flags=re.S)
+    transactions_path = os.path.join(ROOT, 'source', 'reader-transactions.js')
+    transactions = ''
+    if os.path.isfile(transactions_path):
+        transactions = '\n/* DREAM_READER_TRANSACTIONS_BEGIN */\n' + open(transactions_path, encoding='utf-8').read() + '\n/* DREAM_READER_TRANSACTIONS_END */\n'
     if html.count('<script>') != 1:
         raise SystemExit('需要唯一的主脚本来加入聊天资料初始化')
-    src['replaceString'] = html.replace('<script>', '<script>\n' + cache + '\n', 1)
+    src['replaceString'] = html.replace('<script>', '<script>\n' + cache + transactions + '\n', 1)
     return src
 
 
@@ -40,7 +46,8 @@ def install_release_tools(src):
     for name, marker in [('fixed-release-client.js', 'DREAM_FIXED_RELEASE_CLIENT'),
                          ('fixed-runtime.js', 'DREAM_FIXED_RUNTIME'),
                          ('regex-update-guard.js', 'DREAM_REGEX_UPDATE_GUARD'),
-                         ('release-updates.js', 'DREAM_RELEASE_UPDATES')]:
+                         ('release-updates.js', 'DREAM_RELEASE_UPDATES'),
+                         ('update-center.js', 'DREAM_UPDATE_CENTER')]:
         code = open(os.path.join(ROOT, 'source', name), encoding='utf-8').read().rstrip()
         code = code.replace(f'/* {marker}_BEGIN */', '').replace(f'/* {marker}_END */', '').strip()
         if '</script' in code.lower():
@@ -85,14 +92,30 @@ def write_asset(name, ext, text):
 def main():
     if len(sys.argv) < 2:
         raise SystemExit(__doc__)
-    src = install_release_tools(install_profile_cache(json.load(open(sys.argv[1], encoding='utf-8'))))
+    src = json.load(open(sys.argv[1], encoding='utf-8'))
+    # The extracted editable sources also generate the optional full-regex compatibility release.
+    canonical = os.path.join(ROOT, 'source', '读者对话渲染.json')
+    if os.path.normcase(os.path.abspath(sys.argv[1])) == os.path.normcase(canonical) and os.path.isfile(os.path.join(ROOT, 'source', 'legacy-reader.js')):
+        def source(name):
+            return open(os.path.join(ROOT, 'source', name), encoding='utf-8').read()
+        src['replaceString'] = ('```html\n<!doctype html><html lang="zh-CN"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><style>'
+                                + source('legacy-reader.css') + '</style></head><body>' + source('legacy-body.html').replace(PLACEHOLDER, '$1')
+                                + '<script>' + source('legacy-reader.js')
+                                + ('\n;' + source('template-system.js') if os.path.isfile(os.path.join(ROOT, 'source', 'template-system.js')) else '')
+                                + '</script></body></html>\n```')
+    src = install_release_tools(install_profile_cache(src))
     with open(sys.argv[1], 'w', encoding='utf-8', newline='\n') as f:
         json.dump(src, f, ensure_ascii=False, indent=2)
         f.write('\n')
-    version = sys.argv[2] if len(sys.argv) > 2 else datetime.date.today().strftime('%Y.%m.%d')
+    current_manifest = os.path.join(ROOT, 'release-manifest.json')
+    version = sys.argv[2] if len(sys.argv) > 2 else json.load(open(current_manifest, encoding='utf-8'))['version']
     css, body, js = split_render(src['replaceString'])
     files = {'reader.css': write_asset('reader', 'css', css), 'reader-body.html': write_asset('reader-body', 'html', body),
              'reader.js': write_asset('reader', 'js', js)}
+    for name, path in [('reader-runtime.js', 'dist/reader-runtime.js'), ('reader-letter.json', 'regex/读者对话渲染-脚本版.json')]:
+        if os.path.isfile(os.path.join(ROOT, path)):
+            data = open(os.path.join(ROOT, path), 'rb').read()
+            files[name] = {'path': path, 'bytes': len(data), 'sha256': hashlib.sha256(data).hexdigest()}
     manifest = {'schema': 1, 'name': 'dream-reader-render', 'version': version, 'license': 'LICENSE', 'files': files}
     with open(os.path.join(ROOT, 'release-manifest.json'), 'w', encoding='utf-8', newline='\n') as f:
         json.dump(manifest, f, ensure_ascii=False, indent=2)

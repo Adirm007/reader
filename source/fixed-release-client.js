@@ -277,6 +277,29 @@
     if(!selected)throw Error('仓库尚未发布不可变固定版');
     return download(selected);
   }
-  root.DreamFixedReleaseClient=Object.freeze({compare:compare,sha256:sha256,metadata:metadata,fromInstalled:fromInstalled,latest:latest,download:download,resolve:resolve});
+  async function resource(selected, name) {
+    // The signed regex pins the source manifest; its digest in turn pins every
+    // runtime, light renderer and worldbook byte. Mutable branches supply JSON only.
+    var signed=await download(selected), pin=signed.metadata, repository=pin.repository;
+    var bases=['https://raw.githubusercontent.com/'+repository+'/'+pin.sourceCommit+'/',
+      'https://cdn.jsdelivr.net/gh/'+repository+'@'+pin.sourceCommit+'/'];
+    async function verified(path, spec) {
+      if(typeof path!=='string'||! /^(?:dist|regex|worldbook)\/[A-Za-z0-9_./%\u0080-\uFFFF-]+$/.test(path)||path.split('/').some(function(p){return !p||p==='.'||p==='..';}))throw Error('固定版资源路径无效');
+      if(!spec||!Number.isSafeInteger(spec.bytes)||spec.bytes<0||spec.bytes>16000000||!HEX64.test(spec.sha256))throw Error('固定版资源校验信息无效');
+      var failure;
+      for(var i=0;i<bases.length;i++)try{var file=await get(bases[i]+path.split('/').map(encodeURIComponent).join('/'),spec.bytes);if(file.bytes.byteLength!==spec.bytes||await sha256(file.bytes)!==spec.sha256)throw Error('固定版资源 SHA-256 校验失败');return file.bytes;}catch(e){failure=e;}
+      throw failure||Error('固定版资源下载失败');
+    }
+    var manifestFile, failure;
+    for(var i=0;i<bases.length;i++)try{var file=await get(bases[i]+'fixed-release-manifest.json',4000000);if(await sha256(file.bytes)!==pin.manifestSha256)throw Error('固定版清单 SHA-256 校验失败');manifestFile=file.bytes;break;}catch(e){failure=e;}
+    if(!manifestFile)throw failure||Error('固定版清单下载失败');
+    var manifest=JSON.parse(new TextDecoder().decode(manifestFile));
+    if(manifest.schema!==1||manifest.version!==pin.version||manifest.name!=='dream-reader-render-fixed')throw Error('固定版清单身份不符');
+    var spec=manifest.files&&manifest.files[name]||manifest.resources&&manifest.resources[name];
+    if(!spec)throw Error('该固定版未包含所需资源：'+name);
+    var bytes=await verified(spec.path,spec);
+    return {bytes:bytes,metadata:pin,release:signed.release,manifest:manifest,spec:spec};
+  }
+  root.DreamFixedReleaseClient=Object.freeze({compare:compare,sha256:sha256,metadata:metadata,fromInstalled:fromInstalled,latest:latest,download:download,resolve:resolve,resource:resource});
 })(window);
 /* DREAM_FIXED_RELEASE_CLIENT_END */

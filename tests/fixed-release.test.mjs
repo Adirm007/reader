@@ -173,6 +173,9 @@ test('the builder reads committed bytes and rejects mismatched versions and corr
     const fixture = release();
     for (const [file, bytes] of Object.entries(fixture.assets)) await writeFile(path.join(dir, file), bytes);
     const ordinaryManifest = JSON.parse(fixture.manifest);
+    for (const [name,file,text] of [['reader-runtime.js','dist/reader-runtime.js','export function start(){}'],['reader-letter.json','regex/light.json','{"readerRuntime":{"kind":"light-letter"}}']]) {
+      const bytes=Buffer.from(text);await writeFile(path.join(dir,file),bytes);ordinaryManifest.files[name]={path:file,bytes:bytes.length,sha256:sha(bytes)};
+    }
     ordinaryManifest.name = 'dream-reader-render';
     delete ordinaryManifest.resources;
     await writeFile(path.join(dir, 'release-manifest.json'), JSON.stringify(ordinaryManifest));
@@ -180,6 +183,7 @@ test('the builder reads committed bytes and rejects mismatched versions and corr
     await writeFile(path.join(dir, 'source', 'fixed-runtime.js'), '/* DREAM_FIXED_RUNTIME_BEGIN */\nwindow.fixedRuntime = true;\n/* DREAM_FIXED_RUNTIME_END */');
     await writeFile(path.join(dir, 'source', 'regex-update-guard.js'), 'window.regexGuard = true;');
     await writeFile(path.join(dir, 'source', 'release-updates.js'), 'window.releaseUpdates = true;');
+    await writeFile(path.join(dir, 'source', 'update-center.js'), 'window.updateCenter = true;');
     execFileSync('python', ['-c', [
       'import sys; sys.path.insert(0,"tools"); import build_release',
       'source={"replaceString":"<script>window.original=true;</script>"}',
@@ -222,6 +226,9 @@ test('the builder reads committed bytes and rejects mismatched versions and corr
     assert.equal('fixedRelease' in JSON.parse(tagBytes), false);
     assert.throws(() => build('1.0.1'));
     assert.throws(() => build('latest'));
+    await writeFile(path.join(dir,'dist','reader-runtime.js'),'tampered runtime');
+    git('add','.');git('commit','-m','corrupt additional runtime artifact');
+    assert.throws(()=>execFileSync('python',['tools/build_fixed_release.py','1.0.0',git('rev-parse','HEAD')],{cwd:dir,stdio:['ignore','pipe','pipe']}));
     await writeFile(path.join(dir, 'release-manifest.json'), fixture.manifest);
     await writeFile(path.join(dir, 'dist', 'reader.js'), 'corrupt');
     git('add', '.'); git('commit', '-m', 'corrupt');

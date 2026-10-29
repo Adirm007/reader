@@ -1,4 +1,4 @@
-<%_ /* DREAM_WORLDBOOK reader-core v2026.10.26.5 */ _%>
+<%_ /* DREAM_WORLDBOOK reader-core v2026.10.29.1 */ _%>
 <%_ { _%>
 <%_
 let _dream_theme_value = getLocalVar('dream_visual_theme');
@@ -1738,6 +1738,19 @@ let _bs_foe_hit = function(_w) { return _bs_foes.some(_n => _w instanceof RegExp
 // 0.40 正文模式：缓存中的远征处于正文模式时，迷宫本身的资料常驻；本层主题 / 场景 / 敌怪的资料块同样触发；补给员 / 宝箱怪 / 「?」不触发
 let _bs_book = typeof getvar === 'function' ? getvar('booksea', { scope: 'local', defaults: {} }) : {};
 let _bs_narr = (function(_b) { let _a = _b?.activeExpedition, _n = _b?.narrativeMode; return _a?.narrative?.active === true && _a?.mode !== 'ended' && _n?.active === true && _n?.runId === _a?.run?.id ? _n : null; })(_bs_book);
+let _bs_narr_special = (function(_b, _n) {
+  let _a = _b?.activeExpedition, _ctx = typeof SillyTavern !== 'undefined' ? SillyTavern : null;
+  let _live = typeof _ctx?.getContext === 'function' ? _ctx.getContext() : _ctx;
+  let _context = _live?.characterId != null && typeof _live?.getCurrentChatId === 'function' ? String(_live.characterId) + ':' + String(_live.getCurrentChatId()) : null;
+  if (!_n || _a?.narrative?.transition !== 'user-message' || _a?.hostContext !== _context || _n.contextId !== _context
+      || !Number.isInteger(_a.depth) || _n.depth !== _a.depth || _a.narrative.depth !== _a.depth || _a.region?.depth !== _a.depth) return null;
+  let _id = _a.mode === 'supplier' ? _a.supplierState?.thingId : _a.mode === 'battle' ? _a.encounterId : null;
+  let _thing = _id && Array.isArray(_a.region?.things) ? _a.region.things.find(_t => _t?.id === _id && _t.used !== true) : null;
+  if (_a.mode === 'supplier' && _thing?.kind === 'supplier') return 'supplier';
+  if (_a.mode === 'battle' && _thing?.kind === 'mimic') return 'mimic';
+  if (_a.mode === 'battle' && _thing?.kind === 'enemy' && _thing.hunter === true) return 'hunter';
+  return null;
+})(_bs_book, _bs_narr);
 let _bs_narr_words = _bs_narr ? [_bs_narr.floor?.themeName, _bs_narr.floor?.scene, ...(Array.isArray(_bs_narr.floor?.monsters) ? _bs_narr.floor.monsters : []).map(_m => _m?.name)].filter(_w => typeof _w === 'string' && _w) : [];
 let _bs_hit = function(_words) { return matchChatMessages(_words, _bs_scan) || _words.some(_bs_foe_hit) || _words.some(_w => typeof _w === 'string' && _bs_narr_words.includes(_w)); };
 _%>
@@ -1746,11 +1759,11 @@ _%>
 【《书海》迷宫·普罗泰利西翁】
 由{{getvar::系统名}}创造的‘拟似虚海’，只为了让<user>能体验冒险，锻炼变强而存在的无限世界群。越深入越危险。不存在最深处，到处都是敌人和财宝因此很适合作为成长的场所。虽说如此，每一个世界中又都也有着自己的故事
 <%_ } _%>
-<%_ if (!_bs_narr && _bs_hit([/「\s*[?？]\s*」/, '来访者', '黑影少女', '斗篷女', '兜帽女'])) { _%>
+<%_ if (_bs_narr_special === 'hunter' || (!_bs_narr && _bs_hit([/「\s*[?？]\s*」/, '来访者', '黑影少女', '斗篷女', '兜帽女']))) { _%>
 【「?」】
 外观令人联想起{{getvar::系统名}}，同样留着银灰色长发的谜之存在。娇小的个子被漆黑斗篷完全包裹，始终沉默着。脸被涂鸦般的黑线挡住无法看清。戴着材质像是银的，形状似钥匙又似十字的项链。在个位数为9的深度有概率遭遇，她会马上追上来，对队伍发起攻击，是危险的谜之对手
 <%_ } _%>
-<%_ if (!_bs_narr && _bs_hit(['补给员', '商人', '谜之存在'])) { _%>
+<%_ if (_bs_narr_special === 'supplier' || (!_bs_narr && _bs_hit(['补给员', '商人', '谜之存在']))) { _%>
 【补给员】
 外观令人联想起{{getvar::系统名}}，同样留着银灰色长发的谜之女性，可能在任何深度看见。但是拿着涂满黑线的牌子挡住了脸，无论从什么角度都无法一窥真容。难以沟通，提供回复，商品或是某种事件。如果将她杀害的话，尸体会消失变成宝箱，但之后仍可能再次遭遇
 <%_ } _%>
@@ -4470,7 +4483,7 @@ _%>
 无尽后台剧院一直没入场的最后一位观众。会以一个穿正装、看不清面孔的人出现在观众席入口，他走到哪里，哪里的灯光就会亮起。换景总管、提偶师和后台所有演员都在等他。老员工说他入座之后，大幕就会拉开
 <%_ } _%>
 <%_ /* ===== 通用 ===== */ _%>
-<%_ if (!_bs_narr && _bs_hit(['宝箱怪', '价值的结晶'])) { _%>
+<%_ if (_bs_narr_special === 'mimic' || (!_bs_narr && _bs_hit(['宝箱怪', '价值的结晶']))) { _%>
 【书海·宝箱怪】
 迷宫各层都能遇到的拟态捕食者，外形与宝箱无异，常混在真正的宝箱之间。它不挑食，却偏爱被财宝吸引而来的猎物；吞下的财物不会被消化，据说在它腹中越积越多，形成一座小小的库房
 <%_ } _%>
@@ -4479,9 +4492,12 @@ _%>
 <%_ {
 let bnBook = typeof getvar === 'function' ? getvar('booksea', { scope: 'local', defaults: {} }) : {};
 let bnAct = bnBook?.activeExpedition, bnMode = bnBook?.narrativeMode;
-let bnOn = bnAct?.narrative?.active === true && bnAct?.mode !== 'ended' && bnMode?.active === true && bnMode?.runId === bnAct?.run?.id;
 let bnCtx = typeof SillyTavern !== 'undefined' ? SillyTavern : null;
-let bnChat = Array.isArray(bnCtx?.chat) ? bnCtx.chat : [];
+let bnLive = typeof bnCtx?.getContext === 'function' ? bnCtx.getContext() : bnCtx;
+let bnContextId = bnLive?.characterId != null && typeof bnLive?.getCurrentChatId === 'function' ? String(bnLive.characterId) + ':' + String(bnLive.getCurrentChatId()) : null;
+let bnOn = bnAct?.narrative?.active === true && bnAct?.mode !== 'ended' && bnMode?.active === true && bnMode?.runId === bnAct?.run?.id
+    && bnMode?.contextId === bnAct?.hostContext && bnAct?.hostContext === bnContextId;
+let bnChat = Array.isArray(bnLive?.chat) ? bnLive.chat : [];
 let bnId = bnChat.length - 1;
 // A swipe/regeneration keeps the assistant slot in some host versions; bind its preceding user request.
 if (bnId > 0 && bnChat[bnId]?.is_user !== true
@@ -4490,10 +4506,13 @@ if (bnId > 0 && bnChat[bnId]?.is_user !== true
 let bnMsg = bnChat[bnId];
 let bnText = String((typeof getChatMessage === 'function' ? getChatMessage(bnId) : bnMsg?.mes) ?? '').trim();
 let bnSw = bnMsg?.swipe_info?.[bnMsg?.swipe_id ?? 0];
-let bnInfo = bnOn && bnMsg?.is_user === true ? (bnMsg?.extra?.bookseaHandoff ?? bnSw?.extra?.bookseaHandoff ?? bnSw?.bookseaHandoff
-    ?? (typeof getvar === 'function' ? getvar('bookseaPromptHandoff', { scope: 'message', withMsg: { id: bnId }, defaults: null }) : null)) : null;
-let bnEntry = bnOn && bnText === '普罗泰利西翁正文模式' && bnInfo?.kind === 'narrative' && bnInfo?.runId === bnAct?.run?.id && typeof bnInfo?.summary === 'string';
-let bnDescend = bnOn && bnText === '前往下一层（普罗泰利西翁正文模式）' && bnInfo?.kind === 'narrative-descend' && bnInfo?.runId === bnAct?.run?.id && typeof bnInfo?.summary === 'string';
+let bnOwnInfo = bnSw?.extra?.bookseaHandoff ?? bnSw?.bookseaHandoff ?? bnMsg?.extra?.bookseaHandoff;
+let bnVarInfo = typeof getvar === 'function' ? getvar('bookseaPromptHandoff', { scope: 'message', withMsg: { id: bnId }, defaults: null }) : null;
+let bnManual = bnText === '普罗泰利西翁正文模式' || bnText === '前往下一层（普罗泰利西翁正文模式）';
+let bnInfo = bnOn && bnMsg?.is_user === true ? (bnOwnInfo ?? (bnManual || bnVarInfo?.messageId === bnId ? bnVarInfo : null)) : null;
+let bnAutomatic = bnOn && bnMode?.transition === 'user-message' && bnMode?.contextId === bnAct?.hostContext;
+let bnEntry = bnOn && (bnText === '普罗泰利西翁正文模式' || bnAutomatic) && bnInfo?.kind === 'narrative' && bnInfo?.runId === bnAct?.run?.id && bnInfo?.contextId === bnMode?.contextId && typeof bnInfo?.summary === 'string';
+let bnDescend = bnOn && bnText === '前往下一层（普罗泰利西翁正文模式）' && bnInfo?.kind === 'narrative-descend' && bnInfo?.runId === bnAct?.run?.id && bnInfo?.contextId === bnMode?.contextId && typeof bnInfo?.summary === 'string';
 let bnFloor = bnMode?.floor || {};
 let bnMonsters = Array.isArray(bnFloor.monsters) ? bnFloor.monsters : [];
 let bnParty = Array.isArray(bnMode?.party) ? bnMode.party : [];
@@ -4516,7 +4535,7 @@ _%>
 <%_ } _%>
 正文模式要求：
 - 可以和本主题的敌怪进行正文式战斗，战斗过程与战利品照常由正文处理；参考上文本主题、场景与敌怪的资料块
-- 正文模式下不会遇到「补给员」「宝箱怪」「?」等特殊存在，不要写出它们
+- 正文模式下不会遇到「补给员」「宝箱怪」「?」等特殊存在，不要写出它们；断点记录中已在场者除外
 - 不要自行让队伍换层或离开迷宫：进入下一层、切回迷宫模式、离开迷宫都由<user>在面板里选择
 - 正文结束后另起一行，原样输出：<booksea-game>迷宫模式</booksea-game>
 <%_ } } _%>

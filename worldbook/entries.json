@@ -7,7 +7,14 @@
       "file": "worldbook/读者核心本体.txt",
       "legacy": {
         "names": ["命定系统-读者核心"],
-        "contains": ["BOOKSEA_READER_HANDOFF_BEGIN"]
+        "contains": ["BOOKSEA_READER_HANDOFF_BEGIN"],
+        "alternatives": [
+          {
+            "names": ["[本体][命定系统]读者核心(Angtuck)", "命定系统-读者核心(byAngtuck)", "命定系统-读者核心(Angtuck)"],
+            "exactNames": true,
+            "contains": ["setLocalVar('系统核心', '九十九夜梦')", "getLocalVar('dream_persona')"]
+          }
+        ]
       },
       "settings": {
         "enabled": true,

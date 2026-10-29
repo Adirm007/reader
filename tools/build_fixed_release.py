@@ -68,14 +68,14 @@ def build_fixed_regex(version, commit):
         raise ValueError("不支持的读者发布清单")
     if manifest.get("version") != version:
         raise ValueError("数字版本号必须与源提交内 fixed-release-manifest.json 的版本一致")
-    specs = [(name, manifest["files"][name]) for name in ("reader.css", "reader-body.html", "reader.js")]
+    specs = list(manifest["files"].items())
     if not isinstance(manifest.get("resources"), dict):
         raise ValueError("固定版清单缺少 resources 哈希目录")
     specs.extend(manifest["resources"].items())
     for name, spec in specs:
         path = spec["path"]
         parts = path.split("/")
-        if (parts[0] not in ("dist", "gallery", "personas", "worldbook", "vendor")
+        if (parts[0] not in ("dist", "regex", "gallery", "personas", "worldbook", "vendor")
                 or len(parts) < 2 or any(part in ("", ".", "..") for part in parts)
                 or any(char in path for char in "\\?#\x00\r\n")):
             raise ValueError(f"无效资源路径：{path}")

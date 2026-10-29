@@ -184,3 +184,24 @@ test('oversize catalogs, proofs and artifacts fail before parsing or execution',
  const f=client({network:staticNetwork([r],{override:async url=>{if(url.includes(match))return new Response('x',{headers:{'content-length':String(limit+1)}});if(match==='/releases/download/'&&!url.includes('/fixed-updates/')&&!url.includes('@fixed-updates/'))return new Response(Buffer.alloc(4000001));}})});
  await assert.rejects(match==='/releases/download/'?f.api.download(r.selected):f.api.latest(repository),/大小限制/);assert.equal(f.window.__downloadedCodeExecuted,false);}
 });
+
+function resourceRelease({path='dist/reader-runtime.js',manifestPatch,artifactPatch}={}) {
+ const bytes=Buffer.from('export function start(){};export function stop(){}'),manifest={schema:1,name:'dream-reader-render-fixed',version:'1.0.0',files:{'reader-runtime.js':{path,bytes:bytes.length,sha256:digest(bytes)}},resources:{}};
+ if(manifestPatch)manifestPatch(manifest);const manifestBytes=Buffer.from(JSON.stringify(manifest)),r=fixture({marker:{manifestSha256:digest(manifestBytes)}});
+ const network=staticNetwork([r],{override:async url=>{
+  if(url.includes('/'+commit+'/')||url.includes('@'+commit+'/'))return new Response(url.endsWith('fixed-release-manifest.json')?manifestBytes:artifactPatch?artifactPatch(bytes):bytes);
+ }});
+ return {r,bytes,manifestBytes,network};
+}
+test('runtime downloads follow signed regex to pinned manifest to exact resource hash without executing code',async()=>{
+ const r=resourceRelease(),f=client({network:r.network}),file=await f.api.resource(r.r.selected,'reader-runtime.js');assert.deepEqual(Buffer.from(file.bytes),r.bytes);assert.equal(f.verifications.length,1);assert.equal(f.requests.length,4);assert.equal(f.window.__downloadedCodeExecuted,false);assert.ok(f.requests.slice(2).every(r=>r.url.includes(commit)));
+});
+test('signed resource acquisition rejects same-size tampering, path traversal and mismatched manifest version',async()=>{
+ for(const options of [{artifactPatch:b=>Buffer.alloc(b.length,32)},{path:'dist/../evil.js'},{manifestPatch:m=>m.version='2.0.0'}]){
+  const r=resourceRelease(options),f=client({network:r.network});await assert.rejects(f.api.resource(r.r.selected,'reader-runtime.js'));assert.equal(f.window.__downloadedCodeExecuted,false);
+ }
+});
+test('a changed pinned manifest cannot authorize replacement resource bytes',async()=>{
+ const r=resourceRelease(),f=client({network:async(url,options)=>url.endsWith('fixed-release-manifest.json')?new Response(Buffer.alloc(r.manifestBytes.length,32)):r.network(url,options)});
+ await assert.rejects(f.api.resource(r.r.selected,'reader-runtime.js'),/清单 SHA-256/);assert.ok(f.requests.every(r=>!r.url.endsWith('/dist/reader-runtime.js')));
+});

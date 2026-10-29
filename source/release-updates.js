@@ -114,7 +114,7 @@
   root.DreamReleaseUpdates=Object.freeze({scan:scan,check:check,apply:apply,receiptStatus:receiptStatus,exportBackup:exportBackup});
   root.openDreamReleaseUpdates=function(e,toastFn){
     if(e&&e.stopPropagation)e.stopPropagation();
-    var doc=getCustomPersonaHostDocument(),shell=createCustomPersonaLibraryShell(doc,'检查正则更新','');
+    var doc=getCustomPersonaHostDocument(),shell=createCustomPersonaLibraryShell(doc,'检查更新','');
     dreamAddonCss(doc);
     var box=doc.createElement('div');box.className='dad-form';var status=doc.createElement('div');status.className='dad-status';status.setAttribute('aria-live','polite');
     var info=doc.createElement('div');info.style.whiteSpace='pre-wrap';info.style.lineHeight='1.8';var buttons=doc.createElement('div');buttons.className='dad-row';box.appendChild(info);box.appendChild(status);box.appendChild(buttons);shell.card.appendChild(box);
