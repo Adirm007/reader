@@ -72,7 +72,13 @@ def publish(result):
         "--title", f"读者固定版 {result['metadata']['version']}",
         "--notes", f"固定源代码：{result['sourceCommit']}\n正则 SHA-256：{result['sha256']}")
     run("gh", "release", "upload", tag, result["asset"], "--repo", repository)
-    draft = github(f"repos/{repository}/releases/tags/{tag}")
+    # GitHub's tag lookup only exposes published releases. Newly created drafts
+    # must be read from the authenticated release list before digest validation.
+    drafts = [release for release in github(f"repos/{repository}/releases?per_page=100")
+              if release.get("tag_name") == tag and release.get("draft") is True]
+    if len(drafts) != 1:
+        raise ValueError("未能唯一识别刚创建的发布草稿；保留现有标签和附件，请检查后继续")
+    draft = drafts[0]
     assets = [asset for asset in draft.get("assets", []) if asset.get("name") == "reader-fixed.regex.json"]
     if len(assets) != 1 or assets[0].get("digest") != "sha256:" + result["sha256"]:
         raise ValueError("GitHub 附件 digest 与本地正则不符；草稿保留，请检查后发布新版本")
