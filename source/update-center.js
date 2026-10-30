@@ -4,10 +4,10 @@
   var ORDER=['worldbook','regex','script'], KEY='dream_reader_core_selected_v1', RESULT='dream_reader_update_result_v1';
   function message(error){return String(error&&error.message||error);}
   function contextId(){var h=root.parent||root,c=h.SillyTavern&&h.SillyTavern.getContext();return JSON.stringify(c&&[c.characterId,typeof c.getCurrentChatId==='function'?c.getCurrentChatId():c.chatId]);}
-  function guard(){
+  function guard(allowRetired){
     var host=root.parent||root, ctx=host.SillyTavern&&host.SillyTavern.getContext(), id=ctx&&(typeof ctx.getCurrentChatId==='function'?ctx.getCurrentChatId():ctx.chatId), character=ctx&&ctx.characterId;
     var identity=root.DreamRegexUpdateGuard&&JSON.stringify(root.DreamRegexUpdateGuard.identity(host));
-    return function(){var now=host.SillyTavern&&host.SillyTavern.getContext(), chat=now&&(typeof now.getCurrentChatId==='function'?now.getCurrentChatId():now.chatId);if(root.__readerControllerAlive===false||!now||chat!==id||now.characterId!==character||identity&&identity!==JSON.stringify(root.DreamRegexUpdateGuard.identity(host)))throw Error('聊天、角色或预设已变化，请重新检查更新');};
+    return function(){var now=host.SillyTavern&&host.SillyTavern.getContext(), chat=now&&(typeof now.getCurrentChatId==='function'?now.getCurrentChatId():now.chatId);if(!allowRetired&&root.__readerControllerAlive===false||!now||chat!==id||now.characterId!==character||identity&&identity!==JSON.stringify(root.DreamRegexUpdateGuard.identity(host)))throw Error('聊天、角色或预设已变化，请重新检查更新');};
   }
   function createCoordinator(components,capture,onResult){
     var pending=null, checked=null, assertCurrent=null;
@@ -52,11 +52,27 @@
     }
     async function readArtifact(plan,name){var file=await client.resource(plan.selected,name);if(file.metadata.repository!=='Adirm007/reader'||file.metadata.version!==plan.selected.version)throw Error('更新资源身份不符');return file;}
     function validateLight(regex,version){if(!regex||regex.id!=='b1c5a3f2-1007-4e0a-9d7e-5a1e0c0d1007'||regex.scriptName!=='读者对话渲染-脚本版'||!regex.readerRuntime||regex.readerRuntime.kind!=='light-letter'||regex.readerRuntime.version!==version||typeof regex.replaceString!=='string'||regex.replaceString.indexOf('ReaderLetter')<0||/<audio\b|function openDreamLobby\(/.test(regex.replaceString))throw Error('更新资源不是轻量读者正则');}
+    async function bookseaUpdates(){
+      var updates=root.DreamReleaseUpdates;if(!updates)return null;
+      var installed=updates.scan().projects.find(function(p){return p.repository==='Adirm007/Protelysion';});
+      if(!installed||!installed.installed.length&&!installed.invalid.length)return null;
+      var checked=await updates.check({repositories:['Adirm007/Protelysion']}),project=checked.projects[0];
+      if(checked.snapshot.errors.length||project.error||project.invalid.length||project.installed.length!==1)throw Error('书海固定版检查未完成：'+(project.error||project.invalid.join('；')||checked.snapshot.errors.join('；')||'发现重复安装'));
+      return checked;
+    }
     var components=[];
-    if(api){
-      components.push({id:'regex',label:'正则',check:async function(){var latest=await selected(), snapshot=lightSnapshot();return {status:latest&&client.compare(latest.version,snapshot.target.version)>0?'outdated':'current',selected:latest,snapshot:snapshot,detail:'当前 v'+snapshot.target.version+(latest?'；最新 v'+latest.version:'；尚无正式发布')};},apply:async function(plan,assertCurrent){
+    if(api&&!(root.ReaderFixedMigration&&root.ReaderFixedMigration.hasFixed())){
+      components.push({id:'regex',label:'正则',check:async function(){var snapshot=lightSnapshot(),checks=await Promise.all([selected(),bookseaUpdates()]),latest=checks[0],booksea=checks[1],project=booksea&&booksea.projects[0],lightOutdated=!!latest&&client.compare(latest.version,snapshot.target.version)>0;return {status:lightOutdated||project&&project.updatable?'outdated':'current',selected:latest,snapshot:snapshot,lightOutdated:lightOutdated,booksea:booksea,detail:'读者：当前 v'+snapshot.target.version+(latest?'；最新 v'+latest.version:'；尚无正式发布')+(project?'；书海：当前 v'+project.installed[0].metadata.version+(project.latest?'；最新 v'+project.latest.version:'；尚无正式发布'):'')};},apply:async function(plan,assertCurrent){
+        var booksea=plan.booksea&&plan.booksea.projects[0].updatable;
+        if(booksea&&!plan.lightOutdated){assertCurrent();await root.DreamReleaseUpdates.apply(plan.booksea,[],assertCurrent);return {detail:'书海固定版正则已更新至 v'+plan.booksea.projects[0].latest.version};}
+        if(booksea&&typeof hooks().installRegex==='function'&&typeof hooks().installRegexBatch!=='function')throw Error('当前宿主不支持读者与书海联合更新，请先升级命定之诗程序脚本后重试');
         var artifact=await readArtifact(plan,'reader-letter.json'),regex=JSON.parse(new TextDecoder().decode(artifact.bytes));validateLight(regex,artifact.metadata.version);assertCurrent();
         if(lightSnapshot().fingerprint!==plan.snapshot.fingerprint)throw Error('正则在检查后已变化，请重新检查');
+        if(booksea){
+          var request={version:artifact.metadata.version,regex:regex,metadata:artifact.metadata,release:artifact.release,commit:function(){assertCurrent();return root.DreamReleaseUpdates.apply(plan.booksea,[{repository:'Adirm007/reader',version:artifact.metadata.version,scope:plan.snapshot.target.option,index:plan.snapshot.target.index,id:regex.id,scriptName:regex.scriptName,replaceString:regex.replaceString}],assertCurrent);}};
+          var batch=hooks().installRegexBatch;if(typeof batch==='function')await batch(request);else await request.commit();
+          return {detail:'轻量信件已更新至 v'+artifact.metadata.version+'；书海固定版正则已更新至 v'+plan.booksea.projects[0].latest.version};
+        }
         var update=hooks().installRegex;
         if(typeof update==='function')await update({version:artifact.metadata.version,regex:regex,metadata:artifact.metadata,release:artifact.release});
         else {
@@ -68,8 +84,13 @@
         }
         return {detail:'轻量正则已更新到 v'+artifact.metadata.version};
       }});
-      components.push({id:'script',label:'脚本',check:async function(){var latest=await selected(),version=api.runtimeVersion;return {status:latest&&client.compare(latest.version,version)>0?'outdated':'current',selected:latest,detail:'当前 v'+version+(latest?'；最新 v'+latest.version:'；尚无正式发布')};},apply:async function(plan,assertCurrent){
+      components.push({id:'script',label:'脚本',check:async function(){var latest=await selected(),version=api.runtimeVersion,owner=api.scriptOwner,snapshot=owner&&root.ReaderScriptInstaller?root.ReaderScriptInstaller.inspect({scope:owner.scope||'character'}).snapshot:null;return {status:latest&&client.compare(latest.version,version)>0?'outdated':'current',selected:latest,snapshot:snapshot,detail:'当前 v'+version+(latest?'；最新 v'+latest.version:'；尚无正式发布')};},apply:async function(plan,assertCurrent){
         var artifact=await readArtifact(plan,'reader-runtime.js'),source=new TextDecoder().decode(artifact.bytes);assertCurrent();
+        if(api.scriptOwner){
+          if(!root.ReaderScriptInstaller)throw Error('脚本安装模块不可用');
+          await root.ReaderScriptInstaller.install(artifact,guard(true),{scope:api.scriptOwner.scope||'character',snapshot:plan.snapshot});
+          return {detail:'酒馆助手常驻脚本已保存并启动 v'+artifact.metadata.version};
+        }
         var request={version:artifact.metadata.version,source:source,metadata:artifact.metadata,release:artifact.release};
         var storage=(root.parent||root).localStorage,previous=storage.getItem(KEY);storage.setItem(KEY,JSON.stringify(artifact.metadata));
         try{var install=hooks().installRuntime;if(typeof install==='function')await install(request);else await api.replaceRuntime(request);}
@@ -77,8 +98,9 @@
         return {detail:'常驻脚本已更新到 v'+artifact.metadata.version};
       }});
     }else{
-      components.push({id:'regex',label:'正则',check:async function(){var checked=await root.DreamReleaseUpdates.check(),stale=checked.projects.filter(function(p){return p.updatable;}),failures=checked.projects.filter(function(p){return p.error||p.invalid.length||p.installed.length>1;});return {status:stale.length?'outdated':failures.length||checked.snapshot.errors.length?'failed':checked.projects.some(function(p){return p.latest&&p.installed.length!==1;})?'unavailable':'current',checked:checked,detail:checked.projects.map(function(p){return p.label+'：'+(p.error||p.invalid.join('；')||(p.installed.length>1?'发现重复安装':!p.installed.length?'未安装受管理固定版，请从发布页导入':p.updatable?'可更新至 v'+p.latest.version:'没有可用更新'));}).join('；')};},apply:async function(plan,assertCurrent){assertCurrent();await root.DreamReleaseUpdates.apply(plan.checked);return {detail:'固定版正则更新已提交'};}});
-      components.push({id:'script',label:'脚本',check:async function(){return {status:'current',detail:'当前兼容版的脚本随读者正则一起更新'};}});
+      var compatRegexWritten=false;
+      components.push({id:'regex',label:'正则',check:async function(){compatRegexWritten=false;var checked=await root.DreamReleaseUpdates.check(),stale=checked.projects.filter(function(p){return p.updatable;}),failures=checked.projects.filter(function(p){return p.error||p.invalid.length||p.installed.length>1;});return {status:stale.length?'outdated':failures.length||checked.snapshot.errors.length?'failed':checked.projects.some(function(p){return p.latest&&p.installed.length!==1;})?'unavailable':'current',checked:checked,detail:checked.projects.map(function(p){return p.label+'：'+(p.error||p.invalid.join('；')||(p.installed.length>1?'发现重复安装':!p.installed.length?'未安装受管理固定版，请从发布页导入':p.updatable?'可更新至 v'+p.latest.version:'没有可用更新'));}).join('；')};},apply:async function(plan,assertCurrent){assertCurrent();await root.DreamReleaseUpdates.apply(plan.checked);compatRegexWritten=true;return {detail:'固定版正则更新已提交'};}});
+      components.push({id:'script',label:'脚本',check:async function(){if(!root.ReaderFixedMigration)throw Error('首次脚本迁移模块不可用');return root.ReaderFixedMigration.check(await selected());},apply:async function(plan,assertCurrent){if(compatRegexWritten){plan=await root.ReaderFixedMigration.check(plan.selected);assertCurrent();}return root.ReaderFixedMigration.install(plan,assertCurrent);}});
     }
     components.push({id:'worldbook',label:'世界书',check:async function(){
       var latest=await selected();if(!latest)throw Error('尚无可验证的正式发布');var file=await client.resource(latest,'worldbook/manifest.json'),manifest=JSON.parse(new TextDecoder().decode(file.bytes));
@@ -117,5 +139,8 @@
     finally{delete root.__readerAcceptedSelection;}
   }
   root.ReaderUpdates=Object.freeze({createCoordinator:createCoordinator,components:coreComponents,restore:restore,check:function(){return instance().check();},apply:function(progress){return instance().apply(progress);}});
+  // A previously installed updater can only download the new complete fixed loader.
+  // That accepted, pinned loader finishes its own first script migration on load.
+  if(root.ReaderFixedMigration)setTimeout(function(){root.ReaderFixedMigration.autoStart().catch(function(){});},0);
 })(window);
 /* DREAM_UPDATE_CENTER_END */

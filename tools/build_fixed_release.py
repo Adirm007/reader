@@ -33,6 +33,7 @@ def prepare_manifest(version):
     if manifest.get("version") != version:
         raise ValueError("请先构建对应数字版本的 release-manifest.json")
     manifest["name"] = "dream-reader-render-fixed"
+    manifest["installMode"] = "script"
     manifest["resources"] = {}
     for folder in ("gallery", "personas", "worldbook", "vendor"):
         for path in sorted((ROOT / folder).rglob("*")):

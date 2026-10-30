@@ -30,14 +30,17 @@ export function start(options = {}) {
   if (running) return running.api;
   const win = hostWindow(), doc = win.document;
   win.ReaderCore?.stop?.();
-  // Retire the previous message-based floating-menu heartbeat before taking ownership.
-  if (win.__dhb) { win.clearInterval(win.__dhb); win.__dhb = null; }
-  doc.getElementById('dream-hb')?.remove();
+  const legacyNodes = ['dfb','dfo','dfc','dream-hb','dream-p-toast','dlb-overlay','dlb-style','cp-overlay','cp-style','cpl-overlay','cpl-style','dgl-overlay','dgl-style-v2','chess-overlay','chess-styles','bs-overlay','bs-detail-ov','bs-styles','dream-addon-style-v3','dream-ink-native-v1','dream-theme-fix','reader-template-system-overlay','reader-template-system-style'].map(id => doc.getElementById(id)).filter(Boolean);
   doc.getElementById(FRAME_ID)?.remove();
   doc.getElementById(BUTTON_ID)?.remove();
   const state = { stopped: false, generation: 0, key: chatKey(win), frame: null, ready: null, stops: [], letters: new Set(), cancelReady: null };
   let resolveReady = null;
   state.cancelReady = () => { resolveReady?.(null); resolveReady = null; };
+
+  const retireLegacyMenu = () => {
+    if (win.__dhb) { win.clearInterval(win.__dhb); win.__dhb = null; }
+    for (const node of legacyNodes) node.remove();
+  };
 
   const disposeController = () => {
     state.generation++;
@@ -83,6 +86,8 @@ export function start(options = {}) {
         frame.contentDocument.body.appendChild(script);
         const app = target.ReaderController;
         if (!app) throw new Error('读者控制器未能启动');
+        // Keep the complete fixed renderer usable if the first script cannot start.
+        if (!options.scriptOwner || !win.__readerScriptInstallation) retireLegacyMenu();
         resolveReady?.(app);
         resolveReady = null;
         // Reattach already-rendered light letters after a script restart. This
@@ -130,6 +135,8 @@ export function start(options = {}) {
 
   const api = {
     runtimeVersion: ASSETS.version,
+    get scriptOwner() { return options.scriptOwner || null; },
+    retireLegacyMenu,
     getUpdateOptions: () => options.updates || {},
     replaceRuntime: async (request) => {
       const key = state.key;

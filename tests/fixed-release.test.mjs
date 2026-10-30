@@ -183,6 +183,7 @@ test('the builder reads committed bytes and rejects mismatched versions and corr
     await writeFile(path.join(dir, 'source', 'fixed-runtime.js'), '/* DREAM_FIXED_RUNTIME_BEGIN */\nwindow.fixedRuntime = true;\n/* DREAM_FIXED_RUNTIME_END */');
     await writeFile(path.join(dir, 'source', 'regex-update-guard.js'), 'window.regexGuard = true;');
     await writeFile(path.join(dir, 'source', 'release-updates.js'), 'window.releaseUpdates = true;');
+    for (const name of ['standalone-bootstrap', 'script-installer', 'fixed-migration']) await writeFile(path.join(dir, 'source', name + '.js'), 'window.' + name.replaceAll('-', '_') + ' = true;');
     await writeFile(path.join(dir, 'source', 'update-center.js'), 'window.updateCenter = true;');
     execFileSync('python', ['-c', [
       'import sys; sys.path.insert(0,"tools"); import build_release',
@@ -199,6 +200,7 @@ test('the builder reads committed bytes and rejects mismatched versions and corr
     const preparedBytes = await readFile(path.join(dir, 'fixed-release-manifest.json'));
     const prepared = JSON.parse(preparedBytes);
     assert.equal(prepared.name, 'dream-reader-render-fixed');
+    assert.equal(prepared.installMode, 'script');
     assert.equal(prepared.resources['gallery/含 空格.txt'].sha256, sha(Buffer.from('资源')));
     const git = (...args) => execFileSync('git', args, { cwd: dir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
     git('init'); git('config', 'user.email', 'fixed-test@example.invalid'); git('config', 'user.name', 'Fixed release test');

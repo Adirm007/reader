@@ -47,6 +47,9 @@ def install_release_tools(src):
                          ('fixed-runtime.js', 'DREAM_FIXED_RUNTIME'),
                          ('regex-update-guard.js', 'DREAM_REGEX_UPDATE_GUARD'),
                          ('release-updates.js', 'DREAM_RELEASE_UPDATES'),
+                         ('standalone-bootstrap.js', 'DREAM_STANDALONE_BOOTSTRAP'),
+                         ('script-installer.js', 'DREAM_SCRIPT_INSTALLER'),
+                         ('fixed-migration.js', 'DREAM_FIXED_MIGRATION'),
                          ('update-center.js', 'DREAM_UPDATE_CENTER')]:
         code = open(os.path.join(ROOT, 'source', name), encoding='utf-8').read().rstrip()
         code = code.replace(f'/* {marker}_BEGIN */', '').replace(f'/* {marker}_END */', '').strip()

@@ -38,27 +38,33 @@
     });
     return {host:h,lists:lists,projects:projects,errors:errors,context:contextKey(h.window),fingerprint:JSON.stringify(lists)};
   }
-  async function check(){
+  async function check(options){
     var snapshot=scan();
-    var results=await Promise.allSettled(snapshot.projects.map(function(p){return client.latest(p.repository);}));
-    return {snapshot:snapshot,projects:snapshot.projects.map(function(p,i){
+    var projects=snapshot.projects.filter(function(p){return !options||!options.repositories||options.repositories.indexOf(p.repository)>=0;});
+    var results=await Promise.allSettled(projects.map(function(p){return client.latest(p.repository);}));
+    return {snapshot:snapshot,projects:projects.map(function(p,i){
       var r=results[i],state=Object.assign({},p,{latest:r.status==='fulfilled'?r.value:null,error:r.status==='rejected'?String(r.reason&&r.reason.message||r.reason):null});
       state.updatable=!state.error&&state.latest&&state.installed.length===1&&!state.invalid.length&&client.compare(state.latest.version,state.installed[0].metadata.version)>0;
       return state;
     })};
   }
-  async function apply(checked){
+  async function apply(checked,letters,assertCurrent){
+    if(assertCurrent)assertCurrent();
+    letters=letters||[];
+    if(!Array.isArray(letters)||letters.length>1)throw Error('轻量信件更新列表无效');
+    letters.forEach(function(letter){if(!letter||letter.repository!=='Adirm007/reader'||letter.id!=='b1c5a3f2-1007-4e0a-9d7e-5a1e0c0d1007'||letter.scriptName!=='读者对话渲染-脚本版'||typeof letter.replaceString!=='string'||letter.replaceString.length>200000||letter.replaceString.indexOf('ReaderLetter')<0||/<audio\b|function\s+openDreamLobby\b/i.test(letter.replaceString))throw Error('合并更新必须使用已校验的读者轻量信件');});
     var before=checked.snapshot, helper=before.host.helper;
     if(!helperReady(helper))throw Error('一键更新需要酒馆助手 4.9.3 或更新版本；请升级助手或从发布页手动导入');
     if(before.errors.length)throw Error('部分正则范围无法读取，不能安全更新：'+before.errors.join('；'));
     var changes=checked.projects.filter(function(p){return p.updatable;});
-    if(!changes.length)throw Error('没有可执行的一键更新');
+    if(!changes.length&&!letters.length)throw Error('没有可执行的一键更新');
     var guard=root.DreamRegexUpdateGuard;
     if(!guard)throw Error('正则设置保护模块不可用，请手动导入固定版');
-    var affected=before.lists.filter(function(g){return changes.some(function(p){return JSON.stringify(p.installed[0].scope)===JSON.stringify(g.option);});});
+    var affected=before.lists.filter(function(g){return changes.some(function(p){return JSON.stringify(p.installed[0].scope)===JSON.stringify(g.option);})||letters.some(function(letter){return JSON.stringify(letter.scope)===JSON.stringify(g.option);});});
     var rawBefore=affected.map(function(g){return guard.assertSafe(before.host.window,g.option,g.list).rawFingerprint;});
     // No host mutation occurs until every selected artifact has been downloaded and verified.
     var downloads=await Promise.all(changes.map(function(p){return client.download(p.latest);}));
+    if(assertCurrent)assertCurrent();
     var now=scan();
     if(now.context!==before.context||now.fingerprint!==before.fingerprint)throw Error('角色、预设或正则在检查后发生变化，请重新检查更新');
     var expected=[], groups=now.lists.map(function(scope){return {option:scope.option,list:scope.list,changed:false};});
@@ -71,6 +77,14 @@
       group.list[installed.index]=Object.assign({},old,{script_name:String(incoming.scriptName||old.script_name),replace_string:incoming.replaceString});group.changed=true;
       expected.push({repository:changes[i].repository,version:downloads[i].metadata.version,id:old.id,scope:group.option,replaceSha256:await client.sha256(new TextEncoder().encode(incoming.replaceString))});
     }
+    for(var j=0;j<letters.length;j++){
+      var letter=letters[j],letterGroup=groups.find(function(g){return JSON.stringify(g.option)===JSON.stringify(letter.scope);});
+      var previous=letterGroup&&letterGroup.list[letter.index];
+      if(!previous||previous.id!==letter.id)throw Error('轻量信件发生变化，请重新检查');
+      letterGroup.list[letter.index]=Object.assign({},previous,{script_name:letter.scriptName,replace_string:letter.replaceString});letterGroup.changed=true;
+      expected.push({repository:letter.repository,version:letter.version,id:letter.id,scope:letter.scope,replaceSha256:await client.sha256(new TextEncoder().encode(letter.replaceString))});
+    }
+    if(assertCurrent)assertCurrent();
     var finalSnapshot=scan();
     if(finalSnapshot.context!==before.context||finalSnapshot.fingerprint!==before.fingerprint)throw Error('正则设置在下载时发生变化，请重新检查');
     affected.forEach(function(g,index){
@@ -80,6 +94,7 @@
     var receipt={schema:1,phase:'submitted',startedAt:Date.now(),context:before.context,expected:expected,backup:before.lists};
     // Saving the backup is a prerequisite; quota/private-mode errors abort before mutation.
     before.host.window.localStorage.setItem(RECEIPT,JSON.stringify(receipt));
+    if(assertCurrent)assertCurrent();
     var jobs=[];
     groups.filter(function(g){return g.changed;}).forEach(function(g){
       // Start every host call in the same synchronous turn: refreshing reader may destroy this iframe.

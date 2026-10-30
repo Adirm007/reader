@@ -22,7 +22,7 @@ export async function build({ write = false, version } = {}) {
   if ((legacySource.match(/\ninitDreamSys\(\);/g) || []).length !== 1 || !bootstrap.test(legacySource)) throw new Error('Expected one complete legacy bootstrap');
   const legacy = legacySource.replace(bootstrap, '\n');
   const initialization = cache.replace('__DREAM_AUTHOR_PROFILE__', JSON.stringify(JSON.parse(profile)).replace(/</g, '\\u003c'));
-  const releaseTools = await Promise.all(['fixed-release-client.js','fixed-runtime.js','regex-update-guard.js','release-updates.js','update-center.js'].map(name => read('source/' + name)));
+  const releaseTools = await Promise.all(['fixed-release-client.js','fixed-runtime.js','regex-update-guard.js','release-updates.js','standalone-bootstrap.js','script-installer.js','fixed-migration.js','update-center.js'].map(name => read('source/' + name)));
   const controller = [prelude, transactions, booksea, initialization, legacy, templates, ...releaseTools, adapter].join('\n;\n');
   new Script(controller, { filename: 'reader-controller.js' });
   const assets = { version, css, body: body.replace('<!--DREAM_LETTER-->', ''), controller };
