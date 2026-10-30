@@ -23,6 +23,22 @@ test('repeated checks and updates share one in-flight operation',async()=>{
  const first=api.check(),second=api.check();assert.equal(first,second);release({status:'outdated'});await first;assert.equal(checks,1);
  const update=api.apply(),duplicate=api.apply();assert.equal(update,duplicate);assert.equal(writes,1);release({});await update;assert.equal(api.busy,false);
 });
+
+test('component factories refresh on each check and apply the exact components that produced the plans',async()=>{
+ const calls=[];let generation=0;
+ const api=fixture().createCoordinator(()=>{const current=++generation;return [{id:'script',label:'script',check:async()=>({status:'outdated',generation:current}),apply:async plan=>{assert.equal(plan.generation,current);calls.push(current);return {};}}];},()=>()=>{});
+ await api.check();await api.apply();await api.check();await api.apply();
+ assert.deepEqual(calls,[1,2]);
+});
+
+test('a failed dynamic recheck invalidates plans from the previous check',async()=>{
+ const calls=[];let fail=false;
+ const api=fixture().createCoordinator(()=>{if(fail)throw Error('component discovery failed');return [component('script','outdated',calls)];},()=>()=>{});
+ await api.check();fail=true;
+ await assert.rejects(async()=>api.check(),/component discovery failed/);
+ await assert.rejects(api.apply(),/请先检查更新/);
+ assert.deepEqual(calls,[]);
+});
 test('context changes during download prohibit all remaining writes',async()=>{
  let current=true,release,writes=0;const api=fixture().createCoordinator([{id:'regex',label:'regex',check:async()=>({status:'outdated'}),apply:async(_,guard)=>{await new Promise(r=>release=r);guard();writes++;}},component('script','outdated',[])],()=>()=>{if(!current)throw Error('context changed');});
  await api.check();const applying=api.apply();current=false;release();const result=await applying;assert.equal(writes,0);assert.ok(result.every(item=>item.status==='failed'));

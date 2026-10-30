@@ -3,6 +3,7 @@
   'use strict';
   var ORDER=['worldbook','regex','script'], KEY='dream_reader_core_selected_v1', RESULT='dream_reader_update_result_v1';
   function message(error){return String(error&&error.message||error);}
+  function liveApi(){var host=root.parent||root,api=host.ReaderCore;return api&&api.isAlive!==false?api:root.__readerHostApi&&root.__readerHostApi.isAlive!==false?root.__readerHostApi:null;}
   function contextId(){var h=root.parent||root,c=h.SillyTavern&&h.SillyTavern.getContext();return JSON.stringify(c&&[c.characterId,typeof c.getCurrentChatId==='function'?c.getCurrentChatId():c.chatId]);}
   function guard(allowRetired){
     var host=root.parent||root, ctx=host.SillyTavern&&host.SillyTavern.getContext(), id=ctx&&(typeof ctx.getCurrentChatId==='function'?ctx.getCurrentChatId():ctx.chatId), character=ctx&&ctx.characterId;
@@ -10,11 +11,13 @@
     return function(){var now=host.SillyTavern&&host.SillyTavern.getContext(), chat=now&&(typeof now.getCurrentChatId==='function'?now.getCurrentChatId():now.chatId);if(!allowRetired&&root.__readerControllerAlive===false||!now||chat!==id||now.characterId!==character||identity&&identity!==JSON.stringify(root.DreamRegexUpdateGuard.identity(host)))throw Error('聊天、角色或预设已变化，请重新检查更新');};
   }
   function createCoordinator(components,capture,onResult){
-    var pending=null, checked=null, assertCurrent=null;
+    var pending=null, checked=null, assertCurrent=null, activeComponents=null;
     function check(){
       if(pending)return pending;
+      checked=null;activeComponents=null;
       assertCurrent=(capture||guard)();
-      pending=Promise.all(components.map(async function(component){
+      activeComponents=typeof components==='function'?components():components;
+      pending=Promise.all(activeComponents.map(async function(component){
         try{assertCurrent();var plan=await component.check();assertCurrent();return {id:component.id,label:component.label,status:plan.status,detail:plan.detail||'',plan:plan};}
         catch(e){return {id:component.id,label:component.label,status:'failed',detail:message(e)};}
       })).then(function(results){assertCurrent();checked=results;return results;}).finally(function(){pending=null;});
@@ -28,7 +31,7 @@
         var ordered=checked.slice().sort(function(a,b){return ORDER.indexOf(a.id)-ORDER.indexOf(b.id);});
         for(var i=0;i<ordered.length;i++){
           var item=ordered[i];if(item.status!=='outdated')continue;
-          try{assertCurrent();if(onResult)onResult(checked,item.id);if(progress)progress(item.label);var component=components.find(function(c){return c.id===item.id;});var result=await component.apply(item.plan,assertCurrent);item.status='updated';item.detail=result&&result.detail||'已更新';}
+          try{assertCurrent();if(onResult)onResult(checked,item.id);if(progress)progress(item.label);var component=activeComponents.find(function(c){return c.id===item.id;});var result=await component.apply(item.plan,assertCurrent);item.status='updated';item.detail=result&&result.detail||'已更新';}
           catch(e){item.status='failed';item.detail=message(e);}
           if(onResult)onResult(checked);
         }
@@ -39,7 +42,7 @@
     return Object.freeze({check:check,apply:apply,get busy(){return !!pending;},get results(){return checked;}});
   }
   function coreComponents(){
-    var client=root.DreamFixedReleaseClient, api=root.__readerHostApi, selectedJob=null, selectionTime=0;
+    var client=root.DreamFixedReleaseClient, api=liveApi(), selectedJob=null, selectionTime=0;
     function selected(){if(root.__readerAcceptedSelection)return Promise.resolve(root.__readerAcceptedSelection);if(!selectedJob||Date.now()-selectionTime>1500){selectionTime=Date.now();selectedJob=client.latest('Adirm007/reader');}return selectedJob;}
     function helper(){return root.TavernHelper||root.parent.TavernHelper;}
     function hooks(){return api&&api.getUpdateOptions&&api.getUpdateOptions()||{};}
@@ -84,7 +87,10 @@
         }
         return {detail:'轻量正则已更新到 v'+artifact.metadata.version};
       }});
-      components.push({id:'script',label:'脚本',check:async function(){var latest=await selected(),version=api.runtimeVersion,owner=api.scriptOwner,snapshot=owner&&root.ReaderScriptInstaller?root.ReaderScriptInstaller.inspect({scope:owner.scope||'character'}).snapshot:null;return {status:latest&&client.compare(latest.version,version)>0?'outdated':'current',selected:latest,snapshot:snapshot,detail:'当前 v'+version+(latest?'；最新 v'+latest.version:'；尚无正式发布')};},apply:async function(plan,assertCurrent){
+      components.push({id:'script',label:'脚本',check:async function(){var latest=await selected(),version=api.runtimeVersion,owner=api.scriptOwner,snapshot=null;
+        if(owner){if(!root.ReaderScriptInstaller||typeof root.ReaderScriptInstaller.verify!=='function')throw Error('脚本保存核对模块不可用');var verified=await root.ReaderScriptInstaller.verify({scope:owner.scope||'character'},guard());if(verified.api!==api)throw Error('运行脚本已变化，请重新检查');version=verified.version;snapshot=verified.snapshot;}
+        else if(api.ready!==undefined&&!await api.ready)throw Error('读者控制器未能启动');
+        return {status:latest&&client.compare(latest.version,version)>0?'outdated':'current',selected:latest,version:version,snapshot:snapshot,detail:'当前 v'+version+(latest?'；最新 v'+latest.version:'；尚无正式发布')};},apply:async function(plan,assertCurrent){
         var artifact=await readArtifact(plan,'reader-runtime.js'),source=new TextDecoder().decode(artifact.bytes);assertCurrent();
         if(api.scriptOwner){
           if(!root.ReaderScriptInstaller)throw Error('脚本安装模块不可用');
@@ -111,16 +117,25 @@
     return components;
   }
   var coordinator=null,overlay=null;
-  function instance(){if(!coordinator){var scope;coordinator=createCoordinator(coreComponents(),function(){scope=contextId();return guard();},function(results,pending){var record={context:scope,items:results.map(function(item){return {id:item.id,label:item.label,status:item.id===pending?'submitted':item.status,detail:item.detail,version:item.plan&&item.plan.selected&&item.plan.selected.version};})};try{(root.parent||root).localStorage.setItem(RESULT,JSON.stringify(record));}catch(e){/* Results never authorize code or state writes. */}});}return coordinator;}
+  function instance(){if(!coordinator){var scope;coordinator=createCoordinator(coreComponents,function(){scope=contextId();return guard();},function(results,pending){var record={context:scope,items:results.map(function(item){return {id:item.id,label:item.label,status:item.id===pending?'submitted':item.status,detail:item.detail,version:item.plan&&item.plan.selected&&item.plan.selected.version};})};try{(root.parent||root).localStorage.setItem(RESULT,JSON.stringify(record));}catch(e){/* Results never authorize code or state writes. */}});}return coordinator;}
+  function receipt(results){
+    var storage=(root.parent||root).localStorage,previous=JSON.parse(storage.getItem(RESULT)||'null');
+    if(!previous||previous.context!==contextId()||!Array.isArray(previous.items))return null;
+    var changed=false;
+    if(results)previous.items.forEach(function(item){var checked=results.find(function(result){return result.id===item.id;});if(item.id==='script'&&(item.status==='submitted'||item.status==='failed')&&item.version&&checked&&checked.status==='current'&&checked.plan.version&&root.DreamFixedReleaseClient.compare(checked.plan.version,item.version)>=0){item.status='updated';item.detail='已重新核对保存和运行状态';changed=true;}});
+    if(changed)storage.setItem(RESULT,JSON.stringify(previous));return previous;
+  }
   root.openReaderUpdateCenter=function(e){
     if(e&&e.stopPropagation)e.stopPropagation();var doc=getCustomPersonaHostDocument();
     if(overlay&&overlay.isConnected)return overlay;
     var shell=createCustomPersonaLibraryShell(doc,'检查更新',''),box=doc.createElement('div'),info=doc.createElement('div'),status=doc.createElement('div'),buttons=doc.createElement('div');overlay=shell.overlay;
     box.className='dad-form';info.className='dad-wb-pre';status.className='dad-status';status.setAttribute('aria-live','polite');buttons.className='dad-row';box.appendChild(info);box.appendChild(status);box.appendChild(buttons);shell.card.appendChild(box);dreamAddonCss(doc);
-    try{var previous=JSON.parse((root.parent||root).localStorage.getItem(RESULT)||'null');if(previous&&previous.context===contextId()&&Array.isArray(previous.items)){var history=doc.createElement('div');history.className='dad-hint';history.style.whiteSpace='pre-wrap';history.textContent='上次更新：\n'+previous.items.map(function(item){var state=item.status;if(state==='submitted'&&item.id==='script'&&root.__readerHostApi&&root.__readerHostApi.runtimeVersion===item.version)state='updated';return item.label+'：'+(state==='submitted'?'已提交，请重新检查核对':state==='failed'?'失败：'+item.detail:state==='updated'?'已更新':state==='current'?'无需更新':item.detail);}).join('\n');box.insertBefore(history,info);}}catch(e){}
+    var history=null;
+    function renderHistory(results){try{var previous=receipt(results);if(previous){if(!history){history=doc.createElement('div');history.className='dad-hint';history.style.whiteSpace='pre-wrap';box.insertBefore(history,info);}history.textContent='上次更新：\n'+previous.items.map(function(item){var state=item.status;return item.label+'：'+(state==='submitted'?'已提交，请重新检查核对':state==='failed'?'失败：'+item.detail:state==='updated'?'已更新':state==='current'?'无需更新':item.detail);}).join('\n');}}catch(e){}}
+    renderHistory();
     var center=instance(),labels={current:'已是最新',outdated:'有可用更新',updated:'已更新',failed:'失败',unavailable:'不可自动更新'};
     function button(label,handler){buttons.appendChild(customPersonaButton(doc,label,'',handler));}
-    function render(results){info.textContent=results.map(function(item){return item.label+'：'+(labels[item.status]||item.status)+'\n'+item.detail;}).join('\n\n');}
+    function render(results){renderHistory(results);info.textContent=results.map(function(item){return item.label+'：'+(labels[item.status]||item.status)+'\n'+item.detail;}).join('\n\n');}
     async function run(){if(center.busy)return;buttons.textContent='';status.textContent='正在检查…';try{var results=await center.check();if(!overlay.isConnected)return;render(results);var count=results.filter(function(item){return item.status==='outdated';}).length;status.textContent=(root.__readerHostApi&&root.__readerHostApi.updateRestoreError?root.__readerHostApi.updateRestoreError+'；':'')+(count?'发现 '+count+' 项更新':'检查完成');if(count)button('更新可用项目（'+count+' 项）',async function(){if(center.busy)return;buttons.textContent='';try{var done=await center.apply(function(name){status.textContent='正在更新'+name+'…';});if(!overlay.isConnected)return;render(done);status.textContent=done.some(function(item){return item.status==='failed';})?'部分项目未完成，请重新检查':'更新完成';}catch(error){status.textContent=message(error);}button('重新检查',run);});}catch(error){status.textContent=message(error);}finally{if(overlay.isConnected){button('重新检查',run);button('关闭',shell.close);}}}
     run();return overlay;
   };
@@ -138,7 +153,7 @@
     }catch(error){api.updateRestoreError='已选择版本尚未恢复：'+message(error);}
     finally{delete root.__readerAcceptedSelection;}
   }
-  root.ReaderUpdates=Object.freeze({createCoordinator:createCoordinator,components:coreComponents,restore:restore,check:function(){return instance().check();},apply:function(progress){return instance().apply(progress);}});
+  root.ReaderUpdates=Object.freeze({createCoordinator:createCoordinator,components:coreComponents,restore:restore,check:function(){return instance().check().then(function(results){try{receipt(results);}catch(e){}return results;});},apply:function(progress){return instance().apply(progress);}});
   // A previously installed updater can only download the new complete fixed loader.
   // That accepted, pinned loader finishes its own first script migration on load.
   if(root.ReaderFixedMigration)setTimeout(function(){root.ReaderFixedMigration.autoStart().catch(function(){});},0);

@@ -36,27 +36,35 @@
   }
   async function install(plan,assertCurrent){
     var guard=assertCurrent||capture(),client=root.DreamFixedReleaseClient;
-    guard();if(scan().fingerprint!==plan.snapshot.fingerprint)throw Error('正则在检查后已变化，请重新检查');
+    guard();if(scan().context!==plan.snapshot.context)throw Error('聊天、角色或预设已变化，请重新检查更新');
     // Verify both sides before any script-library or regex mutation.
     var artifacts=await Promise.all([client.resource(plan.selected,'reader-runtime.js'),client.resource(plan.selected,'reader-letter.json')]);
     var runtime=artifacts[0],letter=artifacts[1],regex=JSON.parse(new TextDecoder().decode(letter.bytes));
     if(!samePin(runtime.metadata,letter.metadata)||runtime.metadata.repository!==REPOSITORY||runtime.metadata.version!==plan.selected.version)throw Error('脚本与轻量信件不是同一个固定版本');
     validateLight(regex,runtime.metadata.version);guard();
-    if(scan().fingerprint!==plan.snapshot.fingerprint)throw Error('下载期间正则已变化，请重新检查');
+    var old=plan.target.regex,next=Object.assign({},old,{id:LIGHT,script_name:regex.scriptName,replace_string:regex.replaceString});
+    var replacement=[];plan.group.list.forEach(function(rule,index){if(index===plan.target.index)replacement.push(next);else if(!managed(rule))replacement.push(rule);});
+    var expected=JSON.stringify(plan.snapshot.lists.map(function(group){return {option:group.option,list:JSON.stringify(group.option)===JSON.stringify(plan.target.scope)?replacement:group.list};}));
+    async function completed(fresh){
+      if(fresh.fingerprint!==expected)return null;
+      root.DreamRegexUpdateGuard.assertSafe(host(),plan.target.scope,replacement);
+      var verified=await root.ReaderScriptInstaller.verify({scope:plan.target.scope.type},guard);
+      if(verified.version!==runtime.metadata.version||!samePin(Object.assign({repository:REPOSITORY},verified.metadata),runtime.metadata)||verified.metadata.sourceSha256!==runtime.spec.sha256)throw Error('已安装脚本与本次更新来源不符，请重新检查');
+      guard();if(scan().fingerprint!==expected)throw Error('正则在核对时已变化，请重新检查');
+      return {detail:'已切换轻量信件 v'+runtime.metadata.version,version:runtime.metadata.version,id:verified.id};
+    }
+    var before=scan();
+    if(before.fingerprint!==plan.snapshot.fingerprint){var done=await completed(before);if(done)return done;throw Error('正则在检查后已变化，请重新检查');}
     var installed=await root.ReaderScriptInstaller.install(runtime,guard,{scope:plan.target.scope.type,snapshot:plan.scripts.snapshot});
     guard();
     var fresh=scan();
     if(fresh.fingerprint!==plan.snapshot.fingerprint){
-      var completed=fresh.lists.find(function(g){return JSON.stringify(g.option)===JSON.stringify(plan.target.scope);});
-      var letters=completed&&completed.list.filter(function(rule){return rule.id===LIGHT;});
-      if(letters&&letters.length===1&&letters[0].replace_string===regex.replaceString&&!completed.list.some(function(rule){return rule.id===FIXED;})&&host().ReaderCore===installed.api&&installed.api.isAlive!==false)return {detail:'已切换轻量信件 v'+runtime.metadata.version,version:runtime.metadata.version,id:installed.id};
+      var concurrent=await completed(fresh);if(concurrent)return concurrent;
       throw Error('脚本已安装，但正则发生变化；请重新检查');
     }
     var h=fresh.host.helper,group=fresh.lists.find(function(g){return JSON.stringify(g.option)===JSON.stringify(plan.target.scope);});
     if(root.DreamRegexUpdateGuard.assertSafe(host(),plan.target.scope,group.list).rawFingerprint!==plan.protection.rawFingerprint)throw Error('原始正则设置已变化，请重新检查');
-    var old=group.list[plan.target.index];if(!old||old.id!==FIXED)throw Error('原固定版发生变化，请重新检查');
-    var next=Object.assign({},old,{id:LIGHT,script_name:regex.scriptName,replace_string:regex.replaceString});
-    var replacement=[];group.list.forEach(function(rule){if(rule===old)replacement.push(next);else if(!managed(rule))replacement.push(rule);});
+    var currentRule=group.list[plan.target.index];if(!currentRule||currentRule.id!==plan.target.regex.id)throw Error('原固定版发生变化，请重新检查');
     host().localStorage.setItem('dream_reader_fixed_migration_backup_v1',JSON.stringify({schema:1,context:current(),scope:plan.target.scope,regexes:group.list,scriptId:installed.id,version:runtime.metadata.version}));
     guard();await h.replaceTavernRegexes(replacement,plan.target.scope);
     guard();var saved=h.getTavernRegexes(plan.target.scope),found=saved.filter(function(rule){return rule.id===LIGHT;});

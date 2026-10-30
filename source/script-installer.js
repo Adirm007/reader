@@ -95,6 +95,20 @@
     }while(Date.now()<until);
     throw Error('读者脚本尚未启动，原正则已保留；请在酒馆助手脚本库启用读者脚本后重试');
   }
+  async function verify(options,assertCurrent){
+    var env=inspect(options);assertIdentity(env,assertCurrent);
+    if(!env.managed)throw Error('未找到已安装的读者常驻脚本');
+    if(!env.enabled)throw Error('读者常驻脚本或所属脚本范围未启用');
+    var saved=await persistedScript(env);assertIdentity(env,assertCurrent);
+    if(!saved||fingerprint(saved)!==fingerprint(env.managed))throw Error('读者脚本尚未确认保存，请重新检查');
+    var active=env.host.ReaderCore,metadata=env.metadata;
+    if(!active||!owns(active,metadata.ownerToken)||active.scriptOwner.scope!==env.scope||active.runtimeVersion!==metadata.version||active.isAlive===false)throw Error('已保存的读者脚本尚未接管当前聊天，请重新检查');
+    var api=await waitReady(env,metadata.ownerToken,metadata.version,assertCurrent);
+    var fresh=inspect({scope:env.scope});assertIdentity(env,assertCurrent);
+    if(!fresh.enabled||fresh.snapshot.fingerprint!==env.snapshot.fingerprint)throw Error('脚本库在核对期间已变化，请重新检查');
+    if(env.host.ReaderCore!==active||api!==active||api.scriptOwner.scope!==env.scope)throw Error('运行中的读者脚本已变化，请重新检查');
+    return {version:metadata.version,id:ID,ownerToken:metadata.ownerToken,persisted:true,api:api,metadata:metadata,snapshot:env.snapshot};
+  }
   async function restorePrevious(env,script,token,expected,priorStatus,priorApi,external){
     assertIdentity(env,external);
     var status=env.host.__readerStandaloneStatus,active=env.host.ReaderCore;
@@ -175,6 +189,6 @@
     job.then(function(){if(env.host.__readerScriptInstallation&&env.host.__readerScriptInstallation.promise===job)delete env.host.__readerScriptInstallation;},function(){if(env.host.__readerScriptInstallation&&env.host.__readerScriptInstallation.promise===job)delete env.host.__readerScriptInstallation;});
     return job;
   }
-  root.ReaderScriptInstaller=Object.freeze({id:ID,inspect:inspect,install:install});
+  root.ReaderScriptInstaller=Object.freeze({id:ID,inspect:inspect,verify:verify,install:install});
 })(window);
 /* DREAM_SCRIPT_INSTALLER_END */

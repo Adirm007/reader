@@ -3,6 +3,7 @@ import { ASSETS } from 'reader:assets';
 
 const FRAME_ID = 'reader-core-controller';
 const OLD_BUTTON_ID = 'reader-core-launcher';
+const LEGACY_SOURCE = Symbol.for('reader.legacy-letter.source');
 let running = null;
 let successor = null;
 let lifecycle = 0;
@@ -33,7 +34,7 @@ export function start(options = {}) {
   const legacyNodes = ['dfb','dfo','dfc','dream-hb','dream-p-toast','dlb-overlay','dlb-style','cp-overlay','cp-style','cpl-overlay','cpl-style','dgl-overlay','dgl-style-v2','chess-overlay','chess-styles','bs-overlay','bs-detail-ov','bs-styles','dream-addon-style-v3','dream-ink-native-v1','dream-theme-fix','reader-template-system-overlay','reader-template-system-style'].map(id => doc.getElementById(id)).filter(Boolean);
   doc.getElementById(FRAME_ID)?.remove();
   doc.getElementById(OLD_BUTTON_ID)?.remove();
-  const state = { stopped: false, generation: 0, key: chatKey(win), frame: null, ready: null, stops: [], letters: new Set(), cancelReady: null, legacyRetired: false };
+  const state = { stopped: false, generation: 0, key: chatKey(win), frame: null, ready: null, stops: [], letters: new Set(), legacyFrames: new Map(), cancelReady: null, legacyRetired: false };
   let resolveReady = null;
   state.cancelReady = () => { resolveReady?.(null); resolveReady = null; };
 
@@ -42,8 +43,101 @@ export function start(options = {}) {
     doc.getElementById('dream-hb')?.remove();
     for (const node of legacyNodes) node.remove();
     state.legacyRetired = true;
+    adoptLegacyFrames();
     state.frame?.contentWindow?.ReaderController?.refreshEnvelope?.();
   };
+
+  // Replacing a regex does not redraw its already rendered complete iframes.
+  // Keep their letters readable, but route their menu back to this controller.
+  function adoptLegacyFrame(frame) {
+    if (state.stopped || !state.legacyRetired || !frame.closest?.('.mes[mesid]')) return false;
+    let target, letterDoc;
+    try {
+      target = frame.contentWindow;
+      letterDoc = frame.contentDocument;
+    } catch {
+      const previous = state.legacyFrames.get(frame);
+      if (previous) { previous.restore(); state.legacyFrames.delete(frame); state.letters.delete(previous.letter); }
+      return !!previous;
+    }
+    const previous = state.legacyFrames.get(frame);
+    if (previous?.document === letterDoc) return false;
+    if (previous) { previous.restore(); state.legacyFrames.delete(frame); state.letters.delete(previous.letter); }
+    try {
+      if (!target?.__isDreamIframe || target.ReaderLetter || target.__readerHostApi || !letterDoc?.querySelector('.text-body-royal') || !letterDoc.getElementById('menu-trigger')) return !!previous;
+    } catch { return !!previous; }
+    const messageId = frame.closest('.mes[mesid]').getAttribute('mesid');
+    const source = win.SillyTavern?.getContext?.()?.chat?.[Number(messageId)];
+    if (!Object.prototype.hasOwnProperty.call(letterDoc, LEGACY_SOURCE)) {
+      Object.defineProperty(letterDoc, LEGACY_SOURCE, {value: Object.freeze({chatKey: state.key, messageId, mes: source?.mes, swipeId: source?.swipe_id ?? 0, hasMessage: !!source})});
+    }
+    const rendered = letterDoc[LEGACY_SOURCE];
+    if (rendered.chatKey !== state.key || rendered.messageId !== messageId) return !!previous;
+    const sourceText = rendered.mes, sourceSwipe = rendered.swipeId, sourceKey = rendered.chatKey;
+    const originalStyle = frame.getAttribute('style'), originals = new Map();
+    // Old float mode rewrites the whole iframe style. Its inline counterpart
+    // clears that hiding style, so use the same baseline when returning inline.
+    const legacyHidden = letterDoc.body.classList.contains('dream-float-mode');
+    if (legacyHidden) frame.style.cssText = '';
+    const display = frame.style.getPropertyValue('display'), priority = frame.style.getPropertyPriority('display');
+    function replace(name, replacement) {
+      if (typeof target[name] !== 'function') return;
+      const original = target[name];
+      target[name] = replacement;
+      originals.set(name, {original, replacement});
+    }
+    const openMenu = () => { void api.open('lobby'); return true; };
+    const refresh = () => api.refresh();
+    for (const name of ['openDreamLobby','toggleMenu','legacyToggleMenu']) replace(name, openMenu);
+    for (const name of ['applySwitch','hideMyIframe','showMyIframe','eFB','rFB','regLetter','startHeartbeat']) replace(name, refresh);
+    replace('dreamSmartSweep', () => {});
+    replace('dreamCmd', refresh);
+    replace('togglePlay', () => { void api.command('togglePlay'); });
+    replace('handleTrackBtnClick', () => { void api.command('handleTrackBtnClick'); });
+    const letter = {
+      frame, messageId, swipeId: sourceSwipe,
+      isCurrent: () => {
+        const message = win.SillyTavern?.getContext?.()?.chat?.[Number(messageId)];
+        return state.key === sourceKey && (!rendered.hasMessage || !!message && message.mes === sourceText && (message.swipe_id ?? 0) === sourceSwipe);
+      },
+      read: () => ({html: letterDoc.querySelector('.text-body-royal')?.innerHTML || '', signature: letterDoc.querySelector('.sig-mini')?.textContent || ''}),
+      refresh: settings => {
+        letterDoc.body.classList.remove('dream-float-mode');
+        if (settings.mode === 'float') frame.style.setProperty('display', 'none', 'important');
+        else if (display) frame.style.setProperty('display', display, priority);
+        else frame.style.removeProperty('display');
+        if (letterDoc.documentElement.getAttribute('data-dream-theme') !== settings.theme) target.applyVisualTheme?.(settings.theme, false);
+        const avatar = letterDoc.getElementById('char-face-img');
+        if (avatar && settings.avatar && avatar.getAttribute('src') !== settings.avatar) avatar.src = settings.avatar;
+        const wrapper = letterDoc.querySelector('.wrapper-v9-fix');
+        if (wrapper) wrapper.style.zoom = (settings.fontSize || 16) / (settings.defaultFontSize || 16);
+        letterDoc.querySelectorAll('.text-body-royal,.sig-mini').forEach(node => { if (settings.font?.family) node.style.fontFamily = settings.font.family; });
+        letterDoc.querySelectorAll('[data-dream-dear],#dream-dear-name').forEach(node => { if (settings.address) node.textContent = settings.address; });
+        letterDoc.getElementById('record-btn')?.classList.toggle('is-playing', !!settings.playing);
+      }
+    };
+    const restore = () => {
+      // A reused iframe may already belong to a different or cross-origin page.
+      try {
+        if (frame.contentDocument !== letterDoc) return;
+        for (const [name, entry] of originals) if (target[name] === entry.replacement) target[name] = entry.original;
+        if (originalStyle === null) frame.removeAttribute('style'); else frame.setAttribute('style', originalStyle);
+        letterDoc.body.classList.toggle('dream-float-mode', legacyHidden);
+      } catch {}
+    };
+    state.legacyFrames.set(frame, {letter, restore, document: letterDoc});
+    state.letters.add(letter);
+    return true;
+  }
+
+  function adoptLegacyFrames() {
+    for (const frame of doc.querySelectorAll('.mes[mesid] iframe')) adoptLegacyFrame(frame);
+  }
+
+  function releaseLegacyFrames() {
+    for (const {letter, restore} of state.legacyFrames.values()) { restore(); state.letters.delete(letter); }
+    state.legacyFrames.clear();
+  }
 
   const disposeController = () => {
     state.generation++;
@@ -123,8 +217,8 @@ export function start(options = {}) {
     if (state.stopped) return;
     const settings = api.settings();
     for (const letter of state.letters) {
-      if (!letter.frame?.isConnected) { state.letters.delete(letter); continue; }
-      try { letter.refresh?.(settings); } catch { state.letters.delete(letter); }
+      if (!letter.frame?.isConnected) { state.legacyFrames.get(letter.frame)?.restore(); state.legacyFrames.delete(letter.frame); state.letters.delete(letter); continue; }
+      try { letter.refresh?.(settings); } catch { state.legacyFrames.get(letter.frame)?.restore(); state.legacyFrames.delete(letter.frame); state.letters.delete(letter); }
     }
     state.frame?.contentWindow?.ReaderController?.refreshEnvelope?.();
   }
@@ -220,12 +314,17 @@ export function start(options = {}) {
     const next = chatKey(win);
     if (next === state.key) { notifyLetters(); return; }
     disposeController();
+    releaseLegacyFrames();
     state.key = next;
     state.letters.clear();
     void ensure();
   };
   const onChatChanged = changed;
   const refresh = () => { changed(); notifyLetters(); };
+  const onFrameLoaded = event => { if (event.target?.tagName === 'IFRAME' && adoptLegacyFrame(event.target)) notifyLetters(); };
+  doc.addEventListener('load', onFrameLoaded, true);
+  state.stops.push(() => doc.removeEventListener('load', onFrameLoaded, true));
+  state.stops.push(releaseLegacyFrames);
   const events = globalThis.tavern_events || win.tavern_events || {};
   const listen = globalThis.eventOn || win.eventOn;
   if (typeof listen === 'function') {
