@@ -2,7 +2,7 @@
 import { ASSETS } from 'reader:assets';
 
 const FRAME_ID = 'reader-core-controller';
-const BUTTON_ID = 'reader-core-launcher';
+const OLD_BUTTON_ID = 'reader-core-launcher';
 let running = null;
 let successor = null;
 let lifecycle = 0;
@@ -32,14 +32,17 @@ export function start(options = {}) {
   win.ReaderCore?.stop?.();
   const legacyNodes = ['dfb','dfo','dfc','dream-hb','dream-p-toast','dlb-overlay','dlb-style','cp-overlay','cp-style','cpl-overlay','cpl-style','dgl-overlay','dgl-style-v2','chess-overlay','chess-styles','bs-overlay','bs-detail-ov','bs-styles','dream-addon-style-v3','dream-ink-native-v1','dream-theme-fix','reader-template-system-overlay','reader-template-system-style'].map(id => doc.getElementById(id)).filter(Boolean);
   doc.getElementById(FRAME_ID)?.remove();
-  doc.getElementById(BUTTON_ID)?.remove();
-  const state = { stopped: false, generation: 0, key: chatKey(win), frame: null, ready: null, stops: [], letters: new Set(), cancelReady: null };
+  doc.getElementById(OLD_BUTTON_ID)?.remove();
+  const state = { stopped: false, generation: 0, key: chatKey(win), frame: null, ready: null, stops: [], letters: new Set(), cancelReady: null, legacyRetired: false };
   let resolveReady = null;
   state.cancelReady = () => { resolveReady?.(null); resolveReady = null; };
 
   const retireLegacyMenu = () => {
     if (win.__dhb) { win.clearInterval(win.__dhb); win.__dhb = null; }
+    doc.getElementById('dream-hb')?.remove();
     for (const node of legacyNodes) node.remove();
+    state.legacyRetired = true;
+    state.frame?.contentWindow?.ReaderController?.refreshEnvelope?.();
   };
 
   const disposeController = () => {
@@ -117,25 +120,30 @@ export function start(options = {}) {
   };
 
   function notifyLetters() {
+    if (state.stopped) return;
     const settings = api.settings();
     for (const letter of state.letters) {
       if (!letter.frame?.isConnected) { state.letters.delete(letter); continue; }
       try { letter.refresh?.(settings); } catch { state.letters.delete(letter); }
     }
+    state.frame?.contentWindow?.ReaderController?.refreshEnvelope?.();
   }
 
-  const button = doc.createElement('button');
-  button.id = BUTTON_ID;
-  button.type = 'button';
-  button.textContent = '✉ 读者';
-  button.title = '打开九十九夜梦的菜单';
-  button.style.cssText = 'position:fixed;right:16px;bottom:90px;z-index:9990;border:1px solid #c59d5f;border-radius:24px;padding:10px 16px;color:#eadbc0;background:#251b16;box-shadow:0 3px 16px #0005;font:14px/1.4 serif;cursor:pointer';
-  button.addEventListener('click', () => { void api.open('lobby'); });
-  doc.body.appendChild(button);
+  function latestMessageId() {
+    const context = win.SillyTavern?.getContext?.();
+    if (Array.isArray(context?.chat)) return context.chat.length - 1;
+    try {
+      const last = (globalThis.getLastMessageId || win.TavernHelper?.getLastMessageId)?.();
+      if (Number.isInteger(last)) return last;
+    } catch {}
+    return [...doc.querySelectorAll('.mes[mesid]')].reduce((last, message) => Math.max(last, Number(message.getAttribute('mesid')) || 0), -1);
+  }
 
   const api = {
     runtimeVersion: ASSETS.version,
     get scriptOwner() { return options.scriptOwner || null; },
+    get canOwnEnvelope() { return state.legacyRetired; },
+    getLatestMessageId: latestMessageId,
     retireLegacyMenu,
     getUpdateOptions: () => options.updates || {},
     replaceRuntime: async (request) => {
@@ -179,13 +187,19 @@ export function start(options = {}) {
     registerLetter(letter) {
       if (state.stopped || !letter.frame?.isConnected) return () => {};
       state.letters.add(letter);
-      letter.refresh?.(api.settings());
-      return () => state.letters.delete(letter);
+      notifyLetters();
+      return () => { state.letters.delete(letter); notifyLetters(); };
     },
     getLetters(messageId) {
-      const live = [...state.letters].filter(letter => letter.frame?.isConnected);
-      if (messageId == null) messageId = live.reduce((last, letter) => Math.max(last, Number(letter.messageId) || 0), -1);
-      return live.filter(letter => String(letter.messageId) === String(messageId)).map(letter => ({ ...letter.read(), frame: letter.frame }));
+      const chat = win.SillyTavern?.getContext?.()?.chat;
+      const live = [...state.letters].filter(letter => letter.frame?.isConnected
+        && (letter.swipeId == null || String(letter.swipeId) === String(chat?.[Number(letter.messageId)]?.swipe_id ?? 0))
+        && (!letter.isCurrent || letter.isCurrent()));
+      if (messageId == null) messageId = latestMessageId();
+      return live.filter(letter => String(letter.messageId) === String(messageId)).sort((left, right) => {
+        const position = left.frame.compareDocumentPosition?.(right.frame) || 0;
+        return position & 4 ? -1 : position & 2 ? 1 : 0;
+      }).map(letter => ({ ...letter.read(), frame: letter.frame }));
     },
     setAudioFocus: (owner) => state.frame?.contentWindow?.ReaderController?.setAudioFocus?.(owner),
     openBooksea: async (action = 'maze') => {
@@ -198,7 +212,7 @@ export function start(options = {}) {
     get isAlive() { return !state.stopped; },
     stop,
   };
-  running = { state, api, win, button };
+  running = { state, api, win };
   win.ReaderCore = api;
 
   const changed = () => {
@@ -215,7 +229,7 @@ export function start(options = {}) {
   const events = globalThis.tavern_events || win.tavern_events || {};
   const listen = globalThis.eventOn || win.eventOn;
   if (typeof listen === 'function') {
-    for (const name of ['CHAT_CHANGED', 'MESSAGE_RECEIVED', 'MESSAGE_UPDATED', 'MESSAGE_SWIPED', 'MESSAGE_DELETED', 'GENERATION_ENDED']) {
+    for (const name of ['CHAT_CHANGED', 'MESSAGE_SENT', 'USER_MESSAGE_RENDERED', 'CHARACTER_MESSAGE_RENDERED', 'MESSAGE_RECEIVED', 'MESSAGE_UPDATED', 'MESSAGE_SWIPED', 'MESSAGE_DELETED', 'GENERATION_ENDED']) {
       if (!events[name]) continue;
       const handle = listen(events[name], name === 'CHAT_CHANGED' ? onChatChanged : refresh);
       if (handle?.stop) state.stops.push(() => handle.stop());
@@ -242,7 +256,7 @@ export function stop() {
   lifecycle++;
   if (successor) { successor.stop(); return; }
   if (!running) return;
-  const { state, api, win, button } = running;
+  const { state, api, win } = running;
   running = null;
   state.stopped = true;
   state.generation++;
@@ -251,6 +265,5 @@ export function stop() {
   try { state.frame?.contentWindow?.ReaderController?.dispose(); } catch {}
   state.frame?.remove();
   state.letters.clear();
-  button.remove();
   if (win.ReaderCore === api) delete win.ReaderCore;
 }

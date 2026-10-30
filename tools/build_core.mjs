@@ -11,11 +11,12 @@ const hash = text => createHash('sha256').update(text).digest('hex');
 
 export async function build({ write = false, version } = {}) {
   version ||= JSON.parse(await read('release-manifest.json')).version;
-  const [runtimeSource, prelude, adapter, legacySource, css, body, letterSource, letterBody, cache, profile, transactions, booksea, templates] = await Promise.all([
+  const [runtimeSource, prelude, adapter, legacySource, css, body, letterSource, letterBody, cache, profile, transactions, booksea, templates, bookseaAlbum] = await Promise.all([
     read('source/core-runtime.mjs'), read('source/controller-prelude.js'), read('source/controller-adapter.js'),
     read('source/legacy-reader.js'), read('source/legacy-reader.css'), read('source/legacy-body.html'),
     read('source/letter.js'), read('source/letter-body.html'), read('source/black-author-cache.js'), read('source/black-author.prompt.json'),
     optional('source/reader-transactions.js'), optional('source/booksea-host.js'), optional('source/template-system.js'),
+    read('source/booksea-album.js'),
   ]);
   // Replace only the old top-level bootstrap. All feature implementations remain normal editable source.
   const bootstrap = /\ninitDreamSys\(\);\s*setTimeout\(function\(\)\{try\{dreamWbAutoCheck\(\);\}catch\(e\)\{\}\},5000\);/;
@@ -23,7 +24,7 @@ export async function build({ write = false, version } = {}) {
   const legacy = legacySource.replace(bootstrap, '\n');
   const initialization = cache.replace('__DREAM_AUTHOR_PROFILE__', JSON.stringify(JSON.parse(profile)).replace(/</g, '\\u003c'));
   const releaseTools = await Promise.all(['fixed-release-client.js','fixed-runtime.js','regex-update-guard.js','release-updates.js','standalone-bootstrap.js','script-installer.js','fixed-migration.js','update-center.js'].map(name => read('source/' + name)));
-  const controller = [prelude, transactions, booksea, initialization, legacy, templates, ...releaseTools, adapter].join('\n;\n');
+  const controller = [prelude, transactions, booksea, bookseaAlbum, initialization, legacy, templates, ...releaseTools, adapter].join('\n;\n');
   new Script(controller, { filename: 'reader-controller.js' });
   const assets = { version, css, body: body.replace('<!--DREAM_LETTER-->', ''), controller };
   const runtime = runtimeSource.replace("import { ASSETS } from 'reader:assets';", 'const ASSETS = ' + JSON.stringify(assets) + ';');

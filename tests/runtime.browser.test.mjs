@@ -38,8 +38,9 @@ test('persistent runtime survives letter redraw, stops resources, and isolates c
     await page.evaluate(async () => { window.ReaderCoreConfig={bookseaBase:location.origin+'/'};window.runtimeModule = await import('/runtime.js'); runtimeModule.start(); await ReaderCore.ready; });
     assert.equal(await page.locator('#reader-core-controller').count(), 1);
     assert.equal(await page.locator('.mes').count(), 0);
+    assert.equal(await page.locator('#reader-core-launcher').count(), 0, 'the existing envelope is the only launcher');
     // No <dream> or message iframe is needed to open the application.
-    await page.locator('#reader-core-launcher').click();
+    await page.locator('#dfb').click();
     await page.locator('#dlb-overlay').waitFor();
     for (const view of ['persona', 'decouple', 'tuning', 'eggs', 'template', 'lobby']) {
       assert.equal(await page.evaluate(page => ReaderCore.open(page), view), true);
@@ -100,13 +101,13 @@ test('persistent runtime survives letter redraw, stops resources, and isolates c
     await page.evaluate(async () => { __ctx={...__ctx,chatId:'b',chatMetadata:{variables:{}},chat:[{mes:'different chat',swipe_id:0}]};emit('CHAT_CHANGED');await ReaderCore.ready; });
     assert.deepEqual(await page.evaluate(() => ({different:document.getElementById('reader-core-controller').contentWindow!==__controller,dead:__controller.__readerControllerAlive===false,paused:__audio.paused,cached:!!__ctx.chatMetadata.variables.dream_black_author_prompt})), {different:true,dead:true,paused:true,cached:true});
     await page.evaluate(() => runtimeModule.stop());
-    assert.equal(await page.locator('#reader-core-controller,#reader-core-launcher,#dlb-overlay').count(), 0);
+    assert.equal(await page.locator('#reader-core-controller,#reader-core-launcher,#dfb,#dlb-overlay').count(), 0);
     assert.equal(await page.evaluate(() => [...__events.values()].reduce((count,set)=>count+set.size,0)), 0);
     assert.deepEqual(errors, []);
     // Stop an in-flight start before iframe load, then start cleanly again.
     assert.equal(await page.evaluate(async () => { const api=runtimeModule.start();const pending=api.ready;runtimeModule.stop();return await pending; }), null);
     await page.evaluate(async () => { __ctx.name1 = "O'Neil \"作家\" \\ / \n"; __ctx.name2 = '`角色${name}`';runtimeModule.start();await ReaderCore.ready;runtimeModule.start(); });
-    assert.equal(await page.locator('#reader-core-controller,#reader-core-launcher').count(), 2);
+    assert.equal(await page.locator('#reader-core-controller,#dfb').count(), 2);
     assert.equal(await page.evaluate(() => ReaderCore.settings().address), "O'Neil \"作家\" \\ / \n");
     assert.equal(await page.evaluate(() => [1,2,3,4,5].reduce((total,id)=>total+ReaderCore.getLetters(id).length,0)), 0);
     assert.deepEqual(errors, []);

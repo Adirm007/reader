@@ -103,7 +103,7 @@ def main():
             return open(os.path.join(ROOT, 'source', name), encoding='utf-8').read()
         src['replaceString'] = ('```html\n<!doctype html><html lang="zh-CN"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><style>'
                                 + source('legacy-reader.css') + '</style></head><body>' + source('legacy-body.html').replace(PLACEHOLDER, '$1')
-                                + '<script>' + source('legacy-reader.js')
+                                + '<script>' + source('booksea-album.js') + '\n;' + source('legacy-reader.js')
                                 + ('\n;' + source('template-system.js') if os.path.isfile(os.path.join(ROOT, 'source', 'template-system.js')) else '')
                                 + '</script></body></html>\n```')
     src = install_release_tools(install_profile_cache(src))

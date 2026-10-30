@@ -3,6 +3,8 @@
   var host = window.parent, frame = window.frameElement;
   var unregister = null, connectedCore = null, current = {}, extra = document.createElement('style');
   var currentMessageId = null;
+  var sourceMessage = null, sourceText = null, sourceSwipe = null;
+  var originalDisplay = frame?.style.getPropertyValue('display') || '', originalDisplayPriority = frame?.style.getPropertyPriority('display') || '';
   function chatKey() {
     try { var ctx = host.SillyTavern?.getContext?.(); return ctx ? String(ctx.characterId ?? '') + '|' + String(ctx.getCurrentChatId?.() ?? ctx.chatId ?? '') : null; } catch (_) { return null; }
   }
@@ -28,8 +30,13 @@
     var letter = document.querySelector('.letter-interaction');
     if (letter && current.autoUnseal) { letter.open = true; var casing = letter.querySelector('.envelope-casing'); if (casing) casing.style.display = 'none'; }
     document.getElementById('record-btn')?.classList.toggle('is-playing', !!current.playing);
-    // Float mode keeps one compact letter affordance; the main launcher remains available.
+    // Float mode uses the shared envelope; keep this frame registered as letter data.
     document.body.classList.toggle('reader-letter-compact', current.mode === 'float');
+    if (frame) {
+      if (current.mode === 'float') frame.style.setProperty('display', 'none', 'important');
+      else if (originalDisplay) frame.style.setProperty('display', originalDisplay, originalDisplayPriority);
+      else frame.style.removeProperty('display');
+    }
   }
   function connect() {
     if (!frame?.isConnected) { host.document.removeEventListener('reader:ready', connect); return; }
@@ -43,7 +50,16 @@
     try { if (typeof getCurrentMessageId === 'function') messageId = getCurrentMessageId(); } catch (_) {}
     if (messageId == null) messageId = frame?.closest('.mes')?.getAttribute('mesid');
     currentMessageId = messageId;
-    unregister = app.registerLetter({ frame: frame, messageId: messageId, refresh: refresh,
+    if (sourceMessage === null) {
+      var message = host.SillyTavern?.getContext?.()?.chat?.[messageId];
+      if (message) { sourceMessage = message; sourceText = message.mes; sourceSwipe = message.swipe_id ?? 0; }
+    }
+    unregister = app.registerLetter({ frame: frame, messageId: messageId, swipeId: sourceSwipe, refresh: refresh,
+      isCurrent: function () {
+        if (sourceMessage === null) return true;
+        var message = host.SillyTavern?.getContext?.()?.chat?.[messageId];
+        return !!message && message.mes === sourceText && (message.swipe_id ?? 0) === sourceSwipe;
+      },
       read: function () { return { html: document.querySelector('.text-body-royal')?.innerHTML || '', signature: document.querySelector('.sig-mini')?.textContent || '' }; } });
   }
   window.ReaderLetter = { connect: connect };

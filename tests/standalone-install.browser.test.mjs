@@ -45,7 +45,7 @@ test('the saved helper module starts the real reader after reload and survives o
   await page.goto(origin);await page.evaluate(()=>{
    window.ReaderCoreConfig={bookseaBase:location.origin+'/'};
    window.__legacyTicks=0;window.__legacyClicks=0;window.__dhb=setInterval(()=>window.__legacyTicks++,20);
-   const legacy=document.createElement('button');legacy.id='dfb';legacy.textContent='旧固定版菜单';legacy.onclick=()=>window.__legacyClicks++;document.body.append(legacy);
+   const legacy=document.createElement('button');legacy.id='dfb';legacy.textContent='旧固定版菜单';legacy.onclick=()=>window.__legacyClicks++;document.body.append(legacy);window.__legacyFloat=legacy;
    const heartbeat=document.createElement('script');heartbeat.id='dream-hb';heartbeat.type='application/json';heartbeat.textContent='{}';document.head.append(heartbeat);
    window.__dl=[{c:'旧来信',s:'夜梦',idx:0,ifr:null}];window.__legacyCache=__dl;window.__dmid='original-message';window.__dread=true;
    // Persistence is still pending even though the new owned runtime can become ready.
@@ -61,10 +61,11 @@ test('the saved helper module starts the real reader after reload and survives o
   await page.locator('#dfb').click();assert.equal(await page.evaluate(()=>__legacyClicks),1);
   await page.evaluate(()=>{delete window.__readerScriptInstallation;window.__first=boot();});
   await page.waitForFunction(()=>window.ReaderCore?.scriptOwner?.token&&__readerStandaloneStatus.phase==='ready');
-  assert.equal(await page.locator('#dream-hb,#dfb').count(),0);assert.equal(await page.evaluate(()=>__dhb),null);
+  assert.equal(await page.locator('#dream-hb').count(),0);assert.equal(await page.evaluate(()=>__dhb),null);
+  assert.equal(await page.evaluate(()=>__legacyFloat.isConnected),false);assert.equal(await page.locator('#dfb').count(),1,'successful takeover reuses one floating envelope');assert.equal(await page.locator('#reader-core-launcher').count(),0);
   assert.equal(await page.evaluate(()=>ReaderCore.scriptOwner.scope),'character');
   assert.equal(await page.locator('#reader-core-controller').count(),1);assert.equal(await page.locator('.mes').count(),0);
-  await page.locator('#reader-core-launcher').click();await page.locator('#dlb-overlay').waitFor();
+  await page.locator('#dfb').click();await page.locator('#dlb-overlay').waitFor();
   await page.reload();await page.evaluate(()=>{window.ReaderCoreConfig={bookseaBase:location.origin+'/'};window.__first=boot();});
   await page.waitForFunction(()=>window.ReaderCore?.scriptOwner?.token&&__readerStandaloneStatus.phase==='ready');
   assert.equal(await page.evaluate(()=>ReaderCore.runtimeVersion),'2.0');assert.equal(await page.locator('#reader-core-controller').count(),1);
@@ -82,7 +83,7 @@ test('the saved helper module starts the real reader after reload and survives o
   await page.waitForFunction(()=>window.ReaderCore?.isAlive&&__readerStandaloneStatus.phase==='ready');
   await page.evaluate(()=>{__ctx.characterId=1;__ctx.chatId='other';emit('CHAT_CHANGED');});
   await page.waitForFunction(()=>!window.ReaderCore&&__readerStandaloneStatus.phase==='paused');
-  assert.equal(await page.locator('#reader-core-controller,#reader-core-launcher').count(),0);
+  assert.equal(await page.locator('#reader-core-controller,#reader-core-launcher,#dfb').count(),0);
   await page.evaluate(()=>{__ctx.characterId=0;__ctx.chatId='a';window.ReaderCore={isAlive:true,scriptOwner:null,external:true,stop(){throw Error('external host must remain untouched');}};window.__external=ReaderCore;boot();});
   await page.waitForFunction(()=>__readerStandaloneStatus.phase==='delegated');
   assert.equal(await page.evaluate(()=>ReaderCore===__external),true);assert.deepEqual(errors,[]);
