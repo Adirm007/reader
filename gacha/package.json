@@ -1,0 +1,17 @@
+{
+  "name": "dream-reader-gacha",
+  "private": true,
+  "type": "module",
+  "description": "读者大厅「命运抽卡」的源码；打包结果是 ../source/reader-gacha.js",
+  "scripts": {
+    "build": "node build.mjs",
+    "test": "tsx --test tests/*.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "22.15.30",
+    "esbuild": "0.28.2",
+    "tsx": "4.23.13",
+    "typescript": "5.9.3"
+  }
+}

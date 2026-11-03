@@ -26,6 +26,7 @@ node --test tests/runtime.browser.test.mjs
 - `booksea-host.js`：按需装载并保留书海窗口，收起时保留游玩现场。
 - `template-system.js`：原内嵌压缩模块的可维护源码。
 - `booksea-album.js`：书海第六专辑的 124 首曲目目录及单曲校验、加载和回收。
+- `reader-gacha.js`：大厅「命运抽卡」面板（`window.ReaderGacha`）。由 `gacha/` 打包生成，见下方「命运抽卡」，不要手改。
 
 ## 悬浮信封
 
@@ -54,9 +55,41 @@ node --test tests/runtime.browser.test.mjs
 python tools/build_release.py source/读者对话渲染.json
 ```
 
+## 命运抽卡
+
+大厅三套主题（咖啡馆、盛夏、水墨）与纸笺菜单里的「命运抽卡」直接打开抽卡面板，旧的“抽卡5次”点单已经撤掉（不再往输入框写字）。面板配色跟随当前大厅主题：咖啡馆是深色木纹与黄铜，盛夏是海盐玻璃与天蓝，水墨是纸笺与青瓷；抽卡舞台三套都是夜色（暖夜、深海、墨夜）。
+
+1. 选文学或 ACGN 与主题（内置 39 个，可自定义），**换大池**：从 Bangumi、AniList、VNDB、Wikidata、Open Library 等公开资料库随机捞起 54 部作品。花 1000 命运点，捞到作品之后才扣；一部也没捞到、取消或扣点失败都不扣，也不换掉当前这片书海。按钮要点两次才生效。
+2. 挑一部作为**小池**：查 Bangumi 角色、维基剧情章节与 Fandom 设定页，由夜梦编纂物品与命运各 18 张（1～6★ 对应命定之诗 普通～神话）；没有可用的独立生成时用资料直出。换了大池要重新挑小池，编纂过的小池留在这台设备的缓存里。
+3. **单抽 200、十连 2000**。6★ 基础 0.3%，第 121 抽起每抽 +4%，150 抽必出（大保底）；5★ 基础 1.2%，50 抽内必出 5★ 以上（小保底）；十连至少一张 4★。物品池与命运池共用保底，换小池、换大池都不清零。
+4. **回收**：主角背包里来自命运抽卡（标签首项「命运抽卡」）的东西可以按品质换回命运点数，每件是与同一层级的角色缔结命定契约基础价的 1/25：普通 8 · 优良 20 · 稀有 100 · 史诗 200 · 传说 2000 · 神话 6000。可以整档回收、回收 1 件或全部，都要点两次。按现行概率，抽一次平均只能回收约 140，抽了再回收换不回本。别处来的物品不收。
+
+- 定价是固定的，面板设置里只能决定抽到的东西是否放进背包（关闭后照样扣点，只记在抽卡记录里）。
+- 换大池、抽卡与回收都走 `ReaderTransactions`：固定当前聊天、最新楼层与候选，一次变量提交（回执 `:gacha-cast`、`:gacha`、`:gacha-recycle`），与读者其他付费操作互斥；点数不足、聊天或候选变化、背包里的东西变了时什么也不写。入包物品同名不同物时加作品名区分，不覆盖原有物品。
+- 书海旅程未结束时不换大池、不抽卡、不回收（那段时间的命运点数与背包由书海结算）：按最新楼层的书海进度引用找到存档判断，旧存档看聊天镜像。
+- 保底与最近 100 次记录保存在聊天变量 `dream_gacha`。54 部作品、小池与览概缓存（按聊天分开，留最近 6 个聊天）和设置保存在这台设备（`dream_gacha_device_v1`、`dream_gacha_settings_v1`）。
+- 编纂小池与补写中文览概经酒馆助手 `generateRaw`，走「独立API」里的「命运抽卡」路由。资料库请求从这台设备的浏览器直接发出，不带聊天或角色内容；跨域被拦时可经酒馆 `/proxy/` 重试。
+- 面板美术来自读者：当前外观的立绘、头像场景与当前大厅主题的抽卡小人。面板盖在大厅之上；脚本版经登记文档创建，停止读者或切换聊天时与控制器一起清理，完整版在信件页面卸下时撤掉。
+
+脚本版把 `source/reader-gacha.js` 放进常驻控制器（在 `ReaderTransactions` 之后），完整版与外链版由 `tools/build_release.py` 放在主脚本里同样的位置。完整版的整段 HTML 是酒馆正则的替换文本，所以打包结果里不能有 `$` 加数字、`$<名字>`、`{{match}}`，也不能有酒馆宏或 `</script`，打包脚本与构建脚本都会检查。
+
+源码在 `gacha/`（TypeScript）：`src/gacha/` 是规则、资料库、小池、背包与回收、服务层，`src/ui/` 是面板、样式与矢量美术，`src/reader/` 是读者端口与 `window.ReaderGacha` 入口。改完重新打包并构建：
+
+```powershell
+cd gacha
+npm install
+npm test
+npm run build
+cd ..
+node tools/build_core.mjs
+python tools/build_release.py source/读者对话渲染.json
+```
+
+`gacha/tests/gacha.test.ts` 覆盖概率与保底、经济（回收换不回本）、资料库映射、小池解析、换大池扣点、回收与读者端口；`tests/gacha.test.mjs` 用真实 `ReaderTransactions` 检查扣点入包、换大池、回收与聊天切换，并核对大厅入口与完整版构建；`tests/gacha.browser.test.mjs` 在 Chromium 运行实际构建，从大厅打开面板直到换大池、十连写入与回收。
+
 ## 宿主接口
 
-`window.ReaderCore` 提供 `open('lobby')`、`close()`、`openBooksea(action)`、`setAudioFocus('reader'|'booksea')`、`ready` 和 `stop()`。轻信通过 `registerLetter()` 登记展示，不写 MVU。`openBooksea` 支持 `maze/narrative/descend/leave`，供书海标签打开同一游玩实例。开发联调可用 `window.ReaderCoreConfig.bookseaBase` 指定书海资源根。
+`window.ReaderCore` 提供 `open('lobby')`、`close()`、`openBooksea(action)`、`setAudioFocus('reader'|'booksea')`、`ready` 和 `stop()`。控制器内的 `window.ReaderGacha` 提供 `open(host)`、`close()`、`isOpen()`、`price()`（换大池、单抽、十连的命运点数）与 `dispose()`，由大厅的命运抽卡调用。轻信通过 `registerLetter()` 登记展示，不写 MVU。`openBooksea` 支持 `maze/narrative/descend/leave`，供书海标签打开同一游玩实例。开发联调可用 `window.ReaderCoreConfig.bookseaBase` 指定书海资源根。
 
 浏览器回归在本机存在 Chrome 和工作区 `playwright-core` 时运行；其他环境显式标记跳过。它检查无来信菜单、六信共用应用、同一音频跨消息重绘继续播放、真实聊天切换、停止清理、初始化中停止、部分初始化失败后重试、旧异步调用隔离，以及停止后重启时现存轻信的重新登记。不会发起付费模型请求。
 

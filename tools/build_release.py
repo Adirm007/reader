@@ -29,13 +29,24 @@ def install_profile_cache(src):
                   '', src['replaceString'], flags=re.S)
     html = re.sub(r'\s*/\* DREAM_READER_TRANSACTIONS_BEGIN \*/.*?/\* DREAM_READER_TRANSACTIONS_END \*/\s*',
                   '', html, flags=re.S)
+    html = re.sub(r'\s*/\* DREAM_READER_GACHA_BEGIN \*/.*?/\* DREAM_READER_GACHA_END \*/\s*',
+                  '', html, flags=re.S)
     transactions_path = os.path.join(ROOT, 'source', 'reader-transactions.js')
     transactions = ''
     if os.path.isfile(transactions_path):
         transactions = '\n/* DREAM_READER_TRANSACTIONS_BEGIN */\n' + open(transactions_path, encoding='utf-8').read() + '\n/* DREAM_READER_TRANSACTIONS_END */\n'
+    # 大厅「命运抽卡」（window.ReaderGacha，gacha/ 打包生成，自带 BEGIN/END 标记）：放在它用到的 ReaderTransactions 之后。
+    # 整段 HTML 是酒馆正则的替换文本，"$" 加数字、$<名字>、{{match}} 会被换成捕获组，打包时已经排除，这里再核对一次。
+    gacha_path = os.path.join(ROOT, 'source', 'reader-gacha.js')
+    gacha = ''
+    if os.path.isfile(gacha_path):
+        gacha = open(gacha_path, encoding='utf-8').read().strip()
+        if '</script' in gacha.lower() or re.search(r'\$(?:\d|<)|\{\{match\}\}', gacha, re.I):
+            raise SystemExit('reader-gacha.js 含有脚本结束标签或正则替换记号，请在 gacha/ 里重新打包')
+        gacha = '\n' + gacha + '\n'
     if html.count('<script>') != 1:
         raise SystemExit('需要唯一的主脚本来加入聊天资料初始化')
-    src['replaceString'] = html.replace('<script>', '<script>\n' + cache + transactions + '\n', 1)
+    src['replaceString'] = html.replace('<script>', '<script>\n' + cache + transactions + gacha + '\n', 1)
     return src
 
 

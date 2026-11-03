@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "name": "dream-reader-render-fixed",
-  "version": "2026.10.31.1",
+  "version": "2026.11.03.1",
   "license": "LICENSE",
   "files": {
     "reader.css": {
@@ -10,127 +10,237 @@
       "sha256": "35758e4ba8beece01c754bd4fdfcd1d5f70e06e4d05b3d65c3d8caa52b5d6eeb"
     },
     "reader-body.html": {
-      "path": "dist/reader-body.0581024261f5.html",
-      "bytes": 17230,
-      "sha256": "0581024261f564377d95989c4d9c9e03d82fce277f6a983a1f6acf9e727e465b"
+      "path": "dist/reader-body.8197775e596d.html",
+      "bytes": 17223,
+      "sha256": "8197775e596d03a57b7488289efff07e8992398643ef4dff6cddc089d2942d5d"
     },
     "reader.js": {
-      "path": "dist/reader.036636b04f40.js",
-      "bytes": 939351,
-      "sha256": "036636b04f40e3a60bc49af1d7a487db15f61afc673daec1948199f41bc93ede"
+      "path": "dist/reader.66c3b28785b0.js",
+      "bytes": 1105773,
+      "sha256": "66c3b28785b0a47aae6e7b29cc5efd3eea3d34cdf05df8e3c1a4405efcfee8f1"
     },
     "reader-runtime.js": {
       "path": "dist/reader-runtime.js",
-      "bytes": 1093998,
-      "sha256": "10826d64a1007d8b006f617ec555410d88434f22cb177b01442a3e2394600b45"
+      "bytes": 1265904,
+      "sha256": "dd20d3f405ceec595c17d149e231e0b07160bd0c741049f8707b772c27e59755"
     },
     "reader-letter.json": {
       "path": "regex/读者对话渲染-脚本版.json",
       "bytes": 87745,
-      "sha256": "ce4d5b736c287454983ac8dd46de9eb475ec3c052173eaff2aa2880275c18c35"
+      "sha256": "898b57ce5e3d3f99a0de613f7c7df33b4560a45a8ad19394f596c20fea885957"
     }
   },
   "installMode": "script",
   "resources": {
-    "gallery/00-44-54-270142004.png": {
-      "path": "gallery/00-44-54-270142004.png",
-      "bytes": 1495867,
-      "sha256": "6d0190583a5c1687e20f0d54b3f7e566792497d1376b44b03e9c563e791ddd8c"
-    },
-    "gallery/00-50-03-741493292.png": {
-      "path": "gallery/00-50-03-741493292.png",
-      "bytes": 1725397,
-      "sha256": "4c1f8b337373eb38d1bbb7f2224eba17f9a641cd96a152d5dd66e67cfbffd813"
-    },
-    "gallery/00-51-17-3920375961.png": {
-      "path": "gallery/00-51-17-3920375961.png",
-      "bytes": 1686729,
-      "sha256": "63f0d7c2c9ef6d5f609dc1ab8e377eeb3326f3f052645e30d082b74290151d49"
-    },
-    "gallery/01-27-15-2399645319.png": {
-      "path": "gallery/01-27-15-2399645319.png",
-      "bytes": 3794171,
-      "sha256": "051e589fc4300b163ca7d4f4cc98224add2d57a7e0d1047fd2ec133c7076a3a9"
-    },
     "gallery/1011.png": {
       "path": "gallery/1011.png",
       "bytes": 4316968,
       "sha256": "b40a086842164ec17ca0d2e24d678f3f01ec456263cd821e37c2a0dd09a6382c"
-    },
-    "gallery/12-31-41-1093959772.png": {
-      "path": "gallery/12-31-41-1093959772.png",
-      "bytes": 1306320,
-      "sha256": "5c7cc04e1511fd1fe01ff7dfc2c762712c173cc6dfe4a353a3de030f64006bcd"
-    },
-    "gallery/12-34-03-2536370918.png": {
-      "path": "gallery/12-34-03-2536370918.png",
-      "bytes": 1506086,
-      "sha256": "2622114f814f8034131e01e1dbc19cd61429939c633cfd1c9719b488f6a6ff94"
-    },
-    "gallery/15-54-24-260102601.png": {
-      "path": "gallery/15-54-24-260102601.png",
-      "bytes": 1612450,
-      "sha256": "0a9cbc45fb90408f7746d97d4d41c235d18e95e43571a90ca85d30c1dd94fac7"
-    },
-    "gallery/15-54-28-260102602.png": {
-      "path": "gallery/15-54-28-260102602.png",
-      "bytes": 1747578,
-      "sha256": "e298dc8e8dcb294056a67ed9309690c985d5d144c35a0026854f31f4862f475d"
-    },
-    "gallery/15-54-35-260102603.png": {
-      "path": "gallery/15-54-35-260102603.png",
-      "bytes": 1676938,
-      "sha256": "4ac1f2cf582246673a16ac286201bb5adeeef0e5f2212f65e07edf533773398e"
-    },
-    "gallery/16-01-51-260104101.png": {
-      "path": "gallery/16-01-51-260104101.png",
-      "bytes": 1732365,
-      "sha256": "28e9bf5645a22dd8bdf9336ae859864e408bed0feb6754ab21e7983698fed407"
-    },
-    "gallery/16-01-57-260104102.png": {
-      "path": "gallery/16-01-57-260104102.png",
-      "bytes": 1719816,
-      "sha256": "161081293917bf6b18edea3958d03d90f80ca25675d5f1f96f41596fbfe945c8"
-    },
-    "gallery/16-02-10-260104104.png": {
-      "path": "gallery/16-02-10-260104104.png",
-      "bytes": 1661399,
-      "sha256": "110311b1b67d002911b3a9cc54a7f273759f67236dcc5fd91af5bf46e2d5b5c4"
-    },
-    "gallery/16-02-17-260104105.png": {
-      "path": "gallery/16-02-17-260104105.png",
-      "bytes": 1651205,
-      "sha256": "93abfd87c583342ef9f1f2b37d63d7ea45683220f0d458856bf4bbf2fa5aab61"
-    },
-    "gallery/17-15-09-260105402.png": {
-      "path": "gallery/17-15-09-260105402.png",
-      "bytes": 1621088,
-      "sha256": "2d3fab5d5be4becf332ebad3258306a2add5ee6170e83023dad2815ed815dad2"
-    },
-    "gallery/17-15-20-260105404.png": {
-      "path": "gallery/17-15-20-260105404.png",
-      "bytes": 1613678,
-      "sha256": "8b3d52f7dd982e5945e0b779d7760a6337cfc7a86d56081eb149ca0b59c8a1d0"
     },
     "gallery/2077.png": {
       "path": "gallery/2077.png",
       "bytes": 1438588,
       "sha256": "387c12f1b087a0fbdcac818c704227d04c7a2d81bbaacd9d2dfcefac0fbe7970"
     },
+    "gallery/A.png": {
+      "path": "gallery/A.png",
+      "bytes": 1795366,
+      "sha256": "a4c9a93a4a0c40c932bc2b066efb29cfae45730b4eba4123c2d1bb6fe6f4c68f"
+    },
+    "gallery/BITE MOON.png": {
+      "path": "gallery/BITE MOON.png",
+      "bytes": 1730072,
+      "sha256": "cb6f67e0fa2c223ce25dae25f517454d07240e999769a126ae34aee93e2ea1bd"
+    },
+    "gallery/BITE.png": {
+      "path": "gallery/BITE.png",
+      "bytes": 1649485,
+      "sha256": "c96761745db62158d51fa9248f750449771459662545238c2527ea81fb24dc60"
+    },
+    "gallery/CHARM DEALER.png": {
+      "path": "gallery/CHARM DEALER.png",
+      "bytes": 1554864,
+      "sha256": "9bda9af836f29898af0099a89d67cdbb7d759e915c441ef1f82cade4bd4a271d"
+    },
+    "gallery/CONSTELLATION.png": {
+      "path": "gallery/CONSTELLATION.png",
+      "bytes": 1894175,
+      "sha256": "d3589ebad230b146f9bc0f88daf58fa31628058a32a4344cf07af3a1ff9f5ad4"
+    },
+    "gallery/D.png": {
+      "path": "gallery/D.png",
+      "bytes": 1826327,
+      "sha256": "657fafa3b515ca547344f083c26bf436ea876fef56010f60bd8579c3aed78f76"
+    },
+    "gallery/EDGE HEX.png": {
+      "path": "gallery/EDGE HEX.png",
+      "bytes": 1720099,
+      "sha256": "af7c542853216fe91e4cce84fa8954d61d2332b2a8d847ec4a9694aeb2064bf3"
+    },
+    "gallery/FALL.png": {
+      "path": "gallery/FALL.png",
+      "bytes": 1830435,
+      "sha256": "1bf9635515821ae9430bd4a3446263d0108fcb692bad0628f2c5ede93031b571"
+    },
+    "gallery/FAMILIAR.png": {
+      "path": "gallery/FAMILIAR.png",
+      "bytes": 1653235,
+      "sha256": "fd9d419567322639c5a10cc9720dbe147a5738df5f9458f7076e68b5ddca9bc2"
+    },
+    "gallery/FIVE HUNDRED YEARS.png": {
+      "path": "gallery/FIVE HUNDRED YEARS.png",
+      "bytes": 1687569,
+      "sha256": "ec358968dace80bd87eba371155e0ea3fb57e8ef7f21e7b7a6f4b49fa17324a7"
+    },
+    "gallery/FOX CALL.png": {
+      "path": "gallery/FOX CALL.png",
+      "bytes": 1698571,
+      "sha256": "ee19a54cbe2a4865b0e680c8cf4da054aa142d757b0dc588124f722441e18255"
+    },
+    "gallery/HORN GROW.png": {
+      "path": "gallery/HORN GROW.png",
+      "bytes": 1719968,
+      "sha256": "97ed18022c97a654c0a5209a66954f23373305dcf7f6e62fc521e0650e3b2d1a"
+    },
+    "gallery/HORN.png": {
+      "path": "gallery/HORN.png",
+      "bytes": 2057083,
+      "sha256": "c5c23a1a624c2e742ed8250ebf55174151f6353e3fdc09ecd6fce248a84bf0e3"
+    },
+    "gallery/INKWELL ASCENT.png": {
+      "path": "gallery/INKWELL ASCENT.png",
+      "bytes": 1663627,
+      "sha256": "95438a4d27e08288d11d33d97a96ac0ab4aa98bdaee4ac12a901b715a3894d61"
+    },
+    "gallery/KEY TURN.png": {
+      "path": "gallery/KEY TURN.png",
+      "bytes": 1774133,
+      "sha256": "938a75905d5da5b5bf2e78ac256473a490199a945a09f4dbbcce9419fa54f958"
+    },
+    "gallery/KOI GATE.png": {
+      "path": "gallery/KOI GATE.png",
+      "bytes": 1651660,
+      "sha256": "cd78a5e719b47209e9640d8df7ac46cdf4a69eb9830667fa8b07edd4ab97426c"
+    },
+    "gallery/LOOP.png": {
+      "path": "gallery/LOOP.png",
+      "bytes": 1806889,
+      "sha256": "15a7cd12d863a8e853661606bf71731699d1b9d1b766c3a17609869cbc4fdcbc"
+    },
+    "gallery/M.png": {
+      "path": "gallery/M.png",
+      "bytes": 1649612,
+      "sha256": "e32802dc48e1647c460b43989a1a39e72095dec87bae0d80d3a2d0a795ea6cfe"
+    },
+    "gallery/MIRRORWALK.png": {
+      "path": "gallery/MIRRORWALK.png",
+      "bytes": 1756592,
+      "sha256": "b1637c35fb52dc90249fb5ca63e65e8e09dc0d71a91fa2bb868a1902552fb555"
+    },
+    "gallery/MOON TEA.png": {
+      "path": "gallery/MOON TEA.png",
+      "bytes": 1594350,
+      "sha256": "4113605323d78f965720a71014a235ef5951c09c3b2e39849404d2ddd55159d6"
+    },
+    "gallery/MOONWELL.png": {
+      "path": "gallery/MOONWELL.png",
+      "bytes": 1730081,
+      "sha256": "8df90141c9e581ab349b82c3270b40f8a6cc5cc3d35d697fb4e536ef155412c5"
+    },
+    "gallery/NEXT STOP.png": {
+      "path": "gallery/NEXT STOP.png",
+      "bytes": 1593874,
+      "sha256": "61287ec03d415b5e693cb298b95b3f4f56f7b72df5f694876e0921363569f729"
+    },
+    "gallery/NIGHT WORK.png": {
+      "path": "gallery/NIGHT WORK.png",
+      "bytes": 1700798,
+      "sha256": "c39443f5672c4980eb12b68156f989aa317acd9388e1c0cbed8cfad78839bf6a"
+    },
+    "gallery/NIRVANA WALTZ.png": {
+      "path": "gallery/NIRVANA WALTZ.png",
+      "bytes": 1730871,
+      "sha256": "48778ba189deeda197b6db311326dae83b64338ac28b1260da67fa78bd82274a"
+    },
+    "gallery/NOCTURNE.png": {
+      "path": "gallery/NOCTURNE.png",
+      "bytes": 1821157,
+      "sha256": "b322a3269f9920105a651604822d7803828115ef6510535c0db34f0b2d1cdcd1"
+    },
+    "gallery/ONE SEA.png": {
+      "path": "gallery/ONE SEA.png",
+      "bytes": 1632772,
+      "sha256": "531fc2789ea4d1cbf0e1428d8238e268139b01c51268ee652df5dbc036e28d01"
+    },
+    "gallery/OVERGROWN.png": {
+      "path": "gallery/OVERGROWN.png",
+      "bytes": 1638745,
+      "sha256": "234d1c7313729756584b62487466024e8d8e74846a354f1aa04ee4bb5663d1aa"
+    },
+    "gallery/README.md": {
+      "path": "gallery/README.md",
+      "bytes": 798,
+      "sha256": "a4435f48f92fb227b7b7c6f98e96056518f860bbf7b1d8b73379b4deb81a7eda"
+    },
+    "gallery/RING BIND.png": {
+      "path": "gallery/RING BIND.png",
+      "bytes": 1723949,
+      "sha256": "da9afade2869f0ed1e22c1839a2e9fa61f2ba8b70f71641a9d74550cb04ac7ff"
+    },
+    "gallery/S.png": {
+      "path": "gallery/S.png",
+      "bytes": 1726417,
+      "sha256": "1f77f9d15acc4b1d4373b23187322d9ead34fe80802174221f7edba98694ec75"
+    },
+    "gallery/SWIM VIAL.png": {
+      "path": "gallery/SWIM VIAL.png",
+      "bytes": 1582880,
+      "sha256": "bbd09da31a59e72ca6ddad1afbe0cfcb17eb333ab2870cf8d393b71e8bc6e20d"
+    },
+    "gallery/T.png": {
+      "path": "gallery/T.png",
+      "bytes": 1753810,
+      "sha256": "9822d2081d539b87b7322f5f6a304ac3a40ba8053b7d4f58766cf357dd05b2f4"
+    },
     "gallery/index.json": {
       "path": "gallery/index.json",
-      "bytes": 1396,
-      "sha256": "aaf536ff7e9c9a229e386339030e0f18be060ebab9dcff6196f2aec98224890a"
+      "bytes": 3179,
+      "sha256": "85828dcea9d801ae5457b714140773a0c4acaa220a999438bd42e2047c56480d"
+    },
+    "gallery/joker.png": {
+      "path": "gallery/joker.png",
+      "bytes": 1662244,
+      "sha256": "a1b96db50eaf5c96459ad866b317ea2056d0a3ce2583ac0d01684911f244ee9f"
     },
     "gallery/links.txt": {
       "path": "gallery/links.txt",
       "bytes": 208,
       "sha256": "3ac52658a8d7847e2d6129004aec183ec1d98fc1951eb61b4d46ad9f542d77d5"
     },
-    "gallery/README.md": {
-      "path": "gallery/README.md",
-      "bytes": 798,
-      "sha256": "a4435f48f92fb227b7b7c6f98e96056518f860bbf7b1d8b73379b4deb81a7eda"
+    "gallery/♠J.png": {
+      "path": "gallery/♠J.png",
+      "bytes": 1682393,
+      "sha256": "a89d33aff6abfeb5b3ca305c6b44d861d29cc072e750415f48bd2b3ce74af52c"
+    },
+    "gallery/♠Q.png": {
+      "path": "gallery/♠Q.png",
+      "bytes": 1760910,
+      "sha256": "55b664e5d3df43863ad983009915740fc65d9be55bd4481de760980642aa9c38"
+    },
+    "gallery/♥J.png": {
+      "path": "gallery/♥J.png",
+      "bytes": 1725837,
+      "sha256": "f81d0237bce4462b50a0043242a9908f66c718a63d99c769e182302aeb0fb267"
+    },
+    "gallery/♦Q.png": {
+      "path": "gallery/♦Q.png",
+      "bytes": 1610001,
+      "sha256": "b39605bef7a5b7080c8277a1ae0cd584d650397f09e83337cca9eaad770a8fb7"
+    },
+    "gallery/万圣节.png": {
+      "path": "gallery/万圣节.png",
+      "bytes": 1350331,
+      "sha256": "66617d2c85abf51896fadf7778a13525b7d6487769f3b6c28018f9340aaa1414"
     },
     "gallery/不检点僵尸(巨乳) (2).png": {
       "path": "gallery/不检点僵尸(巨乳) (2).png",
@@ -157,6 +267,21 @@
       "bytes": 1721689,
       "sha256": "7def6a5b8b5cd83221da67cdd7c074b31915e5847f788895af66664084ccc83a"
     },
+    "gallery/仍平面.png": {
+      "path": "gallery/仍平面.png",
+      "bytes": 1725060,
+      "sha256": "a66c900bd9a174fac6be24ba4398e135d52cc59ecd617020bfec843ee4defcb7"
+    },
+    "gallery/何服装.png": {
+      "path": "gallery/何服装.png",
+      "bytes": 1891001,
+      "sha256": "82ad8423f2261e02784f491a55ae0636aba8abf6c60662cc83ca250729838f1c"
+    },
+    "gallery/何物.png": {
+      "path": "gallery/何物.png",
+      "bytes": 1720782,
+      "sha256": "d9caea60b761908227094593e0e1f99a9ae72a1970de290f420550f4cc040c19"
+    },
     "gallery/你是谁.png": {
       "path": "gallery/你是谁.png",
       "bytes": 4202171,
@@ -166,6 +291,21 @@
       "path": "gallery/依旧古风.png",
       "bytes": 4410787,
       "sha256": "1299b1bfba4eb07d5ddac950cad0e4d37bf400195d7d534576fa2c4096684986"
+    },
+    "gallery/便利店前.png": {
+      "path": "gallery/便利店前.png",
+      "bytes": 1732365,
+      "sha256": "28e9bf5645a22dd8bdf9336ae859864e408bed0feb6754ab21e7983698fed407"
+    },
+    "gallery/倒影.png": {
+      "path": "gallery/倒影.png",
+      "bytes": 1725397,
+      "sha256": "4c1f8b337373eb38d1bbb7f2224eba17f9a641cd96a152d5dd66e67cfbffd813"
+    },
+    "gallery/到底何服装.png": {
+      "path": "gallery/到底何服装.png",
+      "bytes": 1807415,
+      "sha256": "15db987410459fd7d3e32cf4be745f8e2b97a5865f185e129767b14eb793f427"
     },
     "gallery/加油.png": {
       "path": "gallery/加油.png",
@@ -177,10 +317,20 @@
       "bytes": 4189489,
       "sha256": "54f4057775726e49ab9a6c789f4ce7e8a200826c8e0ddbd82038fa33c3101849"
     },
+    "gallery/南极.png": {
+      "path": "gallery/南极.png",
+      "bytes": 1872024,
+      "sha256": "44bf92e642feff4179fb1fd5be8dcc9ede713d24a1243072f26ebb565f8228a8"
+    },
     "gallery/古古的风.png": {
       "path": "gallery/古古的风.png",
       "bytes": 3524378,
       "sha256": "e2b1e592bed97933b3d9162dce8e80f5028dbf0c040ee68597b50124731b0aea"
+    },
+    "gallery/哪吒.png": {
+      "path": "gallery/哪吒.png",
+      "bytes": 1604138,
+      "sha256": "4dd4f1b87a1b0c48611c5a52e6c6bf14a1153a019f6b3b5131697d45751c5951"
     },
     "gallery/圣奶龙.png": {
       "path": "gallery/圣奶龙.png",
@@ -192,15 +342,60 @@
       "bytes": 4325683,
       "sha256": "82761c6625674495d5dc09d9a1d30edc447d82d0aa3853219a95600ad3ff4824"
     },
+    "gallery/地图.png": {
+      "path": "gallery/地图.png",
+      "bytes": 1716653,
+      "sha256": "f9579a8005ad94097dc10abf22a76dba476a48cae5a846d82d98928087439c1f"
+    },
+    "gallery/地铁.png": {
+      "path": "gallery/地铁.png",
+      "bytes": 1651205,
+      "sha256": "93abfd87c583342ef9f1f2b37d63d7ea45683220f0d458856bf4bbf2fa5aab61"
+    },
+    "gallery/夏.png": {
+      "path": "gallery/夏.png",
+      "bytes": 3794171,
+      "sha256": "051e589fc4300b163ca7d4f4cc98224add2d57a7e0d1047fd2ec133c7076a3a9"
+    },
+    "gallery/夕阳.png": {
+      "path": "gallery/夕阳.png",
+      "bytes": 1495867,
+      "sha256": "6d0190583a5c1687e20f0d54b3f7e566792497d1376b44b03e9c563e791ddd8c"
+    },
+    "gallery/大狗大狗叫叫叫.png": {
+      "path": "gallery/大狗大狗叫叫叫.png",
+      "bytes": 2017202,
+      "sha256": "7aa9ce001ba613844effe27ec5c31e84a2920227a46e1b7424c6387c8d0f981a"
+    },
     "gallery/天台，夕阳，你与我.png": {
       "path": "gallery/天台，夕阳，你与我.png",
       "bytes": 1594825,
       "sha256": "0b4f0fbf0e3ca6adec65cba08b27f22fae15e0599dbea0b3f1e851eef3e0987a"
     },
+    "gallery/奴隶.png": {
+      "path": "gallery/奴隶.png",
+      "bytes": 1802324,
+      "sha256": "b64ac768fd73c26b8a96bf213d5cecfc2d66717570287db6e8d3538f4a359bab"
+    },
     "gallery/奶蛙.png": {
       "path": "gallery/奶蛙.png",
       "bytes": 1473494,
       "sha256": "b24498a3a73cd10c9f4682a518ef48a1304036a48f880e4cddb03f7ef0db31a6"
+    },
+    "gallery/嫦娥.png": {
+      "path": "gallery/嫦娥.png",
+      "bytes": 1712112,
+      "sha256": "d54d32f3f6d27bb2399af443872af14b8315ef85ed43465fdf4729a87a57f745"
+    },
+    "gallery/孔雀.png": {
+      "path": "gallery/孔雀.png",
+      "bytes": 1847614,
+      "sha256": "2307269211a36360be10a55f1f15cf901fd6511ebeaec59c152207a26847c5f5"
+    },
+    "gallery/宇宙.png": {
+      "path": "gallery/宇宙.png",
+      "bytes": 1506086,
+      "sha256": "2622114f814f8034131e01e1dbc19cd61429939c633cfd1c9719b488f6a6ff94"
     },
     "gallery/家中的怪异.png": {
       "path": "gallery/家中的怪异.png",
@@ -212,10 +407,30 @@
       "bytes": 4188956,
       "sha256": "e325490172b531cc04560c162b42c70b9daad188ec8f7ccc29696c4377244ca8"
     },
+    "gallery/工装海报.png": {
+      "path": "gallery/工装海报.png",
+      "bytes": 1772904,
+      "sha256": "176879e127c43e1a507d8f81e56f4d3f0bbec828f91b35573f2fc89671e82e4a"
+    },
+    "gallery/希望.png": {
+      "path": "gallery/希望.png",
+      "bytes": 1703519,
+      "sha256": "d2c0e94edc1341eca41d207b8d9750bd7df02ff6e53bb1ffea098ca224e79c5e"
+    },
+    "gallery/平面.png": {
+      "path": "gallery/平面.png",
+      "bytes": 1682826,
+      "sha256": "326ead523b2a26109c396e76b66f547f477bcc2171ee80faf9e665c90fdc0aea"
+    },
     "gallery/开演.png": {
       "path": "gallery/开演.png",
       "bytes": 4291975,
       "sha256": "6d2f4b87f5227a5ed2e9241df94c1abf72ab6ccd941aaf800ccefdd00753bb31"
+    },
+    "gallery/影.png": {
+      "path": "gallery/影.png",
+      "bytes": 1754772,
+      "sha256": "99e714fb40cd25b88c40371541f0c4f363868912006bd34a1edcaa7585fb9c46"
     },
     "gallery/很刺客的刺客.png": {
       "path": "gallery/很刺客的刺客.png",
@@ -227,10 +442,60 @@
       "bytes": 1890173,
       "sha256": "cb2cc5df1770955d71092ef146a025cbcabd7b5c11d679ccd8f8ae117a9d347a"
     },
+    "gallery/恶魔.png": {
+      "path": "gallery/恶魔.png",
+      "bytes": 1602714,
+      "sha256": "344db54b1aa338e3ca521fb78911683044257bd4191c9167cc6e96403a278e50"
+    },
+    "gallery/我想不出来了.png": {
+      "path": "gallery/我想不出来了.png",
+      "bytes": 1708257,
+      "sha256": "45b0686f4f7772a7633f04e6c903d63054b91dbb60abec6ab7b6062b83685178"
+    },
+    "gallery/指.png": {
+      "path": "gallery/指.png",
+      "bytes": 1845372,
+      "sha256": "88493d9d1171bd38aaeb68b6bcea1b47c8e6da578e11c3c498d209302d092300"
+    },
+    "gallery/携游.png": {
+      "path": "gallery/携游.png",
+      "bytes": 1857910,
+      "sha256": "f3af7566d032cd4f241e092b805b4df942098324a12454888946babbe7c10940"
+    },
+    "gallery/敷伤口的甜蜜.png": {
+      "path": "gallery/敷伤口的甜蜜.png",
+      "bytes": 1764292,
+      "sha256": "b6419074a0dad980183ae3c709e2e787b3711a957466f67f237437b9298770fd"
+    },
+    "gallery/旧书店店员.png": {
+      "path": "gallery/旧书店店员.png",
+      "bytes": 1837922,
+      "sha256": "9051e3f5f1b355becfeb6ffe016ffd75c483640d0c65cdbdc33772775a092116"
+    },
+    "gallery/春天.png": {
+      "path": "gallery/春天.png",
+      "bytes": 1871368,
+      "sha256": "ab819220d4f6a16502bbcd4f1abc92b75b08f1d8acb1ba2b95201daaee00d5fc"
+    },
+    "gallery/是Joker哦.png": {
+      "path": "gallery/是Joker哦.png",
+      "bytes": 1671289,
+      "sha256": "13d773661cb0fbae7deab1e9ffaae189ad7f033979a802da613448208182eec0"
+    },
+    "gallery/曼巴投篮.png": {
+      "path": "gallery/曼巴投篮.png",
+      "bytes": 1583082,
+      "sha256": "2b64501bc2b2f7004231d808ba8d533e60d0acf4eede58b632c1ba1b9a9ab87d"
+    },
     "gallery/最古风.png": {
       "path": "gallery/最古风.png",
       "bytes": 3612524,
       "sha256": "fd7f6511a1da38528fd90abf47cc2f49b8b9846a3982839258093124529a799c"
+    },
+    "gallery/杏仙.png": {
+      "path": "gallery/杏仙.png",
+      "bytes": 1820453,
+      "sha256": "4a8047f74ca720cff500ed1d2dc1d261dea757f43b16b3cc6f0bec7cf7744f79"
     },
     "gallery/极光.png": {
       "path": "gallery/极光.png",
@@ -241,6 +506,16 @@
       "path": "gallery/某个素体的证件照.png",
       "bytes": 1501071,
       "sha256": "572afd2883f3f1ebefcc12b38aadca717227880d61b466804e8ecf143cbe0e80"
+    },
+    "gallery/某处.png": {
+      "path": "gallery/某处.png",
+      "bytes": 1417759,
+      "sha256": "38c33f8c37699de032eb02846460666fb6b41b90ce3fc89c614dcc11f8753a55"
+    },
+    "gallery/椰树牌椰汁，我从小….png": {
+      "path": "gallery/椰树牌椰汁，我从小….png",
+      "bytes": 1474185,
+      "sha256": "8c4f48efd13502bb6b2319b6d50ab9345ce83f565a9aebe9c273b1fcb1901625"
     },
     "gallery/洛丽塔僵尸.png": {
       "path": "gallery/洛丽塔僵尸.png",
@@ -257,6 +532,11 @@
       "bytes": 4509249,
       "sha256": "2dd0ae5bdb23107433dc77fa78eb230d842ebf63772ac42db223311c76daf598"
     },
+    "gallery/海报.png": {
+      "path": "gallery/海报.png",
+      "bytes": 1621088,
+      "sha256": "2d3fab5d5be4becf332ebad3258306a2add5ee6170e83023dad2815ed815dad2"
+    },
     "gallery/海滨与不认识的同学.png": {
       "path": "gallery/海滨与不认识的同学.png",
       "bytes": 2082487,
@@ -267,10 +547,85 @@
       "bytes": 4110580,
       "sha256": "aa3101292bedb52aa323adb86fdf7f4757f2734da3957779bc1f03337594de4a"
     },
+    "gallery/游乐园.png": {
+      "path": "gallery/游乐园.png",
+      "bytes": 1719816,
+      "sha256": "161081293917bf6b18edea3958d03d90f80ca25675d5f1f96f41596fbfe945c8"
+    },
+    "gallery/游戏.png": {
+      "path": "gallery/游戏.png",
+      "bytes": 1777414,
+      "sha256": "77cfdd68951b29ebf3f44e6d20f3f37a8b87aff9517f5e91c0eb1cbd01c07a35"
+    },
+    "gallery/滑冰海报.png": {
+      "path": "gallery/滑冰海报.png",
+      "bytes": 1519141,
+      "sha256": "a62375ddf60c3fd29332e6c5ef3dcefe732597383ddd2f4825e6a845b8c4969f"
+    },
+    "gallery/火锅店海报.png": {
+      "path": "gallery/火锅店海报.png",
+      "bytes": 1584299,
+      "sha256": "45f30005da29b5d72efa0bd91fa2b2e63dfdf0590308152a0eedfa660901ee09"
+    },
+    "gallery/热饮.png": {
+      "path": "gallery/热饮.png",
+      "bytes": 1945179,
+      "sha256": "784e22692e6fc0d84807ed0815c973456029418fd02aab4c84686daad4cc4787"
+    },
+    "gallery/特写.png": {
+      "path": "gallery/特写.png",
+      "bytes": 1727013,
+      "sha256": "4205abc07962c58d1e27cdb7d2dc265b387a71389aa63753c22acf4c8b6c5075"
+    },
+    "gallery/狼.png": {
+      "path": "gallery/狼.png",
+      "bytes": 1694173,
+      "sha256": "a49a0df88229cc2cf1035028b0f96f109d05566ef2370d597eece9f78bc765fe"
+    },
+    "gallery/玉兔.png": {
+      "path": "gallery/玉兔.png",
+      "bytes": 1729774,
+      "sha256": "69c88c853c7866b3eac65f8a9c350da98a6418d760a38ad3c33bcd3ca34db8c5"
+    },
+    "gallery/玉面狐.png": {
+      "path": "gallery/玉面狐.png",
+      "bytes": 1636968,
+      "sha256": "1831e40b61bdeb88547ac03409a81f6d8ad10e4867917092fcfc1905db17d5a3"
+    },
+    "gallery/瓦尔基里.png": {
+      "path": "gallery/瓦尔基里.png",
+      "bytes": 1745148,
+      "sha256": "22bdfdb4394b55b20cde2b290f8d5a23dd7099bfb193fd088a2008f94fbb5eef"
+    },
+    "gallery/画.png": {
+      "path": "gallery/画.png",
+      "bytes": 2165631,
+      "sha256": "cb1fc90fbe25e6bfd8dc8037a20814da6ebf602027cc310c1132e0360dc1a2bd"
+    },
     "gallery/白丝试装.png": {
       "path": "gallery/白丝试装.png",
       "bytes": 1645802,
       "sha256": "4dbeea8219fd2228ea7f085a36ac2dbb69a793b3a302067eecf0ff8b96a5591c"
+    },
+    "gallery/白象.png": {
+      "path": "gallery/白象.png",
+      "bytes": 1779946,
+      "sha256": "4a2d65c020bebfae4c41772b4a1a86a3aa1e02e88d2eb8371020797c3cb364f9"
+    },
+    "gallery/白骨.png": {
+      "path": "gallery/白骨.png",
+      "bytes": 1789687,
+      "sha256": "97551889d1e69de2b26c56e6ccd98905b8655592e4c0d1a40e3aaa59306a845b"
+    },
+    "gallery/白鹿.png": {
+      "path": "gallery/白鹿.png",
+      "bytes": 1724649,
+      "sha256": "9e5dadae817ed1107f515ecb1410782223e1a35e879cbba7a08273b725dba21d"
+    },
+    "gallery/看到的V我50.png": {
+      "path": "gallery/看到的V我50.png",
+      "bytes": 1306320,
+      "sha256": "5c7cc04e1511fd1fe01ff7dfc2c762712c173cc6dfe4a353a3de030f64006bcd"
     },
     "gallery/睡衣.png": {
       "path": "gallery/睡衣.png",
@@ -282,10 +637,125 @@
       "bytes": 1684660,
       "sha256": "4febdc4d4e1dae2f491e36709d0c592937e3d3e6fdd2212a651ac547d7b6a5a1"
     },
+    "gallery/神秘的视角.png": {
+      "path": "gallery/神秘的视角.png",
+      "bytes": 1686729,
+      "sha256": "63f0d7c2c9ef6d5f609dc1ab8e377eeb3326f3f052645e30d082b74290151d49"
+    },
+    "gallery/窗.png": {
+      "path": "gallery/窗.png",
+      "bytes": 1747578,
+      "sha256": "e298dc8e8dcb294056a67ed9309690c985d5d144c35a0026854f31f4862f475d"
+    },
+    "gallery/线.png": {
+      "path": "gallery/线.png",
+      "bytes": 1766368,
+      "sha256": "a93afc68291680fe8297384a7e46aa258593af86123662eca871b79bbd884d95"
+    },
+    "gallery/罗刹.png": {
+      "path": "gallery/罗刹.png",
+      "bytes": 1739933,
+      "sha256": "a4fd1b39d9cd769903191dfb82965d9e5906187e46f248478890d463766ce9d3"
+    },
+    "gallery/羽幕.png": {
+      "path": "gallery/羽幕.png",
+      "bytes": 1708409,
+      "sha256": "6efe107dd3d023e89298d99e60303ec52c18b7d848b2fe7486ce17cfa8817f64"
+    },
+    "gallery/芙蕾雅.png": {
+      "path": "gallery/芙蕾雅.png",
+      "bytes": 1713408,
+      "sha256": "ed0f49867634c55de865851f6bbcdbebeb5b589d0ffed5bcea37791c2551a29a"
+    },
+    "gallery/芬里尔.png": {
+      "path": "gallery/芬里尔.png",
+      "bytes": 1576180,
+      "sha256": "e244c492b1b4e673abd27813af06d12c6de23093d38986714e8db7c96718bf6f"
+    },
+    "gallery/薰衣草原野.png": {
+      "path": "gallery/薰衣草原野.png",
+      "bytes": 1661399,
+      "sha256": "110311b1b67d002911b3a9cc54a7f273759f67236dcc5fd91af5bf46e2d5b5c4"
+    },
+    "gallery/蜘蛛.png": {
+      "path": "gallery/蜘蛛.png",
+      "bytes": 1662745,
+      "sha256": "e4bbd0702ff6c36082f11e6edaace5af874ced598e6b8171c6b8446ba3db14e4"
+    },
+    "gallery/蝎子.png": {
+      "path": "gallery/蝎子.png",
+      "bytes": 1747483,
+      "sha256": "f029c72442e98998726554947528a413d41f4fca5e58c1c143dda5b17e234a07"
+    },
+    "gallery/贴.png": {
+      "path": "gallery/贴.png",
+      "bytes": 1746251,
+      "sha256": "20a3d725f7d756089fca0798819577116c3bf06b4e48df7cfec8b0c422a39305"
+    },
+    "gallery/赫尔.png": {
+      "path": "gallery/赫尔.png",
+      "bytes": 1875245,
+      "sha256": "57e53089407af002a09abfe635ef8315c3a79ac265113f7b720b5b0d4d900420"
+    },
+    "gallery/还是A.png": {
+      "path": "gallery/还是A.png",
+      "bytes": 1655110,
+      "sha256": "98659102d77dfa2b2e62a1fe49d032bf36652f1e67373eab3f6c10c2bc09807a"
+    },
+    "gallery/还是嫦娥.png": {
+      "path": "gallery/还是嫦娥.png",
+      "bytes": 1674244,
+      "sha256": "d4d9cbc3aa387d53fe3a770a9e99a1c074f602d8614da4984619c10430bacbed"
+    },
     "gallery/还是海.png": {
       "path": "gallery/还是海.png",
       "bytes": 2140236,
       "sha256": "cb893cedf55f103f0de791bfec7cc08c7c8875e882bcb6fad717d044ce48b631"
+    },
+    "gallery/还是白骨.png": {
+      "path": "gallery/还是白骨.png",
+      "bytes": 1756013,
+      "sha256": "2d58db9420c140e281eac5669d4b891f805fa2f3b2729990556df96a7464513e"
+    },
+    "gallery/还是蝎.png": {
+      "path": "gallery/还是蝎.png",
+      "bytes": 1775465,
+      "sha256": "57d526e0d6e9eec3feea2ca49f3c88e8f7fd488bab6e288d18d845a8fb05072e"
+    },
+    "gallery/金鱼.png": {
+      "path": "gallery/金鱼.png",
+      "bytes": 1746809,
+      "sha256": "d16bac053e4f047510c4bb3e93fc943d7041b9c19ef9599c14f7155e33547d49"
+    },
+    "gallery/铁扇.png": {
+      "path": "gallery/铁扇.png",
+      "bytes": 1782543,
+      "sha256": "a9c3eea1e650e929f0dbab5b178bb850b90a8efbefee66d6276572ab2b978d2d"
+    },
+    "gallery/银角.png": {
+      "path": "gallery/银角.png",
+      "bytes": 1747495,
+      "sha256": "5b7859d20d6bd8d2db1fa7ea461885bf484a24316f7ba3dd1c3eefac3ff07f04"
+    },
+    "gallery/镜头.png": {
+      "path": "gallery/镜头.png",
+      "bytes": 1613678,
+      "sha256": "8b3d52f7dd982e5945e0b779d7760a6337cfc7a86d56081eb149ca0b59c8a1d0"
+    },
+    "gallery/防波堤.png": {
+      "path": "gallery/防波堤.png",
+      "bytes": 1676938,
+      "sha256": "4ac1f2cf582246673a16ac286201bb5adeeef0e5f2212f65e07edf533773398e"
+    },
+    "gallery/雨中.png": {
+      "path": "gallery/雨中.png",
+      "bytes": 1612450,
+      "sha256": "0a9cbc45fb90408f7746d97d4d41c235d18e95e43571a90ca85d30c1dd94fac7"
+    },
+    "gallery/青狮.png": {
+      "path": "gallery/青狮.png",
+      "bytes": 1781996,
+      "sha256": "eca860c99ed428109ee7e91f69586ab4fb84de86d44a9dddb08bdc7578cfbde7"
     },
     "gallery/面容.png": {
       "path": "gallery/面容.png",
@@ -302,20 +772,40 @@
       "bytes": 2098602,
       "sha256": "3331707066a1ad44db627580a42db2893f26adb8e4eecb4e3736e96bd1f04194"
     },
-    "personas/index.json": {
-      "path": "personas/index.json",
-      "bytes": 513,
-      "sha256": "e3c7dfad02919881f2c31fe435655af2db3092114b24ba30b09c58474247bc65"
+    "gallery/黄昏的神王.png": {
+      "path": "gallery/黄昏的神王.png",
+      "bytes": 1611422,
+      "sha256": "f7fe9e3e5410ba13b61d457ddf62ac5600c43f846d2722b3c55f04d2d29b42e6"
+    },
+    "gallery/黄道带.png": {
+      "path": "gallery/黄道带.png",
+      "bytes": 2008408,
+      "sha256": "9086c0adf5d8ff03116611ff95f9dfa5b4e0b0642799348bb7518b2cba7d28d7"
+    },
+    "gallery/黎山.png": {
+      "path": "gallery/黎山.png",
+      "bytes": 1766003,
+      "sha256": "9021ef7df30a8024d871e4bfec78a7d5321db3db0725452b52ad003161fecd87"
     },
     "personas/README.md": {
       "path": "personas/README.md",
       "bytes": 1279,
       "sha256": "db1eb1b239b1cce25edf720b5fb9ca0f10d0eabaf631d65d7e0962f326b60b70"
     },
+    "personas/index.json": {
+      "path": "personas/index.json",
+      "bytes": 513,
+      "sha256": "e3c7dfad02919881f2c31fe435655af2db3092114b24ba30b09c58474247bc65"
+    },
     "personas/缀诗的少女.json": {
       "path": "personas/缀诗的少女.json",
       "bytes": 5946,
       "sha256": "46d3568dac97f4a86629a75aa726b8c93136e1ec0e3da1c76399c5b106ce142c"
+    },
+    "worldbook/README.md": {
+      "path": "worldbook/README.md",
+      "bytes": 1544,
+      "sha256": "590bff840d9de2f6299b0b4195e425e3f8b2d6facff740e28371e58f9ad4c7a3"
     },
     "worldbook/entries.json": {
       "path": "worldbook/entries.json",
@@ -324,23 +814,18 @@
     },
     "worldbook/manifest.json": {
       "path": "worldbook/manifest.json",
-      "bytes": 2842,
-      "sha256": "6ed40efefb073f65f7481a81bde890e281b60eae3804558e73a930b41d4f655d"
+      "bytes": 3296,
+      "sha256": "37ec9dafe3a220a0fe3c36843a0ec12ed8ec84ac53d9e77e096f14d5fb290b41"
     },
     "worldbook/notes.txt": {
       "path": "worldbook/notes.txt",
-      "bytes": 1375,
-      "sha256": "e42cfdf15200984ff6fa3d1f607816d2af79adf016aff8bf5396ed501d0b8ef7"
-    },
-    "worldbook/README.md": {
-      "path": "worldbook/README.md",
-      "bytes": 1544,
-      "sha256": "590bff840d9de2f6299b0b4195e425e3f8b2d6facff740e28371e58f9ad4c7a3"
+      "bytes": 1824,
+      "sha256": "85ecef53676d163dd31663c9b425d6a6e492cd811f2a88183a92d09842d85ece"
     },
     "worldbook/读者核心本体.txt": {
       "path": "worldbook/读者核心本体.txt",
-      "bytes": 318763,
-      "sha256": "24bf940d0120930b6e89662047ae39a604e428eaa7065bd385123baf27d02faf"
+      "bytes": 318869,
+      "sha256": "11448b88130e6115822444c952631884d9f8a60010e594275fb2b85af1abfa4c"
     }
   }
 }
