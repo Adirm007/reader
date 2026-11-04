@@ -106,8 +106,8 @@ export const RUNE_RING_SVG = (() => {
 </g></svg>`;
 })();
 
-/** 卡面纹章（100×100）：物品是切面宝石，命运是星轨与丝线。 */
-export const KIND_EMBLEM: Readonly<Record<'item' | 'fate', string>> = {
+/** 卡面纹章（100×100）：物品是切面宝石，命运是星轨与丝线，角色是书页上的人影。 */
+export const KIND_EMBLEM: Readonly<Record<'item' | 'fate' | 'character', string>> = {
   item: `<svg class="gc-art" viewBox="0 0 100 100" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg"><g fill="none" stroke-linecap="round" stroke-linejoin="round">
 <circle cx="50" cy="50" r="44" class="gc-art-accent" stroke-width="1" opacity=".55"/><path d="${ticks(50, 50, 44, 49, 16)}" class="gc-art-accent" stroke-width="1.2" opacity=".7"/>
 <path d="M50 16 76 40 50 84 24 40Z" class="gc-art-gem" stroke-width="1.6"/><path d="M24 40h52M36 28l14 12 14-12M50 40v44M36 40l14 44 14-44" stroke="${GOLD}" stroke-width="1" opacity=".75"/>
@@ -118,6 +118,11 @@ export const KIND_EMBLEM: Readonly<Record<'item' | 'fate', string>> = {
 <ellipse cx="50" cy="50" rx="34" ry="13" transform="rotate(32 50 50)" class="gc-art-accent" stroke-width="1.1" opacity=".9"/>
 <path d="M18 74c14-6 22-20 32-24s22 4 32-8" stroke="#fff" stroke-width="1" stroke-dasharray="1 3" opacity=".7"/>
 <path d="${star4(50, 50, 15, 3.6)}" class="gc-art-gem" stroke-width="1.2"/><circle cx="24" cy="36" r="2" fill="${GOLD}"/><circle cx="79" cy="63" r="2.4" fill="${GOLD}"/><circle cx="66" cy="22" r="1.6" fill="#fff"/></g></svg>`,
+  character: `<svg class="gc-art" viewBox="0 0 100 100" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg"><g fill="none" stroke-linecap="round" stroke-linejoin="round">
+<circle cx="50" cy="50" r="44" class="gc-art-accent" stroke-width="1" opacity=".55"/><path d="${ticks(50, 50, 44, 49, 16)}" class="gc-art-accent" stroke-width="1.2" opacity=".7"/>
+<path d="M31 21h30l9 9v50H31Z" stroke="${GOLD}" stroke-width="1.1" opacity=".8"/><path d="M61 21v9h9" stroke="${GOLD}" stroke-width="1" opacity=".7"/>
+<circle cx="50" cy="45" r="8.5" class="gc-art-gem" stroke-width="1.4"/><path d="M35.5 71c2.2-9.5 8-14.5 14.5-14.5S62.3 61.5 64.5 71" class="gc-art-gem" stroke-width="1.4"/>
+<path d="M37 30h12M37 35h8" stroke="${GOLD}" stroke-width=".9" opacity=".6"/><path d="${star4(72, 24, 7, 1.6)}" fill="#fff" opacity=".85"/></g></svg>`,
 };
 
 /** 小星章（作品占位封面、页签用），金色。 */

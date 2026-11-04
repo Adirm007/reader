@@ -87,6 +87,18 @@ test('a draw charges FP and fills the protagonist bag in one ReaderTransactions 
   assert.equal(f.commits, 1, 'an unaffordable draw writes nothing');
 });
 
+test('a character page and a big-pity exchange go through the same paid-action commit, spending no FP', async () => {
+  const f = host(500), port = f.win.ReaderGacha.port(f.options);
+  const page = {id: 'p', kind: 'character', name: '旅人', star: 6, description: '书海的旅人', role: '主角', power: '能在书页间穿行'};
+  assert.equal((await port.commit({cost: 0, cards: [page], pool, kind: 'character', bag: true, scale, spark: true})).fp, 500);
+  assert.equal(f.commits, 1); assert.equal(f.data.stat_data.命运点数, 500);
+  const entry = f.data.stat_data.主角.背包['角色·旅人'];
+  assert.equal(entry.类型, '角色书页'); assert.equal(entry.品质, '神话'); assert.equal(entry.效果.持有, '以书页的形式被主角持有');
+  assert.equal(entry.效果.实力, '完全等同原作：能在书页间穿行'); assert.match(entry.效果.具现, /完全保有自身自由意志的情况下自由行动，主角无法强制约束/);
+  assert.ok(Object.keys(f.data.dream_reader_receipts).some(key => key.endsWith(':gacha-spark')), 'exchanges get their own receipt');
+  assert.deepEqual(plain(port.bag()).map(item => [item.name, item.kind, item.price]), [['角色·旅人', 'character', 6000]]);
+});
+
 test('a new big pool and recycling are paid actions too: one commit each, receipts kept', async () => {
   const f = host(1500), port = f.win.ReaderGacha.port(f.options);
   assert.deepEqual({...await port.commitCast({cost: 1000, theme: '奇幻'})}, {fp: 500});

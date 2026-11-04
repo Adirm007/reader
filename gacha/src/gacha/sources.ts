@@ -1,4 +1,4 @@
-/** 大池：从多个公开资料库里按主题随机捞作品，统一成“作品卡”，跨库去重后均衡抽出 54 部。
+/** 大池：从多个公开资料库里按主题随机捞作品，统一成“作品卡”，跨库去重后均衡抽出 99 部。
  *  文学：Wikidata（只取有中文维基条目的作品）、Open Library、Google Books、Internet Archive；
  *  ACGN：Bangumi（中文条目、简介与标签）、AniList、VNDB、Jikan（MyAnimeList）。
  *  所有请求都在玩家的浏览器里直接发出（这些接口都允许跨域），失败的资料库只是少一些作品，不影响其他库。 */
@@ -199,7 +199,7 @@ const bangumi: SourceDef = {
       const call = (offset: number, limit: number, ranked: boolean) => ctx.net.json(`https://api.bgm.tv/v0/search/subjects?limit=${limit}&offset=${offset}`, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({keyword: '', sort: 'rank', filter: filter(ranked)}), timeoutMs: 20000, ...(ctx.signal ? {signal: ctx.signal} : {})}).then(rec);
       const memoKey = 'bgm:' + types.join(',') + ':' + tag;
       let total = Number(ctx.memo.get(memoKey)) || 0, ranked = ctx.memo.get(memoKey + ':ranked') !== false, rows: unknown[] = [];
-      // 实测（2026-11）：搜索接口每页最多回 20 条，limit 再大也一样；不够就随机多翻几页（不同页码，最多 3 页）。
+      // 实测（2026-11）：搜索接口每页最多回 20 条，limit 再大也一样；不够就随机多翻几页（不同页码，最多 5 页）。
       const limit = BGM_PAGE, pages = (n: number) => {const last = Math.max(0, Math.floor((total - 1) / limit)), picked = new Set<number>(); for (let i = 0; i < 12 && picked.size < Math.min(n, last); i++) picked.add(1 + pickInt(ctx.rng, last)); return [...picked];};
       if (!total) {
         let first = await call(0, limit, true);
@@ -208,9 +208,9 @@ const bangumi: SourceDef = {
         rows = arr(first.data);
         if (total > limit * 2) {
           rows = rows.slice(0, Math.ceil(limit / 3));
-          for (const page of pages(Math.min(3, Math.ceil((per - rows.length) / limit)))) rows.push(...arr((await call(page * limit, limit, ranked)).data));
+          for (const page of pages(Math.min(5, Math.ceil((per - rows.length) / limit)))) rows.push(...arr((await call(page * limit, limit, ranked)).data));
         } else if (total > limit) rows.push(...arr((await call(limit, limit, ranked)).data));
-      } else for (const page of total > limit ? pages(Math.min(3, Math.ceil(per / limit))) : [0]) rows.push(...arr((await call(page * limit, limit, ranked)).data));
+      } else for (const page of total > limit ? pages(Math.min(5, Math.ceil(per / limit))) : [0]) rows.push(...arr((await call(page * limit, limit, ranked)).data));
       for (const d of rows.map(rec)) {const c = bangumiCard(d); if (c && (ctx.nsfw || !c.nsfw)) out.push(c);}
     }));
     return out;
@@ -239,7 +239,7 @@ const anilist: SourceDef = {
     const q = theme.query.anilist; if (!q || !(q.genres?.length || q.tags?.length)) return [];
     const types = q.types?.length ? q.types : ['ANIME', 'MANGA'] as const, filters: Record<string, string[]>[] = [];
     if (q.genres?.length) filters.push({genres: q.genres}); if (q.tags?.length) filters.push({tags: q.tags});
-    const out: WorkCard[] = [], per = Math.min(40, Math.ceil(want / filters.length) + 6);
+    const out: WorkCard[] = [], per = Math.min(50, Math.ceil(want / filters.length) + 6);
     await Promise.all(filters.map(async f => {
       const type = types[pickInt(ctx.rng, types.length)]!, query = `query($page:Int,$perPage:Int,$genres:[String],$tags:[String],$type:MediaType${ctx.nsfw ? '' : ',$adult:Boolean'}){Page(page:$page,perPage:$perPage){media(type:$type,genre_in:$genres,tag_in:$tags,sort:POPULARITY_DESC${ctx.nsfw ? '' : ',isAdult:$adult'}){${ANILIST_FIELDS}}}}`;
       const call = (page: number) => ctx.net.json('https://graphql.anilist.co', {method: 'POST', headers: {'Content-Type': 'application/json', Accept: 'application/json'}, body: JSON.stringify({query, variables: {page, perPage: per, type, ...f, ...(ctx.nsfw ? {} : {adult: false})}}), timeoutMs: 20000, ...(ctx.signal ? {signal: ctx.signal} : {})}).then(rec);
@@ -359,7 +359,7 @@ export function balancedPick(bySource: ReadonlyMap<SourceId, WorkCard[]>, want: 
 export type SpreadOptions = {want?: number; enabled: Readonly<Record<SourceId, boolean>>; onReport?(r: SourceReport): void; now?: () => number};
 /** 撒网：同时询问这个主题用到的全部资料库，返回去重后的作品与每个库的结果。 */
 export async function gatherSpread(theme: GachaTheme, ctx: SourceCtx, options: SpreadOptions): Promise<{works: WorkCard[]; reports: SourceReport[]}> {
-  const want = options.want ?? 54, now = options.now ?? (() => Date.now());
+  const want = options.want ?? 99, now = options.now ?? (() => Date.now());
   const ids = themeSources(theme).filter(id => options.enabled[id] && SOURCE_BY_ID[id]), reports: SourceReport[] = [], found = new Map<SourceId, WorkCard[]>();
   if (!ids.length) throw Error('这个主题没有可用的资料库：请在设置里打开至少一个资料库');
   // 每个库都按“只有它能用”来要候选：有的库会失败，剩下的也要凑得出一整片。

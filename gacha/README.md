@@ -2,7 +2,7 @@
 
 读者大厅「命运抽卡」的 TypeScript 源码，打包成 `../source/reader-gacha.js`（`window.ReaderGacha`）。玩法、定价与存档位置见 [常驻运行时 · 命运抽卡](../docs/runtime.md#命运抽卡)。
 
-- `src/gacha/`：星级与保底（`rarity.ts`）、主题、资料库、小池编纂、背包与回收（`bag.ts`）、服务层（`session.ts`）。
+- `src/gacha/`：星级与大小保底（`rarity.ts`）、主题、资料库、小池编纂（`pool.ts`：54～99 张、角色池、分次编纂与资料直出）、背包与回收（`bag.ts`）、服务层与大保底兑换（`session.ts`）。
 - `src/ui/`：面板、按大厅主题换色的样式、矢量美术。
 - `src/reader/`：读者端口（`ReaderTransactions`、聊天变量、独立 API）与入口。
 

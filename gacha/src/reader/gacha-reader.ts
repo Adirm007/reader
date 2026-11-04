@@ -1,6 +1,6 @@
-/** 读者正则 · 命运抽卡（读者大厅里的「命运抽卡」：主题、大池与小池、单抽与十连、保底、回收）。
- *  - 保底与抽卡记录：当前聊天的聊天变量 dream_gacha（chatMetadata.variables，按聊天＝按存档，不随楼层回退）；
- *  - 54 部作品、小池与览概缓存、设置：这台设备的站点存储（缓存按聊天分开，只留最近 6 个聊天）；
+/** 读者正则 · 命运抽卡（读者大厅里的「命运抽卡」：主题、大池与小池、单抽与十连、大小保底与兑换、回收）。
+ *  - 保底、各作品的抽取点数与抽卡记录：当前聊天的聊天变量 dream_gacha（chatMetadata.variables，按聊天＝按存档，不随楼层回退）；
+ *  - 99 部作品、小池与览概缓存、设置（含角色池开关）：这台设备的站点存储（缓存按聊天分开，只留最近 6 个聊天）；
  *  - 扣命运点数与放进主角背包：ReaderTransactions 固定当前聊天、最新楼层与候选，在同一次变量提交里完成，与读者其他付费操作互斥；
  *    书海的旅程进行中不扣点、不入包、不回收（那段时间的命运点数与背包由书海结算）；
  *  - 模型：读者传入的 generate（读者“独立API”里的「命运抽卡」路由，未单独设置时跟随默认方案或酒馆插头）。
@@ -13,9 +13,10 @@ import {mountGachaPanel,type GachaArt} from '../ui/gacha-panel';
 type Obj = Record<string, unknown>;
 const rec = (v: unknown): Obj => v && typeof v === 'object' && !Array.isArray(v) ? v as Obj : {};
 const message = (e: unknown) => String((e as Error)?.message ?? e);
-export const READER_GACHA_VERSION = '1.0.0';
+export const READER_GACHA_VERSION = '1.1.0';
 export const DURABLE_KEY = 'dream_gacha';
-export const GACHA_TIMEOUT_MS = 180000;
+/** 一次模型请求最多等多久（编纂小池分几次请求，每次最多这么久）。 */
+export const GACHA_TIMEOUT_MS = 300000;
 export const BOOKSEA_BUSY = '书海的旅程还没结束：这段时间的命运点数与背包由书海结算。回到书间结算后再换大池、抽卡或回收。';
 
 /** ReaderTransactions 的这一部分（source/reader-transactions.js）。 */
@@ -108,7 +109,7 @@ export function readerGachaPort(host: ReaderGachaHost): GachaPort {
       if (busy()) throw Error(BOOKSEA_BUSY);
       return T.run('paid-action', async token => {
         assert();
-        const done = await T.transact(token, token.id + ':gacha', data => {
+        const done = await T.transact(token, token.id + (req.spark ? ':gacha-spark' : ':gacha'), data => {
           const r = applyGachaDraw(data, req, (d, cost) => T.charge(d, cost), d => {try {return T.fp(d);} catch {return null;}});
           return {fp: r.fp, count: r.added.length};
         });

@@ -17,38 +17,31 @@ export const starOfQuality = (quality: string): Star | undefined => STARS.find(s
 export type GachaRules = {
   /** 基础概率（合计为 1）。 */
   rates: Readonly<Record<Star, number>>;
-  /** 第 hardPity6 抽必出 6★；从第 softPity6From 抽起，每抽额外 +softPity6Step。 */
-  hardPity6: number; softPity6From: number; softPity6Step: number;
-  /** 连续 pity5 抽没有 5★ 以上时，这一抽至少 5★。 */
-  pity5: number;
+  /** 小保底：前面连续 pity6 − 1 抽都没有 6★ 时，第 pity6 抽必出 6★（当前卡池里随机一张神话）。在各个池之间共用。 */
+  pity6: number;
   /** 十连至少一张这个星级。 */
   tenFloor: Star;
+  /** 大保底：在一部作品的小池里每抽攒 1 点抽取点数（只记在这部作品上，不跨池互通），攒满 spark 点可兑换这部作品小池里指定的一张神话。 */
+  spark: number;
 };
-/** 偏紧的出货：6★ 基础 0.3%，第 121 抽起逐抽 +4%，150 抽必出（大保底，平均约 105 抽一张）；
- *  5★ 基础 1.2%，50 抽内必出 5★ 以上（小保底）；十连至少一张 4★。 */
-export const DEFAULT_RULES: GachaRules = {
-  rates: {1: .52, 2: .30, 3: .12, 4: .045, 5: .012, 6: .003},
-  hardPity6: 150, softPity6From: 121, softPity6Step: .04, pity5: 50, tenFloor: 4,
-};
-/** since6 / since5：距离上一张 6★ / 5★以上 已经抽了几次（不含即将进行的这一抽）。 */
-export type PityState = {since6: number; since5: number; total: number};
-export const emptyPity = (): PityState => ({since6: 0, since5: 0, total: 0});
+/** 6★ 基础 0.3%，120 抽内必出一张随机神话（小保底，平均约 101 抽一张）；
+ *  每部作品攒满 200 点抽取点数可兑换这部作品小池里指定的神话（大保底）；十连至少一张 3★。 */
+export const DEFAULT_RULES: GachaRules = {rates: {1: .52, 2: .30, 3: .12, 4: .045, 5: .012, 6: .003}, pity6: 120, tenFloor: 3, spark: 200};
+/** since6：距离上一张 6★ 已经抽了几次（不含即将进行的这一抽）；total：累计抽数。 */
+export type PityState = {since6: number; total: number};
+export const emptyPity = (): PityState => ({since6: 0, total: 0});
 export function normalizePity(raw: unknown): PityState {
   const r = raw && typeof raw === 'object' ? raw as Record<string, unknown> : {};
   const n = (v: unknown) => {const x = Math.floor(Number(v)); return Number.isFinite(x) && x >= 0 ? x : 0;};
-  return {since6: n(r.since6), since5: n(r.since5), total: n(r.total)};
+  return {since6: n(r.since6), total: n(r.total)};
 }
-/** 下一抽出 6★ 的实际概率。 */
+/** 下一抽出 6★ 的实际概率：到了小保底那一抽必出，其余都是基础概率。 */
 export function chance6(pity: PityState, rules: GachaRules = DEFAULT_RULES): number {
-  const n = pity.since6 + 1;
-  if (n >= rules.hardPity6) return 1;
-  const soft = n >= rules.softPity6From ? (n - rules.softPity6From + 1) * rules.softPity6Step : 0;
-  return Math.min(1, rules.rates[6] + soft);
+  return pity.since6 + 1 >= rules.pity6 ? 1 : rules.rates[6];
 }
 export function rollStar(rng: () => number, pity: PityState, rules: GachaRules = DEFAULT_RULES): Star {
   const p6 = chance6(pity, rules), r = Math.min(.999999999, Math.max(0, rng()));
   if (r < p6) return 6;
-  if (pity.since5 + 1 >= rules.pity5) return 5;
   // 其余五档按基础概率分配剩下的 1 − p6。
   const rest = ([5, 4, 3, 2, 1] as const), total = rest.reduce((s, k) => s + rules.rates[k], 0);
   let x = (r - p6) / (1 - p6) * total;
@@ -56,7 +49,7 @@ export function rollStar(rng: () => number, pity: PityState, rules: GachaRules =
   return 1;
 }
 export function advancePity(p: PityState, star: Star): PityState {
-  return {since6: star === 6 ? 0 : p.since6 + 1, since5: star >= 5 ? 0 : p.since5 + 1, total: p.total + 1};
+  return {since6: star === 6 ? 0 : p.since6 + 1, total: p.total + 1};
 }
 /** 连抽：逐抽滚星级并推进保底；十连若没有 tenFloor 以上，把最后一张提到 tenFloor（保底重新按顺序计算）。 */
 export function drawStars(count: number, rng: () => number, pity: PityState, rules: GachaRules = DEFAULT_RULES): {stars: Star[]; pity: PityState} {
@@ -72,10 +65,10 @@ export function drawStars(count: number, rng: () => number, pity: PityState, rul
 }
 /** 界面用的概率说明。 */
 export function ratesText(rules: GachaRules = DEFAULT_RULES, scale: QualityScale = DESTINED_SCALE): string[] {
-  const pct = (v: number) => (Math.round(v * 1000) / 10).toString().replace(/\.0$/, '') + '%';
+  const pct = (v: number) => (Math.round(v * 1000) / 10).toString().replace(/\.0$/, '') + '%', top = scale.id === 'destined' ? scale.label(6) : '6★';
   return [
     STARS.slice().reverse().map(s => `${s}★ ${scale.id === 'destined' ? scale.label(s) + ' ' : ''}${pct(rules.rates[s])}`).join(' · '),
-    `大保底：第 ${rules.softPity6From} 抽起 6★ 概率逐抽提高，${rules.hardPity6} 抽内必出 6★。小保底：${rules.pity5} 抽内必出 5★ 以上；每次十连至少一张 ${rules.tenFloor}★。保底在物品池与命运池之间共用，换小池、换大池都不清零。`,
+    `小保底：${rules.pity6} 抽内必出一张随机${top}，在各个池之间共用，换小池、换大池都不清零。大保底：在一部作品的小池里每抽攒 1 点抽取点数，攒满 ${rules.spark} 点可兑换这部作品小池里任选的一张${top}；点数只能在这部作品的小池里使用，不跨池互通。每次十连至少一张 ${rules.tenFloor}★。`,
   ];
 }
 /** 浏览器里用 crypto 取随机数；拿不到时退回 Math.random。 */

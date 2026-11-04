@@ -146,7 +146,7 @@ export const GACHA_STYLE = `
 .gc-reports{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:6px;width:min(620px,100%);margin:0;padding:0;list-style:none}
 .gc-reports li{display:flex;justify-content:space-between;gap:8px;padding:5px 10px;border:1px solid ${mix('--gc-ink', 12)};background:var(--gc-panel);font-size:12.5px;color:var(--gc-ink)}
 .gc-reports li.is-ok b{color:var(--gc-ok)}.gc-reports li.is-bad b{color:var(--gc-bad)}.gc-reports li.is-wait b{color:var(--gc-mute)}
-/* 54 部 */
+/* 99 部 */
 .gc-bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:0 0 14px}
 .gc-bar .gc-grow{flex:1;min-width:120px;color:var(--gc-sub);font:500 15px/1.4 ${OCTO_SERIF};letter-spacing:.12em}
 .gc-grid{display:grid;grid-template-columns:repeat(9,minmax(0,1fr));gap:10px;perspective:1400px}
@@ -197,6 +197,10 @@ export const GACHA_STYLE = `
 .gc-tabs{display:flex;gap:0;margin:0 0 0;border-bottom:1px solid ${mix('--gc-acc', 27)}}
 .gc-tab{min-width:120px;min-height:42px;padding:6px 22px;border:1px solid transparent;border-bottom:0;background:none;color:var(--gc-mute);font:600 16px/1.3 ${OCTO_SERIF};letter-spacing:.3em}
 .gc-tab[aria-selected=true]{border-color:${mix('--gc-acc', 40)};background:var(--gc-on);color:var(--gc-on-ink)}
+.gc-tabs{flex-wrap:wrap}
+.gc-pity>.gc-btn.is-small{justify-self:start}
+.gc-ritems li>div p{margin:3px 0 0;color:var(--gc-sub);font-size:11.5px;line-height:1.5}
+@media(max-width:560px){.gc-tab{min-width:0;flex:1;padding:6px 10px}}
 .gc-tab:focus-visible{outline:2px solid ${mix('--gc-acc', 70)};outline-offset:-2px}
 .gc-banner{position:relative;display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:18px;padding:20px 22px;border:1px solid ${mix('--gc-acc', 33)};border-top:0;overflow:hidden;background:var(--gc-banner)}
 .gc-banner .gc-banner-bg{position:absolute;inset:-20px;z-index:0;background-size:cover;background-position:center;filter:blur(18px) saturate(1.2);opacity:.35}

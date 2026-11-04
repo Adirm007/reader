@@ -1,5 +1,6 @@
 /** 命运抽卡：抽到的卡写进命定之诗主角背包的样子。
- *  物品按模型给的类型放入；命运是“命运”类型的一页，在正文里翻开就会降临。
+ *  物品按模型给的类型放入；命运是“命运”类型的一页，在正文里翻开就会降临；
+ *  角色是一页角色书页：以书页的形式被主角持有，实力完全等同原作，一旦被选择具现便完全保有自身自由意志、自由行动，主角无法强制约束。
  *  只改动命运点数与主角背包，其余变量原样保留。 */
 import {KIND_LABEL,type GachaCard,type SmallPool} from './pool';
 import {MEDIA_LABEL} from './sources';
@@ -11,8 +12,15 @@ const own = (parent: Obj, key: string): Obj => {const v = parent[key]; if (v && 
 /** 背包物品上的来源标签：命定之诗与读者都用它认出这是命运抽卡抽来的东西。 */
 export const BAG_TAG = '命运抽卡';
 
+/** 角色书页上写给正文模型看的规矩（与设置里角色池的说明一致）。 */
+export const CHARACTER_PAGE = {持有: '以书页的形式被主角持有', 具现: '一旦被选择具现，便在完全保有自身自由意志的情况下自由行动，主角无法强制约束'} as const;
 export function gachaBagEntry(card: GachaCard, pool: SmallPool, scale: QualityScale): {name: string; item: Obj} {
   const work = pool.work, from = `${MEDIA_LABEL[work.media]}《${work.title}》`;
+  if (card.kind === 'character') return {name: `角色·${card.name}`, item: {
+    品质: scale.label(card.star), 类型: '角色书页', 数量: 1, 标签: [BAG_TAG, '角色', '书页', `作品:${work.title}`, `星级:${card.star}`],
+    效果: {身份: card.description, ...(card.role ? {定位: card.role} : {}), 实力: card.power ? `完全等同原作：${card.power}` : '完全等同原作', ...CHARACTER_PAGE},
+    描述: `抽自${from}的${card.star}★角色书页${card.role ? `（${card.role}）` : ''}。`,
+  }};
   if (card.kind === 'fate') return {name: `命运·${card.name}`, item: {
     品质: scale.label(card.star), 类型: '命运', 数量: 1, 标签: [BAG_TAG, '命运', `作品:${work.title}`, `星级:${card.star}`],
     效果: {命运: card.description, ...(card.hook ? {契机: card.hook} : {}), 使用: '在故事中翻开这一页，这段命运便会降临。'},
@@ -59,7 +67,7 @@ export const RECYCLE_QUALITIES = ['神话', '传说', '史诗', '稀有', '优�
  *  按现行出货率与保底，抽一次（200）平均只能回收约 140，抽了再回收不会赚。不认识的品质不回收。 */
 export const RECYCLE_DIVISOR = 25;
 export function recyclePrice(quality: unknown): number {const tier = QUALITY_TIER[String(quality)]; return tier ? Math.floor((CONTRACT_PRICE[tier] ?? 0) / RECYCLE_DIVISOR) : 0;}
-export type BagEntry = {name: string; quality: string; kind: 'item' | 'fate'; type: string; count: number; price: number; work: string; star: number};
+export type BagEntry = {name: string; quality: string; kind: 'item' | 'fate' | 'character'; type: string; count: number; price: number; work: string; star: number};
 export type RecyclePick = {name: string; quality: string; count: number};
 const isGachaItem = (v: unknown): v is Obj => !!v && typeof v === 'object' && Array.isArray((v as Obj).标签) && ((v as Obj).标签 as unknown[]).includes(BAG_TAG);
 /** 读出主角背包里来自命运抽卡、品质可识别的东西（数量为正）。 */
@@ -70,7 +78,7 @@ export function listGachaBag(data: Obj): BagEntry[] {
     const count = Math.floor(Number(raw.数量) || 0), price = recyclePrice(raw.品质);
     if (count <= 0 || !price) continue;
     const tags = (raw.标签 as unknown[]).map(String), tag = (p: string) => tags.find(t => t.startsWith(p))?.slice(p.length) ?? '';
-    out.push({name, quality: String(raw.品质), kind: raw.类型 === '命运' || tags.includes('命运') ? 'fate' : 'item', type: String(raw.类型 ?? ''), count, price, work: tag('作品:'), star: Math.floor(Number(tag('星级:'))) || QUALITY_TIER[String(raw.品质)] || 0});
+    out.push({name, quality: String(raw.品质), kind: raw.类型 === '命运' || tags.includes('命运') ? 'fate' : raw.类型 === '角色书页' || tags.includes('角色') ? 'character' : 'item', type: String(raw.类型 ?? ''), count, price, work: tag('作品:'), star: Math.floor(Number(tag('星级:'))) || QUALITY_TIER[String(raw.品质)] || 0});
   }
   return out.sort((a, b) => (QUALITY_TIER[b.quality] ?? 0) - (QUALITY_TIER[a.quality] ?? 0) || a.name.localeCompare(b.name, 'zh'));
 }

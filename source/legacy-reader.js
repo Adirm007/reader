@@ -2390,7 +2390,8 @@ try{var manifest=await dreamWbManifest();if(s.skip&&dreamWbCmp(s.skip,manifest.v
 
 /* ★ DREAM GACHA ENTRY BEGIN ★
  * 大厅「命运抽卡」：打开 window.ReaderGacha（source/reader-gacha.js，由 gacha/ 打包）的抽卡面板。
- * 选文学或 ACGN 与主题 → 换大池（撒网捞起 54 部）→ 选一部编纂小池 → 单抽或十连，有大小保底；用不上的按品质回收。
+ * 选文学或 ACGN 与主题 → 换大池（撒网捞起 99 部）→ 选一部编纂小池（54～99 张，可在设置里打开角色池）→ 单抽或十连；
+ * 120 抽内必出随机神话（小保底），每部作品攒满 200 点抽取点数可兑换它小池里指定的神话（大保底）；用不上的按品质回收。
  * 命运点数与主角背包经 ReaderTransactions 提交，保底与记录存在聊天变量 dream_gacha；面板配色跟随当前大厅主题。 */
 function dreamGachaPrice(){try{var G=window.ReaderGacha;if(G&&typeof G.price==='function'){var p=G.price();if(p&&isFinite(p.single))return Math.max(0,Math.floor(p.single));}}catch(e){}return 200;}
 function dreamGachaMini(){return '<i class="mini">'+dreamGachaPrice()+'</i>';}

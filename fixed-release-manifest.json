@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "name": "dream-reader-render-fixed",
-  "version": "2026.11.03.1",
+  "version": "2026.11.04.1",
   "license": "LICENSE",
   "files": {
     "reader.css": {
@@ -15,19 +15,19 @@
       "sha256": "8197775e596d03a57b7488289efff07e8992398643ef4dff6cddc089d2942d5d"
     },
     "reader.js": {
-      "path": "dist/reader.66c3b28785b0.js",
-      "bytes": 1105773,
-      "sha256": "66c3b28785b0a47aae6e7b29cc5efd3eea3d34cdf05df8e3c1a4405efcfee8f1"
+      "path": "dist/reader.53619473654e.js",
+      "bytes": 1124844,
+      "sha256": "53619473654e7dc051ae0184b7118fcc7052fcfd9e2a3f691165f6120c1ed5a8"
     },
     "reader-runtime.js": {
       "path": "dist/reader-runtime.js",
-      "bytes": 1265904,
-      "sha256": "dd20d3f405ceec595c17d149e231e0b07160bd0c741049f8707b772c27e59755"
+      "bytes": 1285570,
+      "sha256": "392a17a11a7e9c14cb556a302cbf0e19de4cf5968ccde09b93032b0a0513e3a1"
     },
     "reader-letter.json": {
       "path": "regex/读者对话渲染-脚本版.json",
       "bytes": 87745,
-      "sha256": "898b57ce5e3d3f99a0de613f7c7df33b4560a45a8ad19394f596c20fea885957"
+      "sha256": "c286496bd926d3d7ebcca792a3fedf67aeacdbc100652b5d2c7e6ced2c6ad364"
     }
   },
   "installMode": "script",
