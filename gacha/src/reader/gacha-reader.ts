@@ -3,17 +3,19 @@
  *  - 99 部作品、小池与览概缓存、设置（含角色池开关）：这台设备的站点存储（缓存按聊天分开，只留最近 6 个聊天）；
  *  - 扣命运点数与放进主角背包：ReaderTransactions 固定当前聊天、最新楼层与候选，在同一次变量提交里完成，与读者其他付费操作互斥；
  *    书海的旅程进行中不扣点、不入包、不回收（那段时间的命运点数与背包由书海结算）；
+ *  - 世界观物品生成细则：经酒馆助手读当前角色卡、聊天与全局世界书里名称包含设置里条目名的条目（只读，不改世界书）；
  *  - 模型：读者传入的 generate（读者“独立API”里的「命运抽卡」路由，未单独设置时跟随默认方案或酒馆插头）。
  *  这个文件由 gacha/build.mjs 打包成 source/reader-gacha.js，读者控制器里以 window.ReaderGacha 使用。 */
 import {CAST_COST,DRAW_COST,TEN_COST,createGacha,deviceStore,SETTINGS_KEY,type CommitRequest,type GachaDurable,type GachaPort,type GachaService,type LlmOptions,type Wallet} from '../gacha/session';
 import {applyGachaDraw,applyRecycle,listGachaBag,type RecyclePick} from '../gacha/bag';
+import {readSpecEntries,type WorldbookHelper} from '../gacha/spec';
 import type {FetchLike} from '../gacha/net';
 import {mountGachaPanel,type GachaArt} from '../ui/gacha-panel';
 
 type Obj = Record<string, unknown>;
 const rec = (v: unknown): Obj => v && typeof v === 'object' && !Array.isArray(v) ? v as Obj : {};
 const message = (e: unknown) => String((e as Error)?.message ?? e);
-export const READER_GACHA_VERSION = '1.1.0';
+export const READER_GACHA_VERSION = '1.2.0';
 export const DURABLE_KEY = 'dream_gacha';
 /** 一次模型请求最多等多久（编纂小池分几次请求，每次最多这么久）。 */
 export const GACHA_TIMEOUT_MS = 300000;
@@ -30,7 +32,7 @@ export type ReaderTx = {
   run<T>(key: string, action: (token: ReaderToken) => Promise<T>): Promise<T>;
 };
 export type StContext = {characterId?: unknown; chatId?: unknown; getCurrentChatId?: () => unknown; chat?: {extra?: unknown}[]; chatMetadata?: {variables?: Obj}; saveMetadata?: () => unknown};
-export type HelperLike = {getVariables?: (o: Obj) => unknown; getLastMessageId?: () => number};
+export type HelperLike = {getVariables?: (o: Obj) => unknown; getLastMessageId?: () => number} & WorldbookHelper;
 export type ReaderGachaHost = {
   /** 面板挂在哪个文档（读者传入登记过的酒馆主文档，停止读者时随之清理）。 */
   document: Document;
@@ -125,6 +127,10 @@ export function readerGachaPort(host: ReaderGachaHost): GachaPort {
         const fp = await T.transact(token, token.id + ':gacha-cast', data => T.charge(data, req.cost));
         return {fp: typeof fp === 'number' ? fp : null};
       });
+    },
+    async specs(names: string[]) {
+      assert();
+      return readSpecEntries(host.helper, names);
     },
     bag() {
       try {assert(); return listGachaBag(T.read(T.capture()));} catch {return [];}

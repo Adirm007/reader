@@ -1,10 +1,10 @@
 /** 命运抽卡（读者大厅）的样式。面板跟随读者当前主题：咖啡馆（深色木纹与黄铜，默认）、盛夏（海盐玻璃与天蓝）、水墨（纸笺与青瓷）。
  *  主题只换配色变量；抽卡舞台在三套主题里都是夜色（咖啡馆的暖夜、盛夏的深海、水墨的墨夜），光效才看得清。
- *  卡面按星级着色（1★ 灰 · 2★ 绿 · 3★ 蓝 · 4★ 紫 · 5★ 金 · 6★ 赤与虹彩）。所有动画只动 transform / opacity，遵循系统“减少动态效果”。 */
+ *  卡面按品质着色（普通 灰 · 优良 绿 · 稀有 蓝 · 史诗 紫 · 传说 金 · 神话 赤与虹彩 · 唯一 青与虹彩）。所有动画只动 transform / opacity，遵循系统“减少动态效果”。 */
 import {OCTO_SERIF,OCTO_SANS,octoCorners} from './octo-kit';
 
-const BRIGHT = '--s1:#b8b2a3;--s2:#7fc58b;--s3:#69a8ea;--s4:#b88cec;--s5:#f2c35d;--s6:#ff6d6a';
-const DEEP = '--s1:#8f8778;--s2:#3f9a5a;--s3:#2f7fc4;--s4:#8559c6;--s5:#c08a12;--s6:#df4a45';
+const BRIGHT = '--s1:#b8b2a3;--s2:#7fc58b;--s3:#69a8ea;--s4:#b88cec;--s5:#f2c35d;--s6:#ff6d6a;--s7:#4fe0cf';
+const DEEP = '--s1:#8f8778;--s2:#3f9a5a;--s3:#2f7fc4;--s4:#8559c6;--s5:#c08a12;--s6:#df4a45;--s7:#16998a';
 /* 咖啡馆：深色木纹、黄铜与奶油色字，和咖啡馆大厅同一套。 */
 const CAFE = `--gc-scrim:radial-gradient(ellipse at 50% 30%,#2a1a10e6,#0b0604f4);--gc-corners:${octoCorners('#c9a26a', '#f0d9a8', 26)};--gc-shell:linear-gradient(180deg,rgba(44,30,20,.97),rgba(27,18,12,.97) 55%,rgba(17,11,8,.98));--gc-shell-line:#c9a26a99;--gc-shell-inset:#0b0705cc;
 --gc-acc:#c9a26a;--gc-hi:#f0d9a8;--gc-ink:#f2e7d3;--gc-ink2:#f6e7c2;--gc-sub:#c4b093;--gc-mute:#9b8b75;--gc-line:#c9a26a;
@@ -323,13 +323,13 @@ export const GACHA_STYLE = `
 .gc-card.is-open .gc-card-inner{transform:rotateY(180deg)}
 .gc-card:not(.is-open):hover .gc-card-inner{transform:translateY(-5px) rotateX(5deg)}
 .gc-card-ring{position:absolute;inset:-7px;border-radius:15px;border:2px solid var(--c);box-shadow:0 0 18px var(--c);opacity:0;pointer-events:none}
-.gc-card.is-open.s4 .gc-card-ring,.gc-card.is-open.s5 .gc-card-ring,.gc-card.is-open.s6 .gc-card-ring{animation:gc-ring .85s ease-out both}
+.gc-card.is-open.s4 .gc-card-ring,.gc-card.is-open.s5 .gc-card-ring,.gc-card.is-open.s6 .gc-card-ring,.gc-card.is-open.s7 .gc-card-ring{animation:gc-ring .85s ease-out both}
 .gc-face{position:absolute;inset:0;border-radius:10px;overflow:hidden;backface-visibility:hidden;-webkit-backface-visibility:hidden;border:1px solid color-mix(in srgb,var(--c) 60%,var(--gc-art))}
 .gc-cardback{background:radial-gradient(circle at 50% 45%,color-mix(in srgb,var(--c) 26%,transparent),transparent 36%),var(--gc-card-back);box-shadow:0 0 16px color-mix(in srgb,var(--c) 42%,transparent),inset 0 0 0 1px #00000080;transition:box-shadow .2s}
 .gc-cardback svg{position:absolute;inset:0;width:100%;height:100%}
 .gc-cardback:after{content:'';position:absolute;inset:0;background:linear-gradient(115deg,transparent 35%,#ffffff1f 50%,transparent 65%) 0 0/300% 100%;animation:gc-shine 3.6s ease-in-out infinite;animation-delay:calc(var(--i,0) * 120ms);pointer-events:none}
 .gc-card:not(.is-open):hover .gc-cardback,.gc-card:not(.is-open):focus-visible .gc-cardback{box-shadow:0 0 30px var(--c),inset 0 0 0 1px #0008}
-.gc-stage.is-cards .gc-card.s5:not(.is-open) .gc-cardback,.gc-stage.is-cards .gc-card.s6:not(.is-open) .gc-cardback{animation:gc-tease 1.5s ease-in-out infinite}
+.gc-stage.is-cards .gc-card.s5:not(.is-open) .gc-cardback,.gc-stage.is-cards .gc-card.s6:not(.is-open) .gc-cardback,.gc-stage.is-cards .gc-card.s7:not(.is-open) .gc-cardback{animation:gc-tease 1.5s ease-in-out infinite}
 .gc-front{transform:rotateY(180deg);display:flex;flex-direction:column;align-items:center;gap:2px;padding:9px 10px 8px;text-align:center;background:radial-gradient(ellipse at 50% 24%,color-mix(in srgb,var(--c) 36%,transparent),transparent 62%),var(--gc-card-front);box-shadow:0 0 22px color-mix(in srgb,var(--c) 55%,transparent),inset 0 0 0 3px #05070dcc}
 .gc-front:before{content:'';position:absolute;inset:5px;border:1px solid color-mix(in srgb,var(--c) 42%,transparent);border-radius:7px;pointer-events:none}
 .gc-front-top{position:relative;display:flex;justify-content:space-between;align-items:center;width:100%;padding:0 2px}
@@ -341,10 +341,11 @@ export const GACHA_STYLE = `
 .gc-front b{font:600 15px/1.3 ${OCTO_SERIF};color:#fff3d6;letter-spacing:.04em;word-break:break-all;text-shadow:0 1px 2px #000}
 .gc-front p{margin:2px 0 0;color:#cdc3ad;font-size:11px;line-height:1.45;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .gc-front small{margin-top:auto;max-width:100%;color:#968d7c;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.gc-card.s5 .gc-front:after,.gc-card.s6 .gc-front:after{content:'';position:absolute;inset:0;background:linear-gradient(115deg,transparent 35%,#ffffff55 50%,transparent 65%) 0 0/300% 100%;animation:gc-shine 2.4s ease-in-out infinite;pointer-events:none}
+.gc-card.s5 .gc-front:after,.gc-card.s6 .gc-front:after,.gc-card.s7 .gc-front:after{content:'';position:absolute;inset:0;background:linear-gradient(115deg,transparent 35%,#ffffff55 50%,transparent 65%) 0 0/300% 100%;animation:gc-shine 2.4s ease-in-out infinite;pointer-events:none}
 .gc-foil{position:absolute;inset:0;border-radius:10px;padding:2px;background:conic-gradient(from 210deg,#ff6d6a,#f2c35d,#7fc58b,#69a8ea,#b88cec,#ff6d6a);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0);animation:gc-hue 3s linear infinite;pointer-events:none}
-.gc-card.s6.is-open .gc-front .gc-stars,.gc-card.s6.is-open .gc-front .gc-quality{animation:gc-hue 3s linear infinite}
-.s1{--c:var(--s1)}.s2{--c:var(--s2)}.s3{--c:var(--s3)}.s4{--c:var(--s4)}.s5{--c:var(--s5)}.s6{--c:var(--s6)}
+.gc-card.s6.is-open .gc-front .gc-stars,.gc-card.s6.is-open .gc-front .gc-quality,.gc-card.s7.is-open .gc-front .gc-quality{animation:gc-hue 3s linear infinite}
+.s1{--c:var(--s1)}.s2{--c:var(--s2)}.s3{--c:var(--s3)}.s4{--c:var(--s4)}.s5{--c:var(--s5)}.s6{--c:var(--s6)}.s7{--c:var(--s7)}
+.gc-mini.is-taken{opacity:.5;filter:saturate(.4)}
 /* 舞台上的字与按钮：舞台总是夜色，按钮也用夜色的样子。 */
 .gc-stage .gc-btn{--gc-btn:#14131ad9;--gc-btn-ink:#eee9e0;--gc-btn-line:#ded8caaa;--gc-btn-inset:#17161d;--gc-btn-hover:#39333bea;--gc-btn-hover-ink:#fff8e3;--gc-hi:#fff0cd;--gc-acc:#cdbf9b}
 .gc-stage .gc-btn.is-primary{--gc-pri:linear-gradient(180deg,#f4e0a8,#d8b56c 55%,#b38a45);--gc-pri-hover:linear-gradient(180deg,#fff0c4,#e6c37a 55%,#c29652);--gc-pri-ink:#1d1508;--gc-pri-line:#f6e2ae}

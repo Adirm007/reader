@@ -1,6 +1,6 @@
-/** 命运抽卡界面（读者大厅打开）：择海（文学 / ACGN · 主题）→ 撒网捞起 99 部（换大池）→ 选一部编纂小池 → 物品池 / 命运池（打开角色池时还有角色池）单抽、十连
+/** 命运抽卡界面（读者大厅打开）：择海（文学 / ACGN · 主题）→ 撒网捞起 99 部（换大池）→ 选一部编纂小池 → 混池单抽、十连（物品、命运，打开角色池时还有唯一角色，不能指定）
  *  → 攒满这部作品的抽取点数兑换指定神话（大保底）→ 用不上的按品质回收。
- *  抽卡动画：书海中的一本书蓄光、翻开，书页化作卡牌飞出，逐张翻开；6★ 带虹彩。
+ *  抽卡动画：书海中的一本书蓄光、翻开，书页化作卡牌飞出，逐张翻开；神话与唯一带虹彩。
  *  配色跟随读者大厅当前主题（咖啡馆 / 盛夏 / 水墨）；夜梦的立绘、小人与背景图由宿主（读者）按当前外观传入，不随界面打包。 */
 import {GACHA_STYLE} from './gacha-style';
 import {CARD_BACK_SVG,KIND_EMBLEM,RUNE_RING_SVG,TOME_COVER_SVG,SIGIL_URI} from './gacha-art';
@@ -8,9 +8,10 @@ import {gameDom} from './game-dom';
 import {SPREAD_SIZE,type GachaService,type GachaSettings,type DrawOutcome} from '../gacha/session';
 import {MEDIA_LABEL,SOURCES,SOURCE_BY_ID,type WorkCard,type SourceReport} from '../gacha/sources';
 import {themeSources,type Direction,type GachaTheme} from '../gacha/themes';
-import {ratesText,starText,STARS,starOfQuality,type Star} from '../gacha/rarity';
+import {ratesText,TIERS,qualityOf,starOfQuality,type Star} from '../gacha/rarity';
 import {RECYCLE_DIVISOR,RECYCLE_QUALITIES,recyclePrice,type BagEntry,type RecyclePick} from '../gacha/bag';
 import {KIND_LABEL,POOL_MAX,POOL_MIN,poolList,type GachaCard,type CardKind,type SmallPool} from '../gacha/pool';
+import {DEFAULT_SPEC_ENTRIES} from '../gacha/spec';
 
 const STYLE_ID = 'dream-gacha-style';
 const ICON = {
@@ -84,8 +85,8 @@ export function mountGachaPanel(doc: Document, gacha: GachaService, options: Gac
     if (toastTimer) clearTimeout(toastTimer); toastTimer = setTimeout(() => {toastBox.hidden = true;}, bad ? 7000 : 4500);
   }
   const message = (e: unknown) => String((e as Error)?.message ?? e);
-  /** 神话的叫法（设置成只显示星级时是 6★）。 */
-  const q6 = () => {const s = gacha.scale(); return s.id === 'destined' ? s.label(6) : '6★';};
+  /** 神话的叫法。 */
+  const q6 = () => qualityOf(6);
   function renderHead() {
     const w = gacha.wallet(), pity = gacha.pity(), left = Math.max(1, gacha.rules.pity6 - pity.since6);
     walletChip.hidden = gacha.mode !== 'host';
@@ -275,12 +276,13 @@ export function mountGachaPanel(doc: Document, gacha: GachaService, options: Gac
     } catch (e) {compileError = compileAbort.signal.aborted ? '已取消编纂。' : message(e);}
     finally {compileAbort = undefined; if (mode === 'pool') renderPool();}
   }
-  function mini(c: GachaCard, scale = gacha.scale()) {
-    const m = el('div', 'gc-mini s' + c.star), emblem = el('span', 'gc-mini-emblem'), text = el('div', 'gc-mini-text');
+  function mini(c: GachaCard, taken = false) {
+    const m = el('div', 'gc-mini s' + c.star + (taken ? ' is-taken' : '')), emblem = el('span', 'gc-mini-emblem'), text = el('div', 'gc-mini-text');
     emblem.innerHTML = KIND_EMBLEM[c.kind];
-    text.append(el('small', '', `${starText(c.star)} ${scale.id === 'destined' ? scale.label(c.star) : ''}`.trim()), el('b', '', c.kind === 'character' && c.role ? `${c.name} · ${c.role}` : c.name), el('p', '', c.description));
+    text.append(el('small', '', [qualityOf(c.star), c.type ?? '', taken ? '已抽到' : ''].filter(Boolean).join(' · ')), el('b', '', c.kind === 'character' && c.role ? `${c.name} · ${c.role}` : c.name), el('p', '', c.description));
     m.append(emblem, text);
-    m.title = [c.description, c.use ?? c.hook ?? (c.power ? '实力：' + c.power : '')].filter(Boolean).join('\n');
+    const spec = c.spec ? [...c.spec.tags, ...Object.entries(c.spec.effects).map(([k, v]) => `${k}: ${v}`)] : [];
+    m.title = [c.description, c.use ?? c.hook ?? (c.power ? '实力：' + c.power : ''), ...spec].filter(Boolean).join('\n');
     return m;
   }
   function renderPool() {
@@ -302,7 +304,9 @@ export function mountGachaPanel(doc: Document, gacha: GachaService, options: Gac
         const sea = el('div', 'gc-sea'); sea.append(el('i'), el('i'), el('i'), el('b'));
         box.append(sea, el('h3', '', `夜梦正在翻阅《${workTitle(w)}》`), steps, el('p', 'gc-note', `${kindText}分几次编纂，合计 ${POOL_MIN}～${POOL_MAX} 张，可能要几分钟。`), button('取消编纂', () => compileAbort?.abort(), 'gc-btn is-small'));
       } else {
-        box.append(el('h3', '', `为《${workTitle(w)}》编纂小池`), el('p', 'gc-note', `查阅资料库与维基百科里的条目，再由夜梦写成${kindText}，合计 ${POOL_MIN}～${POOL_MAX} 张：每种多少张、星级怎么分配都按作品决定，物品里至少 9 件${q6()}。`));
+        const spec = gacha.settings().itemSpec;
+        box.append(el('h3', '', `为《${workTitle(w)}》编纂小池`), el('p', 'gc-note', `查阅资料库与维基百科里的条目，再由夜梦写成${kindText}，合计 ${POOL_MIN}～${POOL_MAX} 张：每种多少张、品质怎么分配都按作品决定，物品里至少 9 件${q6()}${kinds.includes('character') ? `，角色都是${qualityOf(7)}` : ''}。` +
+          (spec.enabled && gacha.mode === 'host' ? `最后读世界书里的物品生成细则（${spec.entries.join('、') || '未填写条目'}），给装备、消耗品、资产等写上能直接使用的属性。` : '')));
         if (compileSteps.length) box.append(steps);
         if (compileError) box.append(el('p', 'gc-note is-bad', compileError));
         box.append(button('编纂小池', () => void compile(w), 'gc-btn is-primary'));
@@ -311,21 +315,25 @@ export function mountGachaPanel(doc: Document, gacha: GachaService, options: Gac
       view.replaceChildren(...blocks); renderHead(); return;
     }
     if (!kinds.includes(kind)) kind = 'item';
-    const tabs = el('div', 'gc-tabs'); tabs.setAttribute('role', 'tablist'); tabs.setAttribute('aria-label', '卡池');
+    // 抽卡是混池：这几个标签只用来翻看池内的卡，不决定抽哪一种。
+    const tabs = el('div', 'gc-tabs'); tabs.setAttribute('role', 'tablist'); tabs.setAttribute('aria-label', '翻看池内');
     for (const k of kinds) {
-      const t = el('button', 'gc-tab', KIND_LABEL[k] + '池'); t.type = 'button'; t.setAttribute('role', 'tab'); t.setAttribute('aria-selected', String(kind === k));
+      const t = el('button', 'gc-tab', KIND_LABEL[k]); t.type = 'button'; t.setAttribute('role', 'tab'); t.setAttribute('aria-selected', String(kind === k));
       t.onclick = () => {kind = k; renderPool();}; tabs.append(t);
     }
-    const list = poolList(pool, kind), ready = gacha.kindReady(pool, kind), banner = el('div', 'gc-banner'), bg = el('div', 'gc-banner-bg');
+    const list = poolList(pool, kind), ready = gacha.poolReady(pool), banner = el('div', 'gc-banner'), bg = el('div', 'gc-banner-bg');
+    const hasUnique = kinds.includes('character') && !!pool.characters?.length, left2 = gacha.uniquesLeft(pool), open = new Set(left2.map(c => c.name));
+    const isTaken = (c: GachaCard) => c.kind === 'character' && hasUnique && !open.has(c.name);
     if (w.cover ?? w.thumb) bg.style.backgroundImage = `url("${String(w.cover ?? w.thumb).replace(/"/g, '%22')}")`;
     const left = el('div'), feature = el('div', 'gc-feature');
     left.append(el('h3', 'gc-h3', `本池${KIND_LABEL[kind]} · 精选`));
-    for (const c of list.filter(c => c.star >= 5).slice(0, 3)) feature.append(mini(c));
+    for (const c of list.filter(c => c.star >= 5).slice(0, 3)) feature.append(mini(c, isTaken(c)));
     left.append(feature);
-    if (kind === 'character') left.append(el('p', 'gc-note', CHARACTER_NOTE));
+    left.append(el('p', 'gc-note', `混池：单抽、十连从${kindText}里一起抽，不能指定只抽哪一种。`));
+    if (kind === 'character') left.append(el('p', 'gc-note', `角色都是${qualityOf(7)}，出货率与${q6()}相同；抽到过的不会再出现${hasUnique ? `（还能抽到 ${left2.length} 位）` : ''}。${CHARACTER_NOTE}`));
     else if (pool.protagonist) left.append(el('p', 'gc-note', `主角：${pool.protagonist}`));
     const side = el('div', 'gc-side'), rates = el('div', 'gc-rates'), pity = gacha.pity(), rules = gacha.rules, points = gacha.points(pool.workKey);
-    for (const line of ratesText(rules, gacha.scale())) rates.append(el('p', '', line));
+    for (const line of ratesText(rules, hasUnique && left2.length > 0)) rates.append(el('p', '', line));
     /** 小保底（随机神话）与大保底（这部作品的抽取点数）各一条进度。 */
     const meterRow = (name: string, value: number, max: number, num: string, goal: string, small: boolean) => {
       const row = el('div', 'gc-pity-row' + (small ? ' is-small' : '')), head = el('div', 'gc-pity-head'), track = el('div', 'gc-pity-bar'), bar = el('i');
@@ -349,12 +357,12 @@ export function mountGachaPanel(doc: Document, gacha: GachaService, options: Gac
     const reason = ready ?? (!one.ok ? one.reason : !ten.ok ? ten.reason : '');
     if (reason) side.append(el('p', 'gc-note is-bad', reason));
     else if (gacha.mode === 'host') side.append(el('p', 'gc-note', gacha.settings().autoBag ? `抽到的${kindText}会放进主角背包，按命定之诗的品质记入。` : '抽到的结果只记在抽卡记录里（设置里可改为放进背包）。'));
-    if (kind === 'character' && !pool.characters && !compileAbort) side.append(button('重新编纂（加上角色池）', () => void compile(w), 'gc-btn is-small'));
+    if (kinds.includes('character') && !pool.characters && !compileAbort) side.append(el('p', 'gc-note', '这个小池编纂时还没有打开角色池，现在抽不到角色。'), button('重新编纂（加上角色池）', () => void compile(w), 'gc-btn is-small'));
     banner.append(bg, left, side);
     blocks.push(tabs, banner);
     const all = el('details', 'gc-list'), grid = el('div', 'gc-list-grid');
-    all.append(el('summary', '', `池内一览（${KIND_LABEL[kind]} ${list.length} 张，其中${q6()} ${list.filter(c => c.star === 6).length} 张 · 小池合计 ${gacha.poolSize(pool)} 张）`));
-    for (const s of [...STARS].reverse()) for (const c of list.filter(c => c.star === s)) grid.append(mini(c));
+    all.append(el('summary', '', `池内一览（${KIND_LABEL[kind]} ${list.length} 张，` + (kind === 'character' ? `都是${qualityOf(7)}${hasUnique ? `，已抽到 ${list.length - left2.length} 位` : ''}` : `其中${q6()} ${list.filter(c => c.star === 6).length} 张`) + ` · 小池合计 ${gacha.poolSize(pool)} 张）`));
+    for (const s of [...TIERS].reverse()) for (const c of list.filter(c => c.star === s)) grid.append(mini(c, isTaken(c)));
     all.append(grid); blocks.push(all);
     view.replaceChildren(...blocks); renderHead();
   }
@@ -362,21 +370,21 @@ export function mountGachaPanel(doc: Document, gacha: GachaService, options: Gac
   async function startDraw(pool: SmallPool, count: 1 | 10) {
     if (drawing) return; drawing = true; renderPool();
     let outcome: DrawOutcome | undefined;
-    try {outcome = await gacha.draw(pool.workKey, kind, count);}
+    try {outcome = await gacha.draw(pool.workKey, count);}
     catch (e) {toast(message(e), true);}
     finally {drawing = false;}
     if (!outcome) {renderPool(); return;}
     options.onChange?.();
     play(outcome, pool);
   }
-  const STAR_COLOR: Record<Star, string> = {1: '#cfc8b8', 2: '#8fd19b', 3: '#7cb6f2', 4: '#c39cf2', 5: '#f5cb68', 6: '#ff7b72'};
+  const STAR_COLOR: Record<Star, string> = {1: '#cfc8b8', 2: '#8fd19b', 3: '#7cb6f2', 4: '#c39cf2', 5: '#f5cb68', 6: '#ff7b72', 7: '#62e6d6'};
   /** 抽卡演出：书本入场 → 蓄光（光点被吸进书页）→ 翻开（光柱、冲击环、闪光，颜色透露这一抽的最高星级）→ 卡牌沿弧线飞出 → 逐张翻开（4★ 以上有光环与碎光，6★ 有全屏“神话”）。 */
   function play(outcome: DrawOutcome, pool: SmallPool) {
     stageCleanup?.(); toastBox.hidden = true;
     type Slot = {card: HTMLButtonElement; c: GachaCard; open: boolean};
-    const motion = !reduced(win), count = outcome.cards.length, max = Math.max(...outcome.stars) as Star, scale = gacha.scale();
+    const motion = !reduced(win), count = outcome.cards.length, max = Math.max(...outcome.stars) as Star;
     const timers: ReturnType<typeof setTimeout>[] = [], later = (ms: number, fn: () => void) => {timers.push(setTimeout(fn, ms));};
-    const quality = (s: Star) => scale.id === 'destined' ? scale.label(s) : s + '★';
+    const quality = qualityOf;
     const stage = el('div', 'gc-stage' + (max >= 6 ? ' is-mythic' : '')), ring = el('div', 'gc-stage-ring'), tome = el('div', 'gc-tome'), cover = el('div', 'gc-tome-cover'), face = el('div', 'gc-tome-face');
     ring.innerHTML = RUNE_RING_SVG; face.innerHTML = TOME_COVER_SVG; cover.append(face, el('div', 'gc-tome-inside'));
     tome.append(el('div', 'gc-tome-block'), el('div', 'gc-tome-light'), el('div', 'gc-tome-page p1'), el('div', 'gc-tome-page p2'), el('div', 'gc-tome-page p3'), cover);
@@ -387,13 +395,13 @@ export function mountGachaPanel(doc: Document, gacha: GachaService, options: Gac
     if (outcome.warning) stage.append(el('p', 'gc-stage-warn', outcome.warning));
     const glow = (s: Star) => stage.style.setProperty('--glow', STAR_COLOR[s]);
     glow(1);
-    const label = (x: Slot) => `${x.c.star}星${KIND_LABEL[x.c.kind]}「${x.c.name}」：${x.c.description}`;
+    const label = (x: Slot) => `${quality(x.c.star)}${KIND_LABEL[x.c.kind]}「${x.c.name}」：${x.c.description}`;
     const cards: Slot[] = outcome.cards.map((c, i) => {
       const card = el('button', 'gc-card s' + c.star) as HTMLButtonElement; card.type = 'button'; card.style.setProperty('--i', String(i));
       card.setAttribute('aria-label', `第 ${i + 1} 张，点击翻开`);
       const inner = el('div', 'gc-card-inner'), back = el('div', 'gc-face gc-cardback'), front = el('div', 'gc-face gc-front'), top = el('div', 'gc-front-top'), emblem = el('div', 'gc-emblem');
       back.innerHTML = CARD_BACK_SVG; emblem.innerHTML = KIND_EMBLEM[c.kind];
-      top.append(el('span', 'gc-stars', starText(c.star)), el('span', 'gc-quality', quality(c.star)));
+      top.append(el('span', 'gc-quality', quality(c.star)));
       front.append(top, emblem, el('span', 'gc-kind', KIND_LABEL[c.kind] + (c.kind === 'character' ? '书页' : '') + (c.type ? ' · ' + c.type : c.chapter ? ' · ' + c.chapter : c.role ? ' · ' + c.role : '')), el('b', '', c.name), el('p', '', c.description), el('small', '', `《${pool.work.title}》${c.owner ? ' · ' + c.owner : ''}`));
       if (c.star >= 6) {back.append(el('i', 'gc-foil')); front.append(el('i', 'gc-foil'));}
       inner.append(back, front); card.append(el('i', 'gc-card-ring'), inner);
@@ -414,11 +422,11 @@ export function mountGachaPanel(doc: Document, gacha: GachaService, options: Gac
     }
     function pulse(strength: number) {flash.style.setProperty('--fl', String(strength)); flash.classList.remove('is-on'); void flash.offsetWidth; flash.classList.add('is-on');}
     let mythicShown = false, done = false;
-    function mythic() {
+    function mythic(s: Star) {
       if (mythicShown || !motion) return; mythicShown = true;
-      splash.replaceChildren(doc.createTextNode(quality(6)), el('small', '', '命运在书页之间苏醒'));
+      splash.replaceChildren(doc.createTextNode(quality(s)), el('small', '', s === 7 ? '书页里的人睁开了眼睛' : '命运在书页之间苏醒'));
       splash.classList.remove('is-on'); void splash.offsetWidth; splash.classList.add('is-on');
-      glow(6); pulse(1); stage.classList.add('is-quake'); later(520, () => stage.classList.remove('is-quake'));
+      glow(s); pulse(1); stage.classList.add('is-quake'); later(520, () => stage.classList.remove('is-quake'));
     }
     function reveal(x: Slot) {
       x.card.classList.remove('is-held'); x.card.classList.add('is-open'); x.card.setAttribute('aria-label', label(x)); x.card.title = x.c.description;
@@ -431,7 +439,7 @@ export function mountGachaPanel(doc: Document, gacha: GachaService, options: Gac
     function flip(x: Slot) {
       if (x.open) return; x.open = true;
       // 第一张 6★：先停一拍——卡牌在原地蓄满虹光、全屏写出“神话”，再翻开。
-      if (x.c.star >= 6 && !mythicShown && motion) {x.card.classList.add('is-held'); mythic(); later(950, () => reveal(x)); return;}
+      if (x.c.star >= 6 && !mythicShown && motion) {x.card.classList.add('is-held'); mythic(x.c.star); later(950, () => reveal(x)); return;}
       reveal(x);
     }
     function revealAll() {
@@ -446,11 +454,11 @@ export function mountGachaPanel(doc: Document, gacha: GachaService, options: Gac
         x.card.classList.remove('is-held');
         if (!x.open || !x.card.classList.contains('is-open')) {x.open = true; x.card.classList.add('is-open'); x.card.setAttribute('aria-label', label(x)); x.card.title = x.c.description;}
       }
-      if (instant && max >= 6) mythic();
+      if (instant && max >= 6) mythic(max);
       if (done) return; done = true;
       if (hasChibi()) {const chibi = el('div', 'gc-stage-chibi' + (max >= 5 ? ' is-cheer' : '')); chibi.setAttribute('aria-hidden', 'true'); stage.append(chibi);}
-      skip.hidden = true; hint.textContent = max >= 6 ? `${quality(6)}降临` : max >= 5 ? `${quality(5)}之页` : '书页已经翻开';
-      sum.replaceChildren(...[...STARS].reverse().map(s => [s, outcome.stars.filter(v => v === s).length] as const).filter(([, n]) => n).map(([s, n]) => el('span', 's' + s, `${s}★ ${scale.id === 'destined' ? quality(s) + ' ' : ''}×${n}`)));
+      skip.hidden = true; hint.textContent = max >= 6 ? `${quality(max)}降临` : max >= 5 ? `${quality(5)}之页` : '书页已经翻开';
+      sum.replaceChildren(...[...TIERS].reverse().map(s => [s, outcome.stars.filter(v => v === s).length] as const).filter(([, n]) => n).map(([s, n]) => el('span', 's' + s, `${quality(s)} ×${n}`)));
       const bagged = outcome.record.bagged ? '已放进主角背包' : gacha.mode === 'host' ? '已记入抽签记录' : '';
       const keep = button(bagged ? `收下（${bagged}）` : '收下', () => closeStage(), 'gc-btn is-primary');
       if (outcome.record.spark) barEl.replaceChildren(keep);
@@ -460,7 +468,7 @@ export function mountGachaPanel(doc: Document, gacha: GachaService, options: Gac
     function closeStage() {
       stageCleanup?.(); renderPool();
       if (!outcome.record.bagged) return;
-      const best = [...outcome.cards].sort((a, b) => b.star - a.star).slice(0, 3).map(c => `${c.star}★${c.name}`).join('、');
+      const best = [...outcome.cards].sort((a, b) => b.star - a.star).slice(0, 3).map(c => `${quality(c.star)}「${c.name}」`).join('、');
       toast(outcome.record.spark ? `大保底兑换的 ${best} 放进了主角背包。` : count > 1 ? `${count} 张放进了主角背包：${best}${count > 3 ? ' 等' : ''}` : `放进了主角背包：${best}`);
     }
     body.append(stage);
@@ -544,9 +552,9 @@ export function mountGachaPanel(doc: Document, gacha: GachaService, options: Gac
     if (!h.length) inner.append(el('p', 'gc-note', '还没有抽过。'));
     for (const r of h) {
       const li = el('li'), top = el('div'), t = el('time', '', when(r.at)); t.dateTime = new Date(r.at).toISOString();
-      top.append(t, el('b', '', `《${r.work}》`), el('span', '', `${KIND_LABEL[r.kind]}池 · ${r.spark ? '大保底兑换' : r.count === 10 ? '十连' : '单抽'}${r.cost ? ` · ${fmt(r.cost)} 命运点` : ''}${r.bagged ? ' · 已入包' : ''}`));
+      top.append(t, el('b', '', `《${r.work}》`), el('span', '', `${r.kind ? KIND_LABEL[r.kind] + '池' : '混池'} · ${r.spark ? '大保底兑换' : r.count === 10 ? '十连' : '单抽'}${r.cost ? ` · ${fmt(r.cost)} 命运点` : ''}${r.bagged ? ' · 已入包' : ''}`));
       const res = el('div', 'gc-res');
-      for (const x of [...r.results].sort((a, b) => b.star - a.star)) res.append(el('span', 's' + x.star, `${x.star}★ ${x.name}`));
+      for (const x of [...r.results].sort((a, b) => b.star - a.star)) res.append(el('span', 's' + x.star, `${qualityOf(x.star)} ${x.name}`));
       li.append(top, res); list.append(li);
     }
     inner.append(list);
@@ -563,7 +571,7 @@ export function mountGachaPanel(doc: Document, gacha: GachaService, options: Gac
       const prices = el('div', 'gc-prices');
       for (const q of RECYCLE_QUALITIES) {const x = el('span'); x.append(doc.createTextNode(q + ' '), el('b', '', fmt(recyclePrice(q)))); prices.append(x);}
       parts.push(el('p', 'gc-note gc-recycle-note', `把用不上的物品、命运与角色书页换回命运点数。回收价是与同一层级的角色缔结命定契约基础价的 1/${RECYCLE_DIVISOR}（每件）：`), prices,
-        el('p', 'gc-note', '只收命运抽卡抽来的东西；回收后从主角背包移除，不能撤销。'));
+        el('p', 'gc-note', `只收命运抽卡抽来的东西；回收后从主角背包移除，不能撤销。回收掉的${qualityOf(7)}角色也不会再抽到。`));
       if (blocked) parts.push(el('p', 'gc-note is-bad', blocked));
       if (!entries.length) parts.push(el('p', 'gc-note', '主角背包里还没有命运抽卡抽来的东西。'));
       for (const q of RECYCLE_QUALITIES) {
@@ -610,11 +618,10 @@ export function mountGachaPanel(doc: Document, gacha: GachaService, options: Gac
       check(cost, '抽到的东西放进主角背包', '物品按它的类型放入；命运是一页“命运”，在正文里翻开就会降临；角色是一页角色书页。大保底兑换的神话也一样。关闭后只记在抽卡记录里，照样扣点。', draft.autoBag, v => {draft.autoBag = v;});
     }
     const small = sec('小池');
-    check(small, '角色池', `默认关闭。打开后小池在物品池、命运池之外再加一个角色池，三者合计 ${POOL_MIN}～${POOL_MAX} 张，各有多少由夜梦按作品决定。${CHARACTER_NOTE}已经编纂过的小池要重新编纂才会有角色池。`, draft.characterPool, v => {draft.characterPool = v;});
-    const look = sec('显示');
-    const row = el('div', 'gc-row'), sel = doc.createElement('select'), lab = el('label', '', '品质名');
-    for (const [v, t] of [['destined', '命定之诗（普通～神话）'], ['stars', '只显示星级']] as const) {const o = doc.createElement('option'); o.value = v; o.textContent = t; sel.append(o);}
-    sel.value = draft.scale; sel.id = 'gc-scale'; lab.htmlFor = 'gc-scale'; sel.onchange = () => {draft.scale = sel.value === 'stars' ? 'stars' : 'destined';}; row.append(lab, sel); look.append(row);
+    check(small, '角色池', `默认关闭。打开后小池在物品、命运之外再加上角色，三者合计 ${POOL_MIN}～${POOL_MAX} 张，各有多少由夜梦按作品决定；抽卡时混在一起抽。角色都是${qualityOf(7)}品质，出货率与${q6()}相同，同一部作品里抽到过的角色不会再出现。${CHARACTER_NOTE}已经编纂过的小池要重新编纂才会有角色。`, draft.characterPool, v => {draft.characterPool = v;});
+    check(small, '世界观物品生成细则', '默认开启。编纂小池的最后一步读世界书里名称包含下面这些字样的条目，按条目里的规则给装备、武器、消耗品、资产等写出类型、标签与效果，抽进背包就能直接用。技能书页、命运与角色书页不写，在正文里使用时由正文模型按规则生成。改了世界书里的规则也会照新的写；读不到条目时物品只写大概。', draft.itemSpec.enabled, v => {draft.itemSpec.enabled = v;});
+    field(small, '细则条目名（用顿号或逗号分隔）', draft.itemSpec.entries.join('、'), v => {draft.itemSpec.entries = [...new Set(v.split(/[、,，;；\n]+/).map(x => x.trim()).filter(Boolean))].slice(0, 12);}, 'text', DEFAULT_SPEC_ENTRIES.join('、'));
+    const look = sec('作品范围');
     check(look, '包含成人向作品', '默认排除 Bangumi / AniList 的 R18 条目与 VNDB 含性内容标签的作品。', draft.nsfw, v => {draft.nsfw = v;});
     const src = sec('资料库');
     for (const s of SOURCES) check(src, `${s.name}（${s.direction === 'literature' ? '文学' : 'ACGN'}）`, s.note, draft.sources[s.id], v => {draft.sources[s.id] = v;});

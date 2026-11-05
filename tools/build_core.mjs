@@ -29,7 +29,8 @@ export async function build({ write = false, version } = {}) {
   const controller = [prelude, transactions, gacha, booksea, bookseaAlbum, initialization, legacy, templates, ...releaseTools, adapter].join('\n;\n');
   new Script(controller, { filename: 'reader-controller.js' });
   const assets = { version, css, body: body.replace('<!--DREAM_LETTER-->', ''), controller };
-  const runtime = runtimeSource.replace("import { ASSETS } from 'reader:assets';", 'const ASSETS = ' + JSON.stringify(assets) + ';');
+  // Function replacement: minified code may contain `$&` / `$'` (e.g. a variable named `$`), which a string replacement would expand.
+  const runtime = runtimeSource.replace("import { ASSETS } from 'reader:assets';", () => 'const ASSETS = ' + JSON.stringify(assets) + ';');
   const letterCss = css + '\n.menu-board{display:none!important}.reader-letter-compact .cafe-v20-responsive{display:none!important}.reader-letter-compact .outer-collapse:not([open]){display:block}.reader-letter-compact .flower-btn{display:block}';
   const replaceString = '```html\n<!doctype html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>' + letterCss + '</style></head><body>' + letterBody.replace('<!--DREAM_LETTER-->', '$1') + '<script>' + letterSource + '</script></body></html>\n```';
   if (/<\/script/i.test(letterSource)) throw new Error('Letter source contains a script terminator');

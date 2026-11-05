@@ -1,11 +1,13 @@
 /** 命运抽卡的服务层：设置、主题、撒网（99 部）、小池编纂、抽卡与保底、大保底兑换、记录。
+ *  抽卡是混池：物品、命运（打开角色池时还有角色）混在一个池子里抽，不能指定只抽哪一种。角色都是唯一，同一部作品里抽到过的不会再出现。
  *  与宿主无关：读者通过 GachaPort 提供命运点数、背包写入与模型（见 src/reader/gacha-reader.ts）；本机演示用本机存储，不扣任何东西。 */
-import {DEFAULT_RULES,advancePity,drawStars,normalizePity,emptyPity,cryptoRng,scaleOf,toStar,type PityState,type Star,type GachaRules,type QualityScale} from './rarity';
+import {DEFAULT_RULES,DESTINED_SCALE,UNIQUE,drawStars,normalizePity,emptyPity,cryptoRng,toStar,type PityState,type Star,type GachaRules,type QualityScale} from './rarity';
 import {DEFAULT_THEMES,DIRECTIONS,normalizeThemes,customTheme,type CustomThemeInput,type GachaTheme,type Direction,type SourceId} from './themes';
 import {createNet,type FetchLike,type Net} from './net';
 import {gatherSpread,defaultSourceSwitches,SOURCES,type WorkCard,type SourceReport} from './sources';
 import {buildDossier,type Dossier} from './dossier';
-import {KIND_KEY,KIND_LABEL,assemblePool,kindPrompt,normalizePlan,normalizePool,offlineCards,offlinePool,overviewPrompt,parseCards,parseOverviews,planPrompt,poolKinds,poolList,poolMythics,poolSize,readReply,type CardKind,type GachaCard,type SmallPool} from './pool';
+import {KIND_KEY,KIND_LABEL,assemblePool,kindPrompt,normalizePlan,normalizePool,offlineCards,offlinePool,overviewPrompt,parseCards,parseOverviews,planPrompt,poolKinds,poolMythics,poolSize,readReply,type CardKind,type GachaCard,type ItemSpec,type SmallPool} from './pool';
+import {SPEC_BATCH,defaultSpecSettings,needsSpec,normalizeSpecSettings,parseSpecs,specPrompt,type SpecEntry,type SpecSettings} from './spec';
 import type {BagEntry,RecyclePick} from './bag';
 
 export type ApiSettings = {enabled: boolean; url: string; model: string; key: string};
@@ -13,18 +15,20 @@ export type GachaSettings = {
   version: 1; autoBag: boolean; nsfw: boolean; proxy: boolean; fandom: boolean;
   /** 角色池（默认关闭）：打开后小池在物品池、命运池之外再加一个角色池。 */
   characterPool: boolean;
-  sources: Record<SourceId, boolean>; googleKey: string; scale: 'destined' | 'stars'; themes: GachaTheme[]; api: ApiSettings;
+  /** 世界观物品生成细则（默认开启）：编纂小池时读世界书里这些条目，给装备、消耗品、资产等写出能直接用的属性。 */
+  itemSpec: SpecSettings;
+  sources: Record<SourceId, boolean>; googleKey: string; themes: GachaTheme[]; api: ApiSettings;
 };
 /** 定价（固定，不在设置里改）：换一次大池（撒网捞起 99 部）1000 命运点；小池单抽 200、十连 2000。 */
 export const CAST_COST = 1000, DRAW_COST = 200, TEN_COST = 2000;
 /** 一网（一片大池）捞起的作品数。 */
 export const SPREAD_SIZE = 99;
-/** 编纂小池时每次请求模型最多等多久（规划与物品、命运、角色各一次请求）。 */
+/** 编纂小池时每次请求模型最多等多久（规划与物品、命运、角色各一次请求，物品属性每 SPEC_BATCH 件一次）。 */
 export const POOL_TIMEOUT_MS = 300000;
 /** 补写中文览概时一次请求的作品数。 */
 export const OVERVIEW_BATCH = 50;
 export function defaultSettings(): GachaSettings {
-  return {version: 1, autoBag: true, nsfw: false, proxy: true, fandom: true, characterPool: false, sources: defaultSourceSwitches(), googleKey: '', scale: 'destined', themes: [], api: {enabled: false, url: '', model: '', key: ''}};
+  return {version: 1, autoBag: true, nsfw: false, proxy: true, fandom: true, characterPool: false, itemSpec: defaultSpecSettings(), sources: defaultSourceSwitches(), googleKey: '', themes: [], api: {enabled: false, url: '', model: '', key: ''}};
 }
 const rec = (v: unknown): Record<string, unknown> => v && typeof v === 'object' && !Array.isArray(v) ? v as Record<string, unknown> : {};
 const money = (v: unknown, fallback: number) => {const n = Math.floor(Number(v)); return Number.isFinite(n) && n >= 0 && n <= 10_000_000 ? n : fallback;};
@@ -33,18 +37,19 @@ const message = (e: unknown) => String((e as Error)?.message ?? e);
 export function normalizeSettings(raw: unknown): GachaSettings {
   const v = rec(raw), s = rec(v.sources), api = rec(v.api);
   return {
-    version: 1, autoBag: v.autoBag !== false, nsfw: v.nsfw === true, proxy: v.proxy !== false, fandom: v.fandom !== false, characterPool: v.characterPool === true,
+    version: 1, autoBag: v.autoBag !== false, nsfw: v.nsfw === true, proxy: v.proxy !== false, fandom: v.fandom !== false, characterPool: v.characterPool === true, itemSpec: normalizeSpecSettings(v.itemSpec),
     sources: Object.fromEntries(SOURCES.map(x => [x.id, typeof s[x.id] === 'boolean' ? s[x.id] as boolean : x.defaultOn])) as Record<SourceId, boolean>,
-    googleKey: text(v.googleKey, 200), scale: v.scale === 'stars' ? 'stars' : 'destined', themes: normalizeThemes(v.themes),
+    googleKey: text(v.googleKey, 200), themes: normalizeThemes(v.themes),
     api: {enabled: api.enabled === true, url: text(api.url, 300), model: text(api.model, 120), key: text(api.key, 400)},
   };
 }
 
-/** spark：这一条是大保底兑换（用抽取点数换的指定神话，不花命运点）。 */
-export type DrawRecord = {id: string; at: number; workKey: string; work: string; kind: CardKind; count: number; cost: number; results: {name: string; kind: CardKind; star: Star}[]; bagged: boolean; spark?: true};
+/** spark：这一条是大保底兑换（用抽取点数换的指定神话，不花命运点）。kind：旧版分池抽卡时抽的是哪个池（混池抽卡没有这一项）。 */
+export type DrawRecord = {id: string; at: number; workKey: string; work: string; kind?: CardKind; count: number; cost: number; results: {name: string; kind: CardKind; star: Star}[]; bagged: boolean; spark?: true};
 /** 一部作品攒下的抽取点数（大保底）：在这部作品的小池里每抽 1 点，只能在这部作品的小池里兑换。 */
 export type DrawPoints = {points: number; work: string; at: number};
-export type GachaDurable = {version: 1; pity: PityState; points: Record<string, DrawPoints>; history: DrawRecord[]; updated: number};
+/** uniques：各作品里已经抽到过的唯一角色（名字），抽到过的不会再出现。 */
+export type GachaDurable = {version: 1; pity: PityState; points: Record<string, DrawPoints>; uniques: Record<string, string[]>; history: DrawRecord[]; updated: number};
 export const HISTORY_LIMIT = 100;
 /** 最多记多少部作品的抽取点数（超出时先丢点数最少、最久没动的）。 */
 export const POINTS_LIMIT = 200;
@@ -54,6 +59,17 @@ export function normalizePoints(raw: unknown): Record<string, DrawPoints> {
   rows.sort((a, b) => Number(b[1].points) - Number(a[1].points) || (Number(b[1].at) || 0) - (Number(a[1].at) || 0));
   const out: Record<string, DrawPoints> = {};
   for (const [k, x] of rows.slice(0, POINTS_LIMIT)) out[k] = {points: Math.min(1_000_000, Math.floor(Number(x.points))), work: text(x.work, 60), at: Number(x.at) || 0};
+  return out;
+}
+/** 最多记多少部作品的唯一角色、每部最多记多少位。 */
+export const UNIQUE_WORKS_LIMIT = 300, UNIQUE_NAMES_LIMIT = 200;
+export function normalizeUniques(raw: unknown): Record<string, string[]> {
+  const out: Record<string, string[]> = {};
+  for (const [k, v] of Object.entries(rec(raw)).slice(-UNIQUE_WORKS_LIMIT)) {
+    if (k.length > 120 || !Array.isArray(v)) continue;
+    const names = [...new Set(v.map(x => text(x, 24)).filter(Boolean))].slice(-UNIQUE_NAMES_LIMIT);
+    if (names.length) out[k] = names;
+  }
   return out;
 }
 /** 改一部作品的抽取点数（用完了就去掉这一条）。 */
@@ -67,9 +83,9 @@ export function normalizeDurable(raw: unknown): GachaDurable {
   for (const r of (Array.isArray(v.history) ? v.history : []).slice(0, HISTORY_LIMIT).map(rec)) {
     if (typeof r.id !== 'string' || typeof r.workKey !== 'string') continue;
     const results = (Array.isArray(r.results) ? r.results : []).map(rec).slice(0, 20).map(x => ({name: text(x.name, 24), kind: kindOf(x.kind), star: toStar(x.star)})).filter(x => x.name);
-    history.push({id: r.id.slice(0, 40), at: Number(r.at) || 0, workKey: r.workKey.slice(0, 120), work: text(r.work, 60), kind: kindOf(r.kind), count: Math.max(1, Math.min(20, Math.floor(Number(r.count)) || 1)), cost: money(r.cost, 0), results, bagged: r.bagged === true, ...(r.spark === true ? {spark: true as const} : {})});
+    history.push({id: r.id.slice(0, 40), at: Number(r.at) || 0, workKey: r.workKey.slice(0, 120), work: text(r.work, 60), ...(r.kind ? {kind: kindOf(r.kind)} : {}), count: Math.max(1, Math.min(20, Math.floor(Number(r.count)) || 1)), cost: money(r.cost, 0), results, bagged: r.bagged === true, ...(r.spark === true ? {spark: true as const} : {})});
   }
-  return {version: 1, pity: normalizePity(v.pity), points: normalizePoints(v.points), history, updated: Number(v.updated) || 0};
+  return {version: 1, pity: normalizePity(v.pity), points: normalizePoints(v.points), uniques: normalizeUniques(v.uniques), history, updated: Number(v.updated) || 0};
 }
 export type GachaSpread = {themeId: string; themeName: string; direction: Direction; works: WorkCard[]; reports: SourceReport[]; at: number};
 export type Overview = {zh?: string; overview: string};
@@ -86,7 +102,7 @@ export function normalizeDevice(raw: unknown): GachaDevice {
 
 export type Wallet = {fp: number | null; blocked?: string};
 /** spark：大保底兑换（不花命运点，只把兑换的神话放进背包）。 */
-export type CommitRequest = {cost: number; cards: GachaCard[]; pool: SmallPool; kind: CardKind; bag: boolean; scale: QualityScale; spark?: boolean};
+export type CommitRequest = {cost: number; cards: GachaCard[]; pool: SmallPool; bag: boolean; scale: QualityScale; spark?: boolean};
 export type RecycleResult = {fp: number | null; gained: number; removed: number};
 export type LlmOptions = {timeoutMs: number; signal?: AbortSignal; purpose: 'pool' | 'overview'};
 export type GachaPort = {
@@ -103,6 +119,8 @@ export type GachaPort = {
   bag?(): BagEntry[];
   /** 宿主：按品质回收，一次提交里移出物品并加回命运点数。 */
   recycle?(picks: RecyclePick[]): Promise<RecycleResult>;
+  /** 宿主：读世界书里名称包含这些字样的条目（世界观物品生成细则）；读不到时返回空数组。 */
+  specs?(names: string[]): Promise<SpecEntry[]>;
   /** 宿主：经酒馆助手独立生成（读者“独立API”里的「命运抽卡」路由）。 */
   llm?(system: string, user: string, options: LlmOptions): Promise<string>;
   fetch: FetchLike; proxyBase?: string;
@@ -158,17 +176,30 @@ export function createGacha(port: GachaPort, options: {rng?: () => number; now?:
   const kinds = () => poolKinds(settings.characterPool);
   function costFor(count: number) {return port.mode === 'host' ? (count >= 10 ? TEN_COST : DRAW_COST * count) : 0;}
   const castCost = () => port.mode === 'host' ? CAST_COST : 0;
-  function pickCard(pool: SmallPool, kind: CardKind, star: Star): GachaCard {
-    const list = poolList(pool, kind);
+  /** 物品与命运（混在一起）里挑一张这个品质的；这个品质没有时找最近的品质。 */
+  function pickCard(pool: SmallPool, star: Star): GachaCard {
+    const list = [...pool.items, ...pool.fates];
     for (const d of [0, -1, 1, -2, 2, -3, 3, -4, 4, -5, 5]) {const s = star + d, hit = list.filter(c => c.star === s); if (hit.length) return hit[Math.floor(rng() * hit.length)]!;}
     return list[Math.floor(rng() * list.length)]!;
   }
-  /** 这个卡池现在能不能抽（能抽时返回 undefined）：角色池要在设置里打开，小池编纂时也要打开过角色池。 */
-  function kindReady(pool: SmallPool, kind: CardKind): string | undefined {
-    if (!kinds().includes(kind)) return '角色池没有打开：在抽卡设置里打开后再抽';
-    if (kind === 'character' && !pool.characters) return '这个小池编纂时还没有打开角色池：重新编纂后才有角色可抽';
-    if (!poolList(pool, kind).length) return kind === 'character' ? '资料里没有找到这部作品的角色，角色池是空的' : '这个卡池是空的，请重新编纂';
+  /** 这个小池现在能不能抽（能抽时返回 undefined）。 */
+  function poolReady(pool: SmallPool): string | undefined {
+    if (!pool.items.length || !pool.fates.length) return '这个小池是空的，请重新编纂';
     return undefined;
+  }
+  /** 这部作品里已经抽到过的唯一角色：聊天里记下的，加上主角背包里还留着的这部作品的角色书页。 */
+  function takenUniques(pool: SmallPool): Set<string> {
+    const taken = new Set(durable.uniques[pool.workKey] ?? []);
+    if (port.mode === 'host' && port.bag) for (const e of safe(() => port.bag!(), [])) {
+      if (e.kind === 'character' && e.work === pool.work.title) taken.add(e.name.replace(/^角色·/, '').replace(/（《[^》]*》）\d*$/, ''));
+    }
+    return taken;
+  }
+  /** 还能抽到的唯一角色（没开角色池、小池里没有角色时为空）。 */
+  function uniquesLeft(pool: SmallPool): GachaCard[] {
+    if (!kinds().includes('character') || !pool.characters?.length) return [];
+    const taken = takenUniques(pool);
+    return pool.characters.filter(c => !taken.has(c.name));
   }
   const wallet = (): Wallet => port.mode === 'host' ? safe(() => port.wallet(), {fp: null, blocked: '读不到命运点数'}) : {fp: null};
   function canDraw(count: number): {ok: boolean; cost: number; reason?: string} {return canPay(costFor(count));}
@@ -209,10 +240,35 @@ export function createGacha(port: GachaPort, options: {rng?: () => number; now?:
     }
     return assemblePool({work, ...(protagonist ? {protagonist} : {}), by: 'model', at: now(), sources: dossier.sources}, lists, use, k => offlineCards(dossier, k));
   }
+  /** 世界观物品生成细则：读世界书里的细则条目，给装备、消耗品、资产等写出格式化的属性（技能书页、命运、角色不写，由正文模型负责）。
+   *  读不到细则或某一批没写成时，那些物品照旧只有大概的描述，不影响小池。 */
+  async function writeSpecs(pool: SmallPool, warnings: string[], o: {onStep?: (label: string) => void; signal?: AbortSignal}): Promise<SmallPool> {
+    const cfg = settings.itemSpec, want = pool.items.filter(needsSpec);
+    if (!cfg.enabled || !want.length || !port.specs) return pool;
+    if (!cfg.entries.length) {warnings.push('世界观物品生成细则没有填写条目名，物品只写了大概'); return pool;}
+    o.onStep?.('夜梦正在读世界书里的物品生成细则');
+    let entries: SpecEntry[];
+    try {entries = await port.specs(cfg.entries);} catch (e) {warnings.push('没能读取世界书（' + message(e).slice(0, 60) + '），物品只写了大概'); return pool;}
+    if (o.signal?.aborted) throw Error('已取消');
+    if (!entries.length) {warnings.push(`世界书里没有找到名称包含「${cfg.entries.join('」「')}」的条目，物品只写了大概`); return pool;}
+    const opts: LlmOptions = {timeoutMs: POOL_TIMEOUT_MS, purpose: 'pool', ...(o.signal ? {signal: o.signal} : {})}, specs = new Map<string, ItemSpec>();
+    const batches: GachaCard[][] = [];
+    for (let i = 0; i < want.length; i += SPEC_BATCH) batches.push(want.slice(i, i + SPEC_BATCH));
+    for (let i = 0; i < batches.length; i++) {
+      o.onStep?.(`夜梦正在按细则写物品属性（${i + 1}/${batches.length}）`);
+      try {const p = specPrompt(entries, pool.work, batches[i]!); for (const [name, spec] of parseSpecs(await ask(p.system, p.user, opts), batches[i]!)) specs.set(name, spec);}
+      catch (e) {if (o.signal?.aborted) throw Error('已取消'); warnings.push(`第 ${i + 1} 批物品属性没能写成（${message(e).slice(0, 60)}），这些物品只写了大概`);}
+      if (o.signal?.aborted) throw Error('已取消');
+    }
+    const missing = want.filter(c => !specs.has(c.name)).length;
+    if (missing && missing < want.length) warnings.push(`有 ${missing} 件物品没写出属性，只写了大概`);
+    return {...pool, items: pool.items.map(c => {const spec = specs.get(c.name); return spec ? {...c, spec} : c;})};
+  }
   return {
     mode: port.mode, contextId: port.contextId, rules,
     settings: () => settings,
-    scale: () => scaleOf(settings.scale),
+    /** 品质名（只用命定之诗的品质；星级显示以后通用化时再加回来）。 */
+    scale: (): QualityScale => DESTINED_SCALE,
     kinds,
     saveSettings(next: GachaSettings) {settings = normalizeSettings(next); try {port.writeSettings(settings);} catch {/* 只影响下次打开 */} net = makeNet(); notify();},
     llmReady,
@@ -253,7 +309,9 @@ export function createGacha(port: GachaPort, options: {rng?: () => number; now?:
     pool: (workKey: string) => device.pools[workKey],
     /** 小池张数（只算正在使用的卡池）。 */
     poolSize: (pool: SmallPool) => poolSize(pool, kinds()),
-    kindReady,
+    poolReady,
+    /** 这个小池里还能抽到的唯一角色。 */
+    uniquesLeft,
     picked: () => device.picked,
     pick(workKey: string | undefined) {if (workKey) device = {...device, picked: workKey}; else {const {picked: _p, ...rest} = device; device = rest;} saveDevice(); notify();},
     /** 编纂小池：查资料 → 模型分几次编纂（失败或没有模型时用资料直出）。 */
@@ -263,7 +321,7 @@ export function createGacha(port: GachaPort, options: {rng?: () => number; now?:
       const use = kinds(), warnings: string[] = [];
       let pool: SmallPool;
       if (!o.offline && llmReady()) {
-        try {pool = await compileWithModel(work, dossier, use, warnings, o);}
+        try {pool = await compileWithModel(work, dossier, use, warnings, o); pool = await writeSpecs(pool, warnings, o);}
         catch (e) {if (o.signal?.aborted) throw Error('已取消'); warnings.unshift('模型没能编纂（' + message(e).slice(0, 60) + '），已改用资料直出'); pool = offlinePool(dossier, now(), use);}
       } else pool = offlinePool(dossier, now(), use);
       if (o.signal?.aborted) throw Error('已取消');
@@ -286,22 +344,24 @@ export function createGacha(port: GachaPort, options: {rng?: () => number; now?:
     refresh() {durable = normalizeDurable(safe(() => port.readDurable(), undefined)); notify();},
     cost: costFor,
     canDraw,
-    /** 抽卡：先算星级与保底，宿主扣点 / 入包成功后才记下保底、抽取点数与记录。 */
-    async draw(workKey: string, kind: CardKind, count: 1 | 10): Promise<DrawOutcome> {
+    /** 抽卡（混池）：先算品质与保底，宿主扣点 / 入包成功后才记下保底、抽取点数、抽到过的唯一与记录。
+     *  滚到唯一时从还没抽到过的角色里随机挑一位；同一次十连里也不会重复。 */
+    async draw(workKey: string, count: 1 | 10): Promise<DrawOutcome> {
       const pool = device.pools[workKey]; if (!pool) throw Error('先选一部作品编纂小池');
-      const bad = kindReady(pool, kind); if (bad) throw Error(bad);
+      const bad = poolReady(pool); if (bad) throw Error(bad);
       const check = canDraw(count); if (!check.ok) throw Error(check.reason ?? '现在不能抽卡');
       durable = normalizeDurable(safe(() => port.readDurable(), durable));
-      const rolled = drawStars(count, rng, durable.pity, rules);
-      // 角色的星级就是这个人在原作里的分量与实力：抽到谁就按谁本来的星级入包，保底按实际抽到的星级推进。
-      const cards = rolled.stars.map(s => {const c = pickCard(pool, kind, s); return kind === 'character' ? {...c} : {...c, star: s};});
-      let pity = rolled.pity;
-      if (cards.some((c, i) => c.star !== rolled.stars[i])) {pity = durable.pity; for (const c of cards) pity = advancePity(pity, c.star);}
+      const left = uniquesLeft(pool), rolled = drawStars(count, rng, durable.pity, rules, left.length);
+      const cards = rolled.stars.map(s => {
+        if (s === UNIQUE) {const c = left.splice(Math.floor(rng() * left.length), 1)[0]!; return {...c, star: UNIQUE};}
+        return {...pickCard(pool, s), star: s};
+      });
       let after = wallet();
-      if (port.mode === 'host' && port.commit) after = await port.commit({cost: check.cost, cards, pool, kind, bag: settings.autoBag, scale: scaleOf(settings.scale)});
-      const at = now();
-      const record: DrawRecord = {id: recordId(at), at, workKey, work: pool.work.title, kind, count, cost: check.cost, results: cards.map(c => ({name: c.name, kind: c.kind, star: c.star})), bagged: port.mode === 'host' && settings.autoBag};
-      durable = {version: 1, pity, points: withPoints(durable.points, workKey, pool.work.title, pointsOf(workKey) + cards.length, at), history: [record, ...durable.history].slice(0, HISTORY_LIMIT), updated: at};
+      if (port.mode === 'host' && port.commit) after = await port.commit({cost: check.cost, cards, pool, bag: settings.autoBag, scale: DESTINED_SCALE});
+      const at = now(), got = cards.filter(c => c.star === UNIQUE).map(c => c.name);
+      const record: DrawRecord = {id: recordId(at), at, workKey, work: pool.work.title, count, cost: check.cost, results: cards.map(c => ({name: c.name, kind: c.kind, star: c.star})), bagged: port.mode === 'host' && settings.autoBag};
+      const uniques = got.length ? normalizeUniques({...durable.uniques, [workKey]: [...(durable.uniques[workKey] ?? []), ...got]}) : durable.uniques;
+      durable = {version: 1, pity: rolled.pity, points: withPoints(durable.points, workKey, pool.work.title, pointsOf(workKey) + cards.length, at), uniques, history: [record, ...durable.history].slice(0, HISTORY_LIMIT), updated: at};
       let warning: string | undefined;
       try {await port.writeDurable(durable);} catch (e) {warning = '抽卡已完成，但保底、抽取点数与记录没能写进聊天：' + message(e).slice(0, 60);}
       notify();
@@ -322,7 +382,7 @@ export function createGacha(port: GachaPort, options: {rng?: () => number; now?:
       durable = spent; notify();
       let after = wallet();
       if (bag && port.commit) {
-        try {after = await port.commit({cost: 0, cards: [card], pool, kind: card.kind, bag: true, scale: scaleOf(settings.scale), spark: true});}
+        try {after = await port.commit({cost: 0, cards: [card], pool, bag: true, scale: DESTINED_SCALE, spark: true});}
         catch (e) {
           durable = before; let note = '';
           try {await port.writeDurable({...before, updated: now()});} catch {note = '；抽取点数也没能退回，请检查聊天后再试';}

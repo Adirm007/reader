@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {DEFAULT_RULES,DESTINED_QUALITY,STARS,advancePity,chance6,drawStars,emptyPity,normalizePity,ratesText,rollStar,seededRng,DESTINED_SCALE,STAR_SCALE,starOfQuality,type Star} from '../src/gacha/rarity';
+import {DEFAULT_RULES,DESTINED_QUALITY,STARS,TIERS,UNIQUE,advancePity,chance6,drawStars,emptyPity,normalizePity,ratesText,rollStar,seededRng,DESTINED_SCALE,starOfQuality,type Star} from '../src/gacha/rarity';
 import {DEFAULT_THEMES,customTheme,normalizeThemes,themeSources} from '../src/gacha/themes';
 import {createNet,mapLimit,plainText,NetError,type FetchLike} from '../src/gacha/net';
 import {SOURCE_BY_ID,anilistCard,bangumiCard,balancedPick,dedupeWorks,firstSentence,gatherSpread,jikanCard,vndbCard,wikidataQuery,stripDisambiguation,type WorkCard,type SourceCtx} from '../src/gacha/sources';
@@ -8,6 +8,8 @@ import {buildDossier,dossierText,fandomRelevant,fandomSlugs,pickWikiSections,wik
 import {KIND_MIN,MYTHIC_ITEMS,POOL_MAX,POOL_MIN,extractJson,fillTiers,kindPrompt,liftMythics,normalizePlan,normalizePool,offlinePool,overviewPrompt,parseOverviews,parsePool,planPrompt,poolSize,readReply,salvageArray,type GachaCard} from '../src/gacha/pool';
 import {CAST_COST,DRAW_COST,SPREAD_SIZE,TEN_COST,createGacha,deviceStore,localGachaPort,normalizeDurable,normalizeSettings,withPoints,type GachaDurable,type GachaPort} from '../src/gacha/session';
 import {BAG_TAG,CONTRACT_PRICE,RECYCLE_DIVISOR,addToBag,applyGachaDraw,applyRecycle,gachaBagEntry,listGachaBag,recyclePrice} from '../src/gacha/bag';
+import {DEFAULT_SPEC_ENTRIES,cleanSpecText,isSkillPage,needsSpec,normalizeSpecSettings,parseSpecs,readSpecEntries,specPrompt} from '../src/gacha/spec';
+import type {BagEntry} from '../src/gacha/bag';
 import {BOOKSEA_BUSY,DURABLE_KEY,bookseaActive,createReaderGacha,readerGachaPort,type ReaderGachaHost,type ReaderTx} from '../src/reader/gacha-reader';
 
 /* ---------- 假网络：按 URL 片段返回 JSON ---------- */
@@ -27,31 +29,38 @@ function fakeFetch(routes: Route[], log: string[] = []): FetchLike {
 const ctxOf = (fetcher: FetchLike, rng = seededRng(7)): SourceCtx => ({net: createNet(fetcher, {useProxy: false}), rng, nsfw: false, memo: new Map()});
 const work = (key: string, title: string, extra: Partial<WorkCard> = {}): WorkCard => ({key, source: key.split(':')[0] as WorkCard['source'], sourceId: key.split(':').slice(1).join(':'), title, media: 'anime', ...extra});
 
-test('抽卡概率：合计为 1；小保底 120 抽内必出 6★（没有逐抽提高、没有 5★ 保底）；十连至少一张 3★；大保底攒 200 点', () => {
-  assert.ok(Math.abs(STARS.reduce((n, s) => n + DEFAULT_RULES.rates[s], 0) - 1) < 1e-9);
-  assert.deepEqual(DEFAULT_RULES.rates, {1: .52, 2: .30, 3: .12, 4: .045, 5: .012, 6: .003});
+test('抽卡概率：合计为 1；唯一与神话同为 0.3%；小保底 120 抽内必出神话（没有逐抽提高、没有传说保底）；十连至少一张稀有；大保底攒 200 点', () => {
+  assert.ok(Math.abs(TIERS.reduce((n, s) => n + DEFAULT_RULES.rates[s], 0) - 1) < 1e-9);
+  assert.deepEqual(DEFAULT_RULES.rates, {1: .517, 2: .30, 3: .12, 4: .045, 5: .012, 6: .003, 7: .003}); assert.equal(DEFAULT_RULES.rates[UNIQUE], DEFAULT_RULES.rates[6]);
   assert.deepEqual([DEFAULT_RULES.pity6, DEFAULT_RULES.spark, DEFAULT_RULES.tenFloor], [120, 200, 3]);
   assert.equal(chance6({since6: 119, total: 119}), 1, '第 120 抽必出');
   assert.equal(chance6({since6: 118, total: 118}), DEFAULT_RULES.rates[6], '第 119 抽还是基础概率');
   assert.equal(chance6({since6: 0, total: 0}), DEFAULT_RULES.rates[6]);
   assert.equal(rollStar(() => .999, {since6: 119, total: 0}), 6);
   assert.equal(rollStar(() => .999, {since6: 49, total: 0}), 1, '不再有 50 抽 5★ 保底');
-  const rng = seededRng(123), counts: Record<Star, number> = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0};
+  const rng = seededRng(123), counts: Record<Star, number> = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0};
   let pity = emptyPity(), maxGap = 0, gap = 0;
   for (let i = 0; i < 40000; i++) {const s = rollStar(rng, pity); counts[s]++; pity = advancePity(pity, s); gap = s === 6 ? 0 : gap + 1; maxGap = Math.max(maxGap, gap);}
   assert.ok(maxGap < 120, '最多 119 抽没有 6★');
   assert.ok(counts[1] > counts[2] && counts[2] > counts[3] && counts[3] > counts[4] && counts[4] > counts[5], JSON.stringify(counts));
   const effective6 = counts[6] / 40000; assert.ok(effective6 > .008 && effective6 < .012, '保底之后的综合 6★ 率 ' + effective6);
+  assert.equal(counts[7], 0, '没有可抽的唯一时不会滚出唯一');
   for (let seed = 1; seed < 400; seed++) {
     const {stars, pity: p} = drawStars(10, seededRng(seed), emptyPity());
     assert.equal(stars.length, 10); assert.ok(Math.max(...stars) >= 3, 'seed ' + seed); assert.equal(p.total, 10);
   }
-  const low = drawStars(10, () => 0.5, emptyPity(), {...DEFAULT_RULES, rates: {1: 1, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0}});
+  const low = drawStars(10, () => 0.5, emptyPity(), {...DEFAULT_RULES, rates: {1: 1, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0}});
   assert.deepEqual(low.stars, [1, 1, 1, 1, 1, 1, 1, 1, 1, 3]);
+  const two = drawStars(3, () => .004, emptyPity(), DEFAULT_RULES, 2);
+  assert.deepEqual(two.stars, [7, 7, 5], '唯一抽一个少一个，抽完后那一份分给其余品质'); assert.equal(two.pity.since6, 3, '唯一不算神话，不清小保底');
+  let unique = 0, up = emptyPity(); const ur = seededRng(77);
+  for (let i = 0; i < 40000; i++) {const s = rollStar(ur, up, DEFAULT_RULES, true); if (s === 7) unique++; up = advancePity(up, s);}
+  assert.ok(unique / 40000 > .002 && unique / 40000 < .0042, '唯一率 ' + unique / 40000);
   assert.deepEqual(normalizePity({since6: 7, since5: 3, total: 9}), {since6: 7, total: 9}, '旧存档里的 5★ 保底计数不再使用');
   assert.match(ratesText()[1]!, /小保底：120 抽内必出一张随机神话/); assert.match(ratesText()[1]!, /攒满 200 点可兑换这部作品小池里任选的一张神话；点数只能在这部作品的小池里使用，不跨池互通/);
-  assert.match(ratesText()[1]!, /每次十连至少一张 3★/); assert.match(ratesText(DEFAULT_RULES, STAR_SCALE)[1]!, /随机6★/);
-  assert.equal(DESTINED_SCALE.label(6), '神话'); assert.equal(DESTINED_SCALE.label(1), '普通'); assert.equal(STAR_SCALE.label(3), '3★'); assert.equal(starOfQuality('史诗'), 4);
+  assert.match(ratesText()[1]!, /每次十连至少一张稀有/); assert.doesNotMatch(ratesText().join(''), /★|唯一/);
+  assert.match(ratesText(DEFAULT_RULES, true)[0]!, /^唯一 0\.3% · 神话 0\.3% · 传说 1\.2%/); assert.match(ratesText(DEFAULT_RULES, true)[1]!, /抽到过的角色不会再出现/);
+  assert.equal(DESTINED_SCALE.label(6), '神话'); assert.equal(DESTINED_SCALE.label(1), '普通'); assert.equal(DESTINED_SCALE.label(7), '唯一'); assert.equal(starOfQuality('史诗'), 4); assert.equal(starOfQuality('唯一'), 7);
 });
 test('主题：默认主题都有资料库；自定义主题生成查询；坏数据丢弃', () => {
   assert.ok(DEFAULT_THEMES.filter(t => t.direction === 'literature').length >= 12);
@@ -211,6 +220,8 @@ test('小池解析：容忍代码块、多余逗号与截断；去重；物品�
   const three = parsePool(MODEL_REPLY, work('bangumi:42', '测试作品'), [], 5, ['item', 'fate', 'character']);
   assert.equal(three.characters!.length, 20); assert.equal(poolSize(three), 84);
   assert.deepEqual([three.characters![0]!.role, three.characters![0]!.power, three.characters![0]!.kind], ['主角', '实力0', 'character']);
+  assert.ok(three.characters!.every(c => c.star === UNIQUE), '角色全部是唯一'); assert.deepEqual(three.characters!.map(c => c.name), CHARACTER_STARS.map((_, i) => '角色' + i), '保持模型给的从主到次的顺序');
+  assert.ok(three.items.every(c => c.star <= 6) && three.fates.every(c => c.star <= 6));
   const cut = readReply(MODEL_REPLY.slice(0, MODEL_REPLY.indexOf('"name":"物品30"')));
   assert.equal((cut.items as unknown[]).length, 30, '截断时取出每一张完整的卡'); assert.equal(cut.protagonist, '英雄'); assert.deepEqual(cut.plan, {items: 40, fates: 24, characters: 20});
   assert.deepEqual(salvageArray('{"items":[{"name":"a\\"}","description":"x"},{"name":"b"', 'items'), [{name: 'a"}', description: 'x'}], '字符串里的括号不算，没写完的那张丢掉');
@@ -220,8 +231,10 @@ test('小池解析：容忍代码块、多余逗号与截断；去重；物品�
   assert.deepEqual(fillTiers([6, 5, 4, 3, 2, 1].map(card)).map(c => c.star), [6, 5, 4, 3, 2, 1], '齐全时不动');
   assert.deepEqual(liftMythics([6, 5, 5, 5, 4, 4, 1].map(card), 4).map(c => c.star), [6, 6, 6, 5, 6, 4, 1]);
   assert.deepEqual(liftMythics([6, 5, 5, 4, 3, 2, 1].map(card), 3).map(c => c.star), [6, 6, 5, 4, 3, 2, 1], '每个星级至少留一张');
-  const again = normalizePool(JSON.parse(JSON.stringify(three)))!;
+  const spec = {type: '单手剑', tags: ['攻击: 320'], effects: {锋利: '额外伤害+300'}};
+  const again = normalizePool(JSON.parse(JSON.stringify({...three, items: three.items.map((c, i) => i ? c : {...c, spec}), characters: three.characters!.map(c => ({...c, star: 5}))})))!;
   assert.deepEqual(again.items.map(c => c.id), three.items.map(c => c.id)); assert.equal(again.characters!.length, 20);
+  assert.deepEqual(again.items[0]!.spec, spec, '物品属性随小池缓存'); assert.ok(again.characters!.every(c => c.star === UNIQUE), '旧缓存里分星级的角色读出来也是唯一');
   assert.equal(normalizePool({...JSON.parse(JSON.stringify(pool)), version: 1}), undefined, '旧版（各 18 张）的小池缓存要重新编纂');
   const big = normalizePlan({items: 80, fates: 60}, ['item', 'fate']); assert.equal(big.item + big.fate, POOL_MAX); assert.ok(big.item > big.fate);
   const tiny = normalizePlan({items: 3, fates: 2, characters: 1}, ['item', 'fate', 'character']);
@@ -229,9 +242,9 @@ test('小池解析：容忍代码块、多余逗号与截断；去重；物品�
   assert.deepEqual(normalizePlan(undefined, ['item', 'fate']), {item: 32, fate: 28, character: 0}, '没给规划时按常见比例');
   const d0 = {work: work('bangumi:42', '测试作品'), synopsis: 's', characters: [], sections: [], facts: [], sources: [], notes: []};
   const p1 = planPrompt(d0, ['item', 'fate', 'character']), p2 = kindPrompt(d0, 'character', {item: 30, fate: 24, character: 18}, ['item', 'fate', 'character'], '英雄');
-  assert.match(p1.system, /不要引用原作的大段文字/); assert.match(p1.user, /合计 54–99 张/); assert.match(p1.user, /物品池至少 9 件 6★，命运池与角色池各至少 1 张 6★/);
+  assert.match(p1.system, /不要引用原作的大段文字/); assert.match(p1.user, /合计 54–99 张/); assert.match(p1.user, /物品池至少 9 件 6★，命运池至少 1 张 6★/); assert.match(p1.user, /角色全部是唯一品质/); assert.match(p1.system, /技能书页/);
   assert.match(p1.user, /"plan":\{"items":0,"fates":0,"characters":0\}/); assert.match(planPrompt(d0, ['item', 'fate']).user, /命运池至少 1 张 6★/);
-  assert.match(p2.system, /实力完全等同原作/); assert.match(p2.system, /完全保有自身自由意志的情况下自由行动，玩家无法强制约束/); assert.match(p2.user, /共 18 张/); assert.match(p2.user, /主角是英雄/);
+  assert.match(p2.system, /实力完全等同原作/); assert.match(p2.system, /完全保有自身自由意志的情况下自由行动，玩家无法强制约束/); assert.match(p2.user, /共 18 位：全部是唯一品质/); assert.doesNotMatch(p2.user + p2.system, /"star"/); assert.match(p2.user, /主角是英雄/);
   assert.doesNotMatch(p1.system + p1.user + p2.system + p2.user, /<user>|\{\{user\}\}/);
 });
 test('资料直出小池：没有模型也能抽——合计 54–99 张、物品至少 9 件神话、每个星级都有牌；角色只用资料里的人物', () => {
@@ -246,7 +259,7 @@ test('资料直出小池：没有模型也能抽——合计 54–99 张、物�
   const thin = offlinePool({...d, characters: [], sections: [], synopsis: ''}, 9);
   assert.ok(poolSize(thin) >= POOL_MIN, String(poolSize(thin))); assert.ok(thin.items.filter(c => c.star === 6).length >= MYTHIC_ITEMS);
   const withPeople = offlinePool(d, 9, ['item', 'fate', 'character']);
-  assert.deepEqual(withPeople.characters!.map(c => [c.name, c.star, c.role]), [['汪淼', 6, '主角'], ['史强', 3, '配角']], '角色只取资料里真有的人物，不凑数');
+  assert.deepEqual(withPeople.characters!.map(c => [c.name, c.star, c.role]), [['汪淼', 7, '主角'], ['史强', 7, '配角']], '角色只取资料里真有的人物，不凑数');
   assert.ok(poolSize(withPeople) <= POOL_MAX);
   assert.deepEqual(offlinePool({...d, characters: []}, 9, ['item', 'fate', 'character']).characters, [], '资料里没有人物时角色池是空的');
 });
@@ -296,15 +309,15 @@ test('抽卡服务：换大池扣 1000 捞起 99 部 → 编纂小池（先规�
   assert.equal(f.llmCalls.filter(c => c.startsWith('pool:')).length, 2, '规划与物品一次、命运一次（没开角色池）');
   assert.equal(pool.items.length, 40); assert.equal(pool.characters, undefined); assert.equal(g.poolSize(pool), 64);
   assert.equal(g.canDraw(10).cost, 2000); assert.equal(g.canDraw(1).cost, 200);
-  const out = await g.draw(target.key, 'item', 10);
+  const out = await g.draw(target.key, 10);
   assert.equal(out.cards.length, 10); assert.ok(Math.max(...out.stars) >= 3);
   assert.equal(out.wallet.fp, 7000); assert.equal((f.commits[0] as {cost: number}).cost, 2000);
-  assert.ok(out.cards.every(c => c.kind === 'item'));
+  assert.ok(out.cards.every(c => c.kind === 'item' || c.kind === 'fate'), '混池：物品与命运一起抽'); assert.ok(!('kind' in (f.commits[0] as object)));
   assert.equal(f.durable.history.length, 1); assert.equal(f.durable.pity.total, 10); assert.equal(f.durable.history[0]!.bagged, true);
   assert.equal(f.durable.points[target.key]!.points, 10, '每抽攒 1 点抽取点数');
-  const fate = await g.draw(target.key, 'fate', 1);
-  assert.equal(fate.cards[0]!.kind, 'fate'); assert.equal(f.durable.pity.total, 11); assert.equal(f.durable.history[0]!.kind, 'fate');
-  assert.equal(f.fp, 6800, '单抽 200'); assert.equal(g.points(target.key), 11, '物品池与命运池的点数都记在这部作品上');
+  const one = await g.draw(target.key, 1);
+  assert.equal(one.cards.length, 1); assert.equal(f.durable.pity.total, 11); assert.equal(f.durable.history[0]!.kind, undefined, '混池记录不分池');
+  assert.equal(f.fp, 6800, '单抽 200'); assert.equal(g.points(target.key), 11);
   const again = createGacha(f.port, {rng: seededRng(12)});
   assert.equal(again.pool(target.key)!.items.length, 40, '小池缓存在这台设备');
   assert.equal(again.history().length, 2); assert.equal(again.points(target.key), 11);
@@ -333,17 +346,17 @@ test('抽卡服务：点数不足、旅程进行中都不抽；价格固定，�
   const poor = fakePort({}, 1150), g = createGacha(poor.port, {rng: seededRng(1)});
   await g.cast('acg-fantasy'); const w = g.spread()!.works[0]!; await g.compile(w);
   assert.equal(poor.fp, 150); assert.match(g.canDraw(1).reason!, /命运点不足（需要 200，现有 150）/);
-  await assert.rejects(g.draw(w.key, 'item', 1), /命运点不足/); assert.equal(poor.commits.length, 0);
+  await assert.rejects(g.draw(w.key, 1), /命运点不足/); assert.equal(poor.commits.length, 0);
   const busy = fakePort(), b = createGacha(busy.port, {rng: seededRng(2)});
   await b.cast('acg-fantasy'); const w2 = b.spread()!.works[0]!; await b.compile(w2);
   busy.block('旅程还没结束');
-  await assert.rejects(b.draw(w2.key, 'item', 1), /旅程还没结束/); assert.equal(busy.commits.length, 0);
+  await assert.rejects(b.draw(w2.key, 1), /旅程还没结束/); assert.equal(busy.commits.length, 0);
   busy.block(undefined);
   b.saveSettings({...b.settings(), cost1: 0, cost10: 0, castCost: 0} as never);
   assert.equal(b.canDraw(10).cost, 2000); assert.equal(b.castCost(), 1000); assert.ok(!('cost1' in b.settings()));
   const broken = fakePort({async commit() {throw Error('写入失败');}}), c = createGacha(broken.port, {rng: seededRng(3)});
   await c.cast('acg-fantasy'); const w3 = c.spread()!.works[0]!; await c.compile(w3);
-  await assert.rejects(c.draw(w3.key, 'item', 1), /写入失败/);
+  await assert.rejects(c.draw(w3.key, 1), /写入失败/);
   assert.equal(c.pity().total, 0); assert.equal(broken.durable, undefined);
 });
 test('抽卡服务：没有模型时用资料直出；本机模式不扣任何东西', async () => {
@@ -353,13 +366,15 @@ test('抽卡服务：没有模型时用资料直出；本机模式不扣任何�
   await g.cast('acg-mecha'); const w = g.spread()!.works[0]!;
   const pool = await g.compile(w); assert.equal(pool.by, 'offline');
   assert.equal(g.canDraw(10).cost, 0);
-  const out = await g.draw(w.key, 'fate', 10); assert.equal(out.cards.length, 10); assert.equal(out.record.bagged, false);
+  const out = await g.draw(w.key, 10); assert.equal(out.cards.length, 10); assert.equal(out.record.bagged, false);
   assert.ok(storage.m.has('dream_gacha_local_v1'));
   assert.equal(normalizeDurable(JSON.parse(storage.m.get('dream_gacha_local_v1')!)).pity.total, 10);
   assert.equal(g.castCost(), 0); assert.equal(g.canRecycle(), false); assert.deepEqual(g.bag(), []);
   await assert.rejects(g.recycle([{name: 'x', quality: '普通', count: 1}]), /没有背包/);
   const s = normalizeSettings({cost1: -5, cost10: 'x', sources: {bangumi: false}, scale: 'stars', api: {enabled: true, url: 'https://x', model: 'm'}});
-  assert.ok(!('cost1' in s) && !('cost10' in s)); assert.equal(s.sources.bangumi, false); assert.equal(s.sources.vndb, true); assert.equal(s.scale, 'stars'); assert.equal(s.api.enabled, true);
+  assert.ok(!('cost1' in s) && !('cost10' in s) && !('scale' in s), '星级显示已撤掉'); assert.equal(s.sources.bangumi, false); assert.equal(s.sources.vndb, true); assert.equal(s.api.enabled, true);
+  assert.deepEqual(s.itemSpec, {enabled: true, entries: [...DEFAULT_SPEC_ENTRIES]}, '世界观物品生成细则默认开启');
+  assert.deepEqual(normalizeSettings({itemSpec: {enabled: false, entries: ['核心数值表', ' 核心数值表 ', '', '自定规则']}}).itemSpec, {enabled: false, entries: ['核心数值表', '自定规则']});
   const ds = deviceStore(storage, 'chat-1'); ds.write({a: 1}); assert.deepEqual(ds.read(), {a: 1});
   for (let i = 2; i < 10; i++) deviceStore(storage, 'chat-' + i).write({i});
   assert.equal(deviceStore(storage, 'chat-1').read(), undefined, '只留最近 6 个聊天的缓存');
@@ -385,7 +400,13 @@ test('入包：物品与命运按命定之诗品质名进主角背包，同名�
   const pool = parsePool(MODEL_REPLY, work('bangumi:42', '测试作品', {media: 'anime'}), []);
   const item = pool.items.find(c => c.star === 6)!, fate = pool.fates.find(c => c.star === 6)!;
   const e1 = gachaBagEntry(item, pool, DESTINED_SCALE), e2 = gachaBagEntry(fate, pool, DESTINED_SCALE);
-  assert.equal(e1.item.品质, '神话'); assert.equal(e1.item.类型, '武器'); assert.ok((e1.item.标签 as string[]).includes('作品:测试作品')); assert.equal((e1.item.标签 as string[])[0], BAG_TAG); assert.match(String(e1.item.描述), /动画《测试作品》的6★物品，原属英雄/);
+  assert.equal(e1.item.品质, '神话'); assert.equal(e1.item.类型, '武器'); assert.ok((e1.item.标签 as string[]).includes('作品:测试作品')); assert.equal((e1.item.标签 as string[])[0], BAG_TAG); assert.match(String(e1.item.描述), /动画《测试作品》的神话物品，原属英雄/);
+  assert.ok(!(e1.item.标签 as string[]).some(t => t.startsWith('星级:')), '背包里不再写星级'); assert.deepEqual(e1.item.效果, {来历: item.description, 用途: '用途'}, '没写属性的物品照旧只有大概');
+  const armed = gachaBagEntry({...item, spec: {type: '单手剑', tags: ['攻击: 1800'], effects: {破甲: '无视目标 30% 防御'}}}, pool, DESTINED_SCALE);
+  assert.deepEqual([armed.item.类型, armed.item.效果], ['单手剑', {破甲: '无视目标 30% 防御'}]); assert.ok((armed.item.标签 as string[]).includes('攻击: 1800'));
+  assert.match(String(armed.item.描述), new RegExp('^' + item.description + '用途。抽自动画《测试作品》的神话物品'));
+  const page = gachaBagEntry({...item, type: '技能书页', spec: {tags: [], effects: {x: 'y'}}}, pool, DESTINED_SCALE), pageEffect = page.item.效果 as Record<string, string>;
+  assert.equal(page.item.类型, '技能书页'); assert.equal(pageEffect.技能, item.description); assert.match(pageEffect.使用!, /转赠/); assert.equal(pageEffect.x, undefined, '技能书页不用细则属性');
   assert.equal(e2.name, '命运·' + fate.name); assert.equal(e2.item.类型, '命运'); assert.ok((e2.item.效果 as Record<string, string>).使用);
   assert.ok(!(e1.item.标签 as string[]).includes('书海'), '不再冒充书海的物品（书海会按“书海”标签识别兑换券）');
   const bag: Record<string, unknown> = {[item.name]: {品质: '普通', 类型: '道具', 数量: 3, 效果: {}}};
@@ -406,32 +427,32 @@ test('读者端口：钱包读最新楼层；扣点与入包在一次付费提�
   const r = fakeReader(), port = readerGachaPort(readerHost(r));
   assert.deepEqual(port.wallet(), {fp: 3000}); assert.equal(port.mode, 'host'); assert.equal(port.contextId, 'x|c1'); assert.equal(port.proxyBase, 'http://127.0.0.1:8017');
   const pool = parsePool(MODEL_REPLY, work('bangumi:42', '测试作品'), []);
-  const w = await port.commit!({cost: 200, cards: [pool.items[0]!], pool, kind: 'item', bag: true, scale: DESTINED_SCALE});
+  const w = await port.commit!({cost: 200, cards: [pool.items[0]!], pool, bag: true, scale: DESTINED_SCALE});
   assert.equal(w.fp, 2800); assert.deepEqual(r.stats(), {runs: 1, transacts: 1});
   assert.equal((r.data.stat_data as {命运点数: number}).命运点数, 2800);
   assert.ok((r.data.stat_data as {主角: {背包: Obj}}).主角.背包[pool.items[0]!.name]);
   const before = structuredClone(r.data);
-  await assert.rejects(port.commit!({cost: 5000, cards: [pool.items[1]!], pool, kind: 'item', bag: true, scale: DESTINED_SCALE}), /FP不足/);
+  await assert.rejects(port.commit!({cost: 5000, cards: [pool.items[1]!], pool, bag: true, scale: DESTINED_SCALE}), /FP不足/);
   assert.deepEqual(r.data, before, '点数不足时什么也不写');
-  assert.deepEqual(await port.commit!({cost: 0, cards: [], pool, kind: 'item', bag: true, scale: DESTINED_SCALE}), {fp: 2800}); assert.equal(r.stats().transacts, 2, '免费且没有东西入包时不提交');
+  assert.deepEqual(await port.commit!({cost: 0, cards: [], pool, bag: true, scale: DESTINED_SCALE}), {fp: 2800}); assert.equal(r.stats().transacts, 2, '免费且没有东西入包时不提交');
   assert.deepEqual(await port.commitCast!({cost: 1000, theme: '奇幻'}), {fp: 1800}); assert.deepEqual(r.stats(), {runs: 3, transacts: 3}, '换大池也是一次付费提交');
   const beforeCast = structuredClone(r.data);
   await assert.rejects(port.commitCast!({cost: 5000, theme: '奇幻'}), /FP不足/); assert.deepEqual(r.data, beforeCast);
   r.ctx.chatMetadata.variables.booksea = {other: 1};
-  await port.writeDurable({version: 1, pity: emptyPity(), points: {}, history: [], updated: 1});
-  assert.deepEqual(r.ctx.chatMetadata.variables[DURABLE_KEY], {version: 1, pity: emptyPity(), points: {}, history: [], updated: 1}); assert.equal(r.ctx.saves, 1);
+  await port.writeDurable({version: 1, pity: emptyPity(), points: {}, uniques: {}, history: [], updated: 1});
+  assert.deepEqual(r.ctx.chatMetadata.variables[DURABLE_KEY], {version: 1, pity: emptyPity(), points: {}, uniques: {}, history: [], updated: 1}); assert.equal(r.ctx.saves, 1);
   assert.deepEqual(r.ctx.chatMetadata.variables.booksea, {other: 1}, '不碰其他聊天变量'); assert.deepEqual(port.readDurable(), r.ctx.chatMetadata.variables[DURABLE_KEY]);
   const bad = readerGachaPort(readerHost(fakeReader({fp: '未知'})));
   assert.match(bad.wallet().blocked!, /还没有读到有效的命运点数/);
   r.switchChat();
   assert.match(port.wallet().blocked!, /聊天已切换/);
-  await assert.rejects(port.commit!({cost: 200, cards: [pool.items[0]!], pool, kind: 'item', bag: true, scale: DESTINED_SCALE}), /聊天已切换/);
+  await assert.rejects(port.commit!({cost: 200, cards: [pool.items[0]!], pool, bag: true, scale: DESTINED_SCALE}), /聊天已切换/);
   await assert.rejects(port.commitCast!({cost: 1000, theme: '奇幻'}), /聊天已切换/);
   await assert.rejects(port.recycle!([{name: pool.items[0]!.name, quality: '神话', count: 1}]), /聊天已切换/);
-  await assert.rejects(port.writeDurable({version: 1, pity: emptyPity(), points: {}, history: [], updated: 2}), /聊天已切换/);
+  await assert.rejects(port.writeDurable({version: 1, pity: emptyPity(), points: {}, uniques: {}, history: [], updated: 2}), /聊天已切换/);
 });
 test('读者端口：书海旅程进行中不扣点、不入包、不回收——按最新楼层的进度引用找存档，旧版看聊天镜像', async () => {
-  const pool = parsePool(MODEL_REPLY, work('bangumi:42', '测试作品'), []), req = {cost: 200, cards: [pool.items[0]!], pool, kind: 'item' as const, bag: true, scale: DESTINED_SCALE};
+  const pool = parsePool(MODEL_REPLY, work('bangumi:42', '测试作品'), []), req = {cost: 200, cards: [pool.items[0]!], pool, bag: true, scale: DESTINED_SCALE};
   const mirror = fakeReader({chat: {booksea: {activeExpedition: {run: {id: 'r'}, mode: 'explore'}}}}), mp = readerGachaPort(readerHost(mirror));
   const untouched = structuredClone(mirror.data);
   assert.equal(mp.wallet().blocked, BOOKSEA_BUSY); await assert.rejects(mp.commit!(req), /书海的旅程还没结束/);
@@ -494,7 +515,7 @@ test('小池标题：补写览概得到的中文译名成为小池标题，原�
   assert.ok(await g.overview() > 0); assert.equal(g.overviewOf(w.key)!.zh, '中文译名');
   const pool = await g.compile(w);
   assert.equal(pool.work.title, '中文译名'); assert.equal(pool.work.original, w.title, '原来的标题留作原名');
-  const out = await g.draw(w.key, 'item', 1); assert.equal(out.record.work, '中文译名');
+  const out = await g.draw(w.key, 1); assert.equal(out.record.work, '中文译名');
 });
 test('Fandom：猜到的同名站点必须真的在讲这部作品，否则不收', async () => {
   assert.equal(fandomRelevant('Cowboy Bebop', 'Spike Spiegel', 'Spike Spiegel is the protagonist of Cowboy Bebop, a bounty hunter.'), true);
@@ -515,7 +536,7 @@ test('Fandom：猜到的同名站点必须真的在讲这部作品，否则不�
 
 test('回收：每件按同层级命定契约基础价的 1/25；只收命运抽卡的东西，逐件核对后移出并加回命运点数', () => {
   assert.equal(RECYCLE_DIVISOR, 25);
-  assert.deepEqual(['普通', '优良', '稀有', '史诗', '传说', '神话'].map(recyclePrice), [8, 20, 100, 200, 2000, 6000]);
+  assert.deepEqual(['普通', '优良', '稀有', '史诗', '传说', '神话', '唯一'].map(recyclePrice), [8, 20, 100, 200, 2000, 6000, 6000]);
   assert.deepEqual([1, 2, 3, 4, 5, 6].map(t => CONTRACT_PRICE[t]), [200, 500, 2500, 5000, 50000, 150000], '与世界书「命定契约」的基础价一致');
   assert.equal(recyclePrice('至高'), 0); assert.equal(recyclePrice(undefined), 0);
   const tag = (q: string, kind = '物品') => ({品质: q, 类型: kind === '命运' ? '命运' : '武器', 数量: 1, 标签: [BAG_TAG, kind, '作品:测试作品', '星级:' + starOfQuality(q)]});
@@ -556,18 +577,21 @@ test('经济：小保底平均约 101 抽一张神话；抽来的东西全部回
   const per6 = pulls / sixes, perPull = value / pulls, spark = recyclePrice('神话') / DEFAULT_RULES.spark;
   assert.ok(per6 > 92 && per6 < 110, '平均 ' + per6.toFixed(1) + ' 抽一张 6★');
   assert.ok(perPull + spark < DRAW_COST * .8, `每抽平均只能回收 ${perPull.toFixed(0)}，加上大保底兑换的神话也只有 ${(perPull + spark).toFixed(0)}，少于单抽 ${DRAW_COST}（还没算换大池的 ${CAST_COST}）`);
+  let withUnique = 0, wp = emptyPity(), n = 0; const ur = seededRng(43);
+  for (let i = 0; i < 20000; i++) {const r = drawStars(10, ur, wp, DEFAULT_RULES, 99); wp = r.pity; for (const s of r.stars) {n++; withUnique += recyclePrice(DESTINED_QUALITY[s]);}}
+  assert.ok(withUnique / n + spark < DRAW_COST * .9, '一直有唯一可抽（按神话价回收）时也赚不回来：' + (withUnique / n + spark).toFixed(0));
 });
 test('大保底：每部作品各攒各的抽取点数，攒满 200 点兑换这部作品小池里指定的神话；不花命运点、不动小保底；入包失败把点数退回', async () => {
   const f = fakePort({}, 100000), g = createGacha(f.port, {rng: seededRng(51), now: () => 2000});
   await g.cast('acg-fantasy'); const [a, b] = g.spread()!.works;
   const pa = await g.compile(a!), pb = await g.compile(b!);
-  for (let i = 0; i < 19; i++) await g.draw(a!.key, 'item', 10);
-  await g.draw(b!.key, 'fate', 10);
+  for (let i = 0; i < 19; i++) await g.draw(a!.key, 10);
+  await g.draw(b!.key, 10);
   assert.equal(g.points(a!.key), 190); assert.equal(g.points(b!.key), 10, '不跨池互通');
   assert.match(g.canExchange(a!.key).reason!, /还差 10/);
   const mythic = pa.items.find(c => c.star === 6)!;
   await assert.rejects(g.exchange(a!.key, mythic.id), /还差 10/);
-  await g.draw(a!.key, 'fate', 10); assert.equal(g.points(a!.key), 200); assert.equal(g.canExchange(a!.key).ok, true);
+  await g.draw(a!.key, 10); assert.equal(g.points(a!.key), 200); assert.equal(g.canExchange(a!.key).ok, true);
   await assert.rejects(g.exchange(a!.key, pb.items[0]!.id), /不在这部作品的小池里/, '别的作品的神话不能兑换');
   await assert.rejects(g.exchange(a!.key, pa.items.find(c => c.star === 5)!.id), /不在这部作品的小池里/, '只能兑换神话');
   const commits = f.commits.length, fp = f.fp, since6 = g.pity().since6;
@@ -579,35 +603,93 @@ test('大保底：每部作品各攒各的抽取点数，攒满 200 点兑换这
   assert.equal(f.durable.history[0]!.spark, true); assert.equal(normalizeDurable(JSON.parse(JSON.stringify(f.durable))).history[0]!.spark, true);
   const flaky = fakePort({async commit(req) {if (req.spark) throw Error('写入失败'); return {fp: 9000};}}), x = createGacha(flaky.port, {rng: seededRng(52)});
   await x.cast('acg-fantasy'); const w = x.spread()!.works[0]!, px = await x.compile(w);
-  for (let i = 0; i < 20; i++) await x.draw(w.key, 'item', 10);
+  for (let i = 0; i < 20; i++) await x.draw(w.key, 10);
   await assert.rejects(x.exchange(w.key, px.items[0]!.id), /兑换没有完成：写入失败/);
   assert.equal(x.points(w.key), 200, '入包失败时点数退回'); assert.equal(flaky.durable.points[w.key]!.points, 200); assert.ok(!flaky.durable.history.some(r => r.spark));
   x.saveSettings({...x.settings(), autoBag: false});
   const kept = await x.exchange(w.key, px.items[0]!.id); assert.equal(kept.record.bagged, false); assert.equal(x.points(w.key), 0, '不入包时只记在抽卡记录里');
   assert.deepEqual(Object.keys(withPoints({}, 'k', '作品', 0, 1)), [], '点数用完就不留这一条');
 });
-test('角色池：默认关闭；打开后小池加上角色池（三者合计 54–99），角色以书页的形式进主角背包，实力完全等同原作、具现后自由行动', async () => {
+test('角色池：默认关闭；打开后角色混进同一个池子，全部是唯一、出货率与神话相同；同一部作品里抽到过的不会再出现', async () => {
   assert.equal(normalizeSettings({}).characterPool, false); assert.equal(normalizeSettings({characterPool: true}).characterPool, true);
-  const f = fakePort(), g = createGacha(f.port, {rng: seededRng(61)});
+  const often = {...DEFAULT_RULES, rates: {1: .5, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: .5}};
+  const f = fakePort({}, 1e7), g = createGacha(f.port, {rng: seededRng(61), rules: often});
   await g.cast('acg-fantasy'); const w = g.spread()!.works[0]!;
   const plain = await g.compile(w);
   assert.equal(plain.characters, undefined); assert.deepEqual(g.kinds(), ['item', 'fate']);
-  await assert.rejects(g.draw(w.key, 'character', 1), /角色池没有打开/);
+  assert.ok((await g.draw(w.key, 10)).cards.every(c => c.kind !== 'character' && c.star !== UNIQUE), '没开角色池时滚不出唯一');
   g.saveSettings({...g.settings(), characterPool: true});
-  assert.deepEqual(g.kinds(), ['item', 'fate', 'character']); assert.match(g.kindReady(plain, 'character')!, /重新编纂/);
-  await assert.rejects(g.draw(w.key, 'character', 1), /重新编纂/);
+  assert.deepEqual(g.kinds(), ['item', 'fate', 'character']); assert.deepEqual(g.uniquesLeft(plain), [], '旧小池没有角色：要重新编纂');
+  assert.equal(g.poolReady(plain), undefined, '照样能抽物品与命运');
   const calls = f.llmCalls.length, pool = await g.compile(w);
   assert.equal(f.llmCalls.length - calls, 3, '规划与物品、命运、角色各一次');
-  assert.equal(pool.characters!.length, 20); assert.equal(g.poolSize(pool), 84); assert.ok(g.poolSize(pool) >= POOL_MIN && g.poolSize(pool) <= POOL_MAX);
-  const out = await g.draw(w.key, 'character', 10);
-  assert.ok(out.cards.every(c => c.kind === 'character'));
-  for (const c of out.cards) assert.equal(c.star, pool.characters!.find(x => x.id === c.id)!.star, '角色按自己在原作里的星级入包');
+  assert.equal(pool.characters!.length, 20); assert.equal(g.poolSize(pool), 84); assert.ok(pool.characters!.every(c => c.star === UNIQUE));
+  const seen: string[] = [];
+  for (let i = 0; i < 8; i++) for (const c of (await g.draw(w.key, 10)).cards) {
+    if (c.kind === 'character') {assert.equal(c.star, UNIQUE); seen.push(c.name);}
+    else assert.ok(c.star <= 6);
+  }
+  assert.equal(new Set(seen).size, seen.length, '同一个角色不会抽到两次');
+  assert.ok(f.durable.history.slice(0, 8).some(r => r.results.some(x => x.kind === 'item')) && f.durable.history.slice(0, 8).some(r => r.results.some(x => x.kind === 'fate')), '物品、命运、角色混在一个池子里抽'); assert.equal(seen.length, 20, '二十位都抽到了');
+  assert.deepEqual(g.uniquesLeft(pool), []); assert.deepEqual([...f.durable.uniques[w.key]!].sort(), [...seen].sort(), '抽到过的角色记在聊天里');
+  assert.ok((await g.draw(w.key, 10)).cards.every(c => c.kind !== 'character'), '都抽到之后不再出角色');
+  const reloaded = createGacha(f.port, {rng: seededRng(62), rules: often}); assert.deepEqual(reloaded.uniquesLeft(pool), [], '换个会话也记得');
   const entry = gachaBagEntry(pool.characters![0]!, pool, DESTINED_SCALE), effect = entry.item.效果 as Record<string, string>;
-  assert.deepEqual([entry.name, entry.item.类型, entry.item.品质], ['角色·角色0', '角色书页', '神话']); assert.ok((entry.item.标签 as string[]).includes('书页'));
+  assert.deepEqual([entry.name, entry.item.类型, entry.item.品质], ['角色·角色0', '角色书页', '唯一']); assert.ok((entry.item.标签 as string[]).includes('书页'));
   assert.equal(effect.持有, '以书页的形式被主角持有'); assert.equal(effect.实力, '完全等同原作：实力0'); assert.equal(effect.定位, '主角');
   assert.equal(effect.具现, '一旦被选择具现，便在完全保有自身自由意志的情况下自由行动，主角无法强制约束');
   const bag: Record<string, unknown> = {}; addToBag(bag, entry, pool.work.title);
-  assert.deepEqual(listGachaBag({stat_data: {主角: {背包: bag}}}).map(e => [e.kind, e.price]), [['character', 6000]], '角色书页也按品质回收');
-  g.saveSettings({...g.settings(), characterPool: false});
-  await assert.rejects(g.draw(w.key, 'character', 1), /角色池没有打开/);
+  assert.deepEqual(listGachaBag({stat_data: {主角: {背包: bag}}}).map(e => [e.kind, e.price, e.star]), [['character', 6000, 7]], '角色书页按唯一回收（与神话同价）');
+  // 聊天记录丢了（比如旧版抽到的），背包里还留着的角色书页也算抽到过。
+  let owned: BagEntry[] = [];
+  const h = fakePort({bag: () => owned}), x = createGacha(h.port, {rng: seededRng(63)});
+  x.saveSettings({...x.settings(), characterPool: true}); await x.cast('acg-fantasy');
+  const px = await x.compile(x.spread()!.works[0]!);
+  owned = [{name: '角色·角色3（《' + px.work.title + '》）', quality: '神话', kind: 'character', type: '角色书页', count: 1, price: 6000, work: px.work.title, star: 6}, {name: '角色·角色4', quality: '唯一', kind: 'character', type: '角色书页', count: 1, price: 6000, work: '别的作品', star: 7}];
+  assert.deepEqual(x.uniquesLeft(px).map(c => c.name).filter(n => n === '角色3' || n === '角色4'), ['角色4']);
+  g.saveSettings({...g.settings(), characterPool: false}); assert.deepEqual(g.uniquesLeft(pool), []);
+});
+test('世界观物品生成细则：按条目名读世界书（启用的优先、去掉模板语法），给装备、消耗品、资产写格式化属性；技能书页、命运、角色不写', async () => {
+  assert.equal(cleanSpecText('甲<%- destinyWiVar("x") %>乙\n\n\n\n丙{{user}}'), '甲乙\n\n丙');
+  const books: Record<string, unknown[]> = {
+    命定之诗: [{name: '[本体][额外设定]技能装备道具生成规则', content: '官方规则', enabled: false}, {name: '[本体][额外设定]品质效果限定', content: '神: 3 | +[1400-2500]<% if (x) { %>', enabled: true}, {name: '无关', content: 'x'}],
+    附加: [{name: '我改过的技能装备道具生成规则', content: '玩家改过的规则', enabled: true}],
+  };
+  const helper = {getCharWorldbookNames: () => ({primary: '命定之诗', additional: ['附加']}), getChatWorldbookName: () => null, getGlobalWorldbookNames: () => ['命定之诗'], async getWorldbook(n: string) {return books[n] as never ?? [];}};
+  assert.deepEqual(await readSpecEntries(helper, ['技能装备道具生成规则', '品质效果限定', '核心数值表']), [{name: '我改过的技能装备道具生成规则', content: '玩家改过的规则'}, {name: '[本体][额外设定]品质效果限定', content: '神: 3 | +[1400-2500]'}], '启用的优先、找不到的跳过');
+  assert.deepEqual(await readSpecEntries({getCharLorebooks: () => ({primary: '旧', additional: []}), async getLorebookEntries() {return [{comment: '核心数值表', content: '系数'}];}}, ['核心数值表']), [{name: '核心数值表', content: '系数'}], '旧版酒馆助手接口');
+  assert.deepEqual(await readSpecEntries(undefined, ['核心数值表']), []);
+  assert.deepEqual(normalizeSpecSettings(undefined).entries, [...DEFAULT_SPEC_ENTRIES]); assert.ok(DEFAULT_SPEC_ENTRIES.includes('技能装备道具生成规则'));
+  const sample = parsePool(MODEL_REPLY, work('bangumi:42', '测试作品'), []), sword = sample.items[0]!;
+  assert.equal(needsSpec(sword), true); assert.equal(needsSpec({...sword, type: '技能书页'}), false); assert.equal(isSkillPage({...sword, type: '技能书页'}), true); assert.equal(needsSpec(sample.fates[0]!), false);
+  const p = specPrompt([{name: '规则', content: '品质数值表'}], sample.work, [sword]);
+  assert.match(p.user, /【规则】\n品质数值表/); assert.match(p.user, /"quality":"神话"/); assert.match(p.system, /物品规格编纂人/); assert.doesNotMatch(p.system + p.user, /<user>|\{\{user\}\}/);
+  assert.deepEqual([...parseSpecs('{"items":[{"name":"' + sword.name + '","type":"长剑","tags":["攻击: 2000"],"effects":{"斩铁":"额外伤害+1500"}},{"name":"别的","effects":{"a":"b"}},{"name":"' + sword.name + '","effects":{}}]}', [sword])], [[sword.name, {type: '长剑', tags: ['攻击: 2000'], effects: {斩铁: '额外伤害+1500'}}]], '认不出的名字跳过');
+  const wanted: string[][] = [], specCalls: string[] = [];
+  const f = fakePort({
+    async specs(names) {wanted.push(names); return [{name: '[本体][额外设定]技能装备道具生成规则', content: '装备格式'}];},
+    async llm(system, user, o) {
+      if (!system.includes('物品规格')) return o.purpose === 'pool' ? MODEL_REPLY : '{}';
+      specCalls.push(user);
+      const rows = JSON.parse(user.split('\n').find(l => l.startsWith('[{'))!) as {name: string}[];
+      return JSON.stringify({items: rows.map((r, i) => ({name: r.name, type: i % 2 ? '消耗品' : '单手剑', tags: ['攻击: 300'], effects: {锋利: '额外伤害+300'}}))});
+    },
+  });
+  const g = createGacha(f.port, {rng: seededRng(71)}), steps: string[] = [];
+  await g.cast('acg-fantasy'); const w = g.spread()!.works[0]!;
+  const pool = await g.compile(w, {onStep: s => steps.push(s)});
+  assert.deepEqual(wanted, [[...DEFAULT_SPEC_ENTRIES]]); assert.equal(specCalls.length, 4, '40 件物品每 12 件一次'); assert.match(specCalls[0]!, /装备格式/);
+  assert.ok(pool.items.every(c => c.spec?.effects.锋利 === '额外伤害+300')); assert.ok(pool.fates.every(c => !('spec' in c)));
+  assert.ok(steps.some(s => /按细则写物品属性（4\/4）/.test(s)));
+  assert.deepEqual(g.pool(w.key)!.items[0]!.spec, pool.items[0]!.spec, '属性存进小池缓存');
+  const out = await g.draw(w.key, 10), bagged = (f.commits.at(-1) as {cards: {spec?: unknown}[]}).cards.filter(c => c.spec);
+  assert.ok(out.cards.length === 10 && bagged.length === out.cards.filter(c => c.kind === 'item').length, '入包的物品带着属性');
+  const empty = fakePort({async specs() {return [];}}), e = createGacha(empty.port, {rng: seededRng(72)}), notes: string[] = [];
+  await e.cast('acg-fantasy'); const pe = await e.compile(e.spread()!.works[0]!, {onStep: s => notes.push(s)});
+  assert.ok(pe.items.every(c => !c.spec)); assert.ok(notes.some(s => /没有找到名称包含「技能装备道具生成规则」/.test(s)), '读不到细则时说明一声，物品照旧');
+  const off = fakePort({async specs() {throw Error('不该读');}}), o = createGacha(off.port, {rng: seededRng(73)});
+  o.saveSettings({...o.settings(), itemSpec: {enabled: false, entries: ['核心数值表']}}); await o.cast('acg-fantasy');
+  assert.equal((await o.compile(o.spread()!.works[0]!)).by, 'model', '关掉细则就不读世界书');
+  const r = fakeReader(), port = readerGachaPort(readerHost(r, {helper: {...r.helper, getCharWorldbookNames: () => ({primary: '命定之诗', additional: []}), async getWorldbook() {return [{name: '核心数值表', content: '系数'}];}}}));
+  assert.deepEqual(await port.specs!(['核心数值表']), [{name: '核心数值表', content: '系数'}], '读者端口经酒馆助手读世界书');
 });
