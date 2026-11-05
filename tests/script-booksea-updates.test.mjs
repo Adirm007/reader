@@ -107,3 +107,14 @@ test('the explicit batch hook adopts the new light rule around the same guarded 
  let hookCalls=0;const f=fixture({readerOld:true,hooks:{installRegexBatch:async update=>{hookCalls++;await update.commit();}}});await f.center.check();const results=await f.center.apply();
  assert.equal(results[0].status,'updated');assert.equal(hookCalls,1);assert.equal(f.calls.filter(call=>call==='write:character').length,1);
 });
+
+test('full browser storage keeps every modern regex update usable and reports the missing backup',async()=>{
+ for(const options of [{readerOld:true,booksea:false},{readerOld:false},{readerOld:true},{readerOld:true,hooks:{installRegexBatch:async update=>{await update.commit();}}}]){
+  const f=fixture(options);f.root.localStorage.setItem=()=>{throw Error('exceeded the quota');};
+  await f.center.check();const results=await f.center.apply();
+  assert.equal(results[0].status,'updated');assert.match(results[0].detail,/备份未保存/);
+  const saved=f.read().character;
+  if(options.readerOld)assert.match(saved.find(rule=>rule.id===LIGHT_ID).replaceString,/READER_LIGHT_VERSION:2\.0/);
+  if(options.booksea!==false)assert.equal(saved.find(rule=>rule.id===BOOKSEA_ID).replaceString,fixedBooksea('2.0').replaceString);
+ }
+});

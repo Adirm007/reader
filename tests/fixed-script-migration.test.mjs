@@ -27,6 +27,17 @@ test('accepting fixed-to-script migration creates one visible script before swit
  assert.equal(results.find(item=>item.id==='regex').status,'current');
 });
 
+test('full browser storage does not block fixed or linked migration and the result reports the missing backup',async()=>{
+ for(const linked of [false,true]){
+  const f=fixedReaderFixture({linked}),updates=center(f);
+  f.root.localStorage.setItem=()=>{throw Error('exceeded the quota');};
+  await updates.check();const results=await updates.apply(),script=results.find(item=>item.id==='script');
+  assert.equal(script.status,'updated');assert.match(script.detail,/备份未保存/);
+  assert.equal(f.regexes[0].id,LIGHT_ID);assert.equal(f.regexes[0].scriptName,'读者对话渲染-脚本版');
+  assert.equal(f.scripts.filter(item=>item.id===SCRIPT_ID).length,1);
+ }
+});
+
 test('the original fixed renderer stays installed while the new script is still starting',async()=>{
  const ready=deferred(),f=fixedReaderFixture({ready:ready.promise}),updates=center(f);await updates.check();const applying=updates.apply();
  await until(()=>f.calls.includes('script-write'));
@@ -91,12 +102,12 @@ test('a global fixed reader installs a global standalone script with the same sa
  assert.deepEqual(f.context.characters[0].data.extensions.tavern_helper.scripts,f.originalScripts);
 });
 
-test('a prior fixed release may update its full loader but cannot switch to light before the script is ready',async()=>{
+test('a prior fixed release goes straight to the script and stays untouched until the script is ready',async()=>{
  const ready=deferred(),f=fixedReaderFixture({fixedVersion:'1.0',ready:ready.promise}),updates=center(f);await updates.check();const applying=updates.apply();
  await until(()=>f.calls.includes('script-write'));
- assert.equal(f.regexes[0].id,FIXED_ID);assert.match(f.regexes[0].scriptName,/v2\.0/);assert.ok(f.calls.includes('fixed-regex-write'));assert.equal(f.calls.includes('light-regex-write'),false);
+ assert.equal(f.regexes[0].id,FIXED_ID);assert.match(f.regexes[0].scriptName,/v1\.0/);assert.equal(f.calls.includes('regex-write'),false,'no intermediate fixed-loader rewrite');
  ready.resolve({running:true});const results=await applying;
- assert.equal(f.regexes[0].id,LIGHT_ID);assert.ok(results.filter(item=>['regex','script'].includes(item.id)).every(item=>item.status==='updated'));
+ assert.equal(f.regexes[0].id,LIGHT_ID);assert.equal(results.find(item=>item.id==='script').status,'updated');assert.equal(results.find(item=>item.id==='regex').status,'current');
 });
 
 test('a script library edit after checking is preserved and prevents migration',async()=>{
@@ -152,11 +163,27 @@ test('a later owned standalone upgrade persists the new module even when the old
  assert.equal(f.root.ReaderCore.runtimeVersion,'3.0');assert.equal(writes,2);assert.equal(f.root.__readerControllerAlive,false);
 });
 
-test('a healthy runtime owned by auto-regex remains untouched and leaves a clear migration error',{timeout:12000},async()=>{
- const f=fixedReaderFixture({delegated:true}),external={runtimeVersion:'2.0',isAlive:true,scriptOwner:null,stop(){throw Error('an external core must not be stopped');}};f.root.ReaderCore=external;
+test('the installed script takes over from a runtime started by the card auto-regex and finishes migration',async()=>{
+ const f=fixedReaderFixture(),external={runtimeVersion:'2.0',isAlive:true,scriptOwner:null,stop(){this.isAlive=false;if(f.root.ReaderCore===this)delete f.root.ReaderCore;}};f.root.ReaderCore=external;
  const updates=center(f);await updates.check();const results=await updates.apply();
- assert.equal(f.root.ReaderCore,external);assert.deepEqual(f.regexes,f.originalRegexes);assert.equal(f.calls.includes('light-regex-write'),false);
- assert.match(results.find(item=>item.id==='script').detail,/外部|其他.*宿主|集成.*宿主/);
+ assert.equal(external.isAlive,false);assert.equal(f.root.ReaderCore.scriptOwner.id,SCRIPT_ID);assert.ok(f.calls.includes('external-stopped'));
+ assert.equal(results.find(item=>item.id==='script').status,'updated');assert.equal(f.regexes[0].id,LIGHT_ID);
+});
+
+test('a 外链版 regex migrates to the reader script plus the light letter, from the update page or on load',async()=>{
+ for(const start of ['update','load']){
+  const f=fixedReaderFixture({linked:true});
+  if(start==='update'){const updates=center(f),checked=await updates.check();assert.equal(checked.find(item=>item.id==='script').status,'outdated');assert.match(checked.find(item=>item.id==='script').detail,/外链版/);await updates.apply();}
+  else await f.root.ReaderFixedMigration.autoStart();
+  assert.equal(f.scripts.filter(script=>script.id===SCRIPT_ID).length,1,start);assert.equal(f.regexes.length,1);
+  assert.equal(f.regexes[0].id,LIGHT_ID);assert.equal(f.regexes[0].scriptName,'读者对话渲染-脚本版');assert.match(f.regexes[0].replaceString,/ReaderLetter/);
+ }
+});
+
+test('a script that still yields to another reader script keeps the fixed renderer and says why',{timeout:12000},async()=>{
+ const f=fixedReaderFixture({delegated:true}),updates=center(f);await updates.check();const results=await updates.apply();
+ assert.deepEqual(f.regexes,f.originalRegexes);assert.equal(f.calls.includes('light-regex-write'),false);
+ assert.match(results.find(item=>item.id==='script').detail,/另一个读者脚本/);
 });
 
 test('an owned script upgrade that fails startup restores the previous saved module and ready runtime',async()=>{

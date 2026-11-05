@@ -42,6 +42,8 @@
         if(!before.eligible){release();status.phase='paused';failedKey=null;return;}
         var active=host.ReaderCore;
         if(active&&active.isAlive!==false&&!owns(active)&&active.scriptOwner&&active.scriptOwner.id===config.id){active.stop();active=host.ReaderCore;}
+        // A runtime started by the card's auto-regex has no script owner. The player installed this script, so it runs reader.
+        if(active&&active.isAlive!==false&&!active.scriptOwner){try{active.stop();}catch(e){}active=host.ReaderCore;}
         if(active&&active.isAlive!==false&&!owns(active)){status.phase='delegated';failedKey=null;return;}
         if(active&&active.isAlive!==false&&owns(active)){status.phase='ready';failedKey=null;return;}
         if(failedKey===before.key)return;

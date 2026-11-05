@@ -19,21 +19,19 @@ for(const id of [LIGHT_ID,'reimported-reader-fixed-id']){
   assert.doesNotMatch(f.regexes[0].replaceString,/FIXED_RELEASE:/);
   for(const key of ['disabled','runOnEdit','findRegex','minDepth','maxDepth','placement','trimStrings','substituteRegex','markdownOnly','promptOnly'])assert.deepEqual(f.regexes[0][key],original[key],key);
  });
- test('an older fixed renderer with retained ID updates its full loader before completing script migration: '+id,async()=>{
+ test('an older fixed renderer with retained ID migrates straight to the light letter: '+id,async()=>{
   const f=fixedReaderFixture({fixedVersion:'1.0'});f.regexes[0].id=id;
   const original=structuredClone(f.regexes[0]),regexWrites=[],replace=f.helper.replaceTavernRegexes;
   f.helper.replaceTavernRegexes=(list,scope)=>{regexWrites.push({list:structuredClone(list),callIndex:f.calls.length});return replace(list,scope);};
   const checked=await f.root.ReaderUpdates.check();
-  assert.equal(checked.find(item=>item.id==='regex').status,'outdated');
+  assert.equal(checked.find(item=>item.id==='regex').status,'current','the reader fixed loader is not upgraded before it is replaced');
   assert.equal(checked.find(item=>item.id==='script').status,'outdated');
   const results=await f.root.ReaderUpdates.apply();
-  assert.ok(results.filter(item=>item.id==='regex'||item.id==='script').every(item=>item.status==='updated'));
-  assert.equal(regexWrites.length,2);
-  assert.equal(regexWrites[0].list[0].id,id,'the loader update preserves the imported rule identity');
-  assert.match(regexWrites[0].list[0].replace_string,/FIXED_RELEASE:/);
-  assert.match(regexWrites[1].list[0].replace_string,/READER_LIGHT_VERSION:2\.0/);
-  assert.ok(regexWrites[0].callIndex<f.calls.indexOf('script-write'));
-  assert.ok(f.calls.indexOf('script-start')<regexWrites[1].callIndex);
+  assert.equal(results.find(item=>item.id==='script').status,'updated');
+  assert.equal(regexWrites.length,1);
+  assert.match(regexWrites[0].list[0].replace_string,/READER_LIGHT_VERSION:2\.0/);
+  assert.ok(regexWrites[0].callIndex>f.calls.indexOf('script-write'),'the light letter is written only after the script is installed');
+  assert.ok(f.calls.indexOf('script-start')<regexWrites[0].callIndex);
   assert.equal(f.regexes[0].id,LIGHT_ID);
   assert.match(f.regexes[0].replaceString,/READER_LIGHT_VERSION:2\.0/);
   for(const key of ['disabled','runOnEdit','findRegex','minDepth','maxDepth','placement','trimStrings','substituteRegex','markdownOnly','promptOnly'])assert.deepEqual(f.regexes[0][key],original[key],key);

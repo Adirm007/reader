@@ -55,10 +55,10 @@ test('all artifacts are verified before one grouped write, preserving enabled st
   assert.deepEqual(f.ctx.extensionSettings.regex[2],extra);assert.equal(f.sandbox.mustNeverRun,undefined);
   const receipt=await f.updates.receiptStatus();assert.ok(receipt.verified.every(v=>v.matches));assert.equal(receipt.contextMatches,true);
 });
-test('one failed download, backup failure or old helper makes zero host mutations',async()=>{
-  for(const reason of ['download','backup','helper']){
+test('one failed download or old helper makes zero host mutations',async()=>{
+  for(const reason of ['download','helper']){
     const f=fixture();if(reason==='download'){const original=f.download;f.download=async s=>{if(s.repository===repositories[1])throw Error('bad digest');return original(s);};}
-    if(reason==='backup')f.sandbox.localStorage.setItem=()=>{throw Error('quota');};if(reason==='helper')f.helper.getTavernHelperVersion=()=> '4.8.9';
+    if(reason==='helper')f.helper.getTavernHelperVersion=()=> '4.8.9';
     const checked=await f.updates.check();await assert.rejects(f.updates.apply(checked));assert.equal(f.writes.length,0,reason);
   }
 });
@@ -79,5 +79,34 @@ test('writes to separate scopes start together even while the first host promise
 });
 test('partial host failure keeps the pre-update backup and never claims transaction success',async()=>{
   const f=fixture({separate:true}),checked=await f.updates.check();f.helper.replaceTavernRegexes=(_,option)=>option.type==='character'?Promise.reject(Error('save failed')):Promise.resolve();
-  await assert.rejects(f.updates.apply(checked),/部分/);const receipt=JSON.parse([...f.store.values()][0]);assert.equal(receipt.phase,'partial');assert.equal(receipt.backup.length,3);
+  await assert.rejects(f.updates.apply(checked),/部分/);const receipt=JSON.parse([...f.store.values()][0]);assert.equal(receipt.phase,'partial');
+  assert.equal(receipt.backup.length,2);assert.ok(receipt.backup.every(group=>group.list.length===1&&ids.includes(group.list[0].id)&&/const VERSION="1\.0\.0"/.test(group.list[0].replace_string)));
+});
+test('partial host failure with full browser storage never claims a backup was saved',async()=>{
+  const f=fixture({separate:true}),checked=await f.updates.check(),replace=f.helper.replaceTavernRegexes;
+  f.sandbox.localStorage.setItem=()=>{throw Error('exceeded the quota');};
+  f.helper.replaceTavernRegexes=(list,option)=>option.type==='character'?Promise.reject(Error('save failed')):replace(list,option);
+  await assert.rejects(f.updates.apply(checked),error=>{
+    assert.match(error.message,/部分正则提交失败/);assert.match(error.message,/备份未保存/);assert.match(error.message,/save failed/);assert.doesNotMatch(error.message,/备份已保留/);return true;
+  });
+  assert.match(f.ctx.extensionSettings.regex[0].replaceString,/const VERSION="1\.1\.0"/);
+  assert.match(f.ctx.characters[0].data.extensions.regex_scripts[0].replaceString,/const VERSION="1\.0\.0"/);
+});
+test('the backup holds only replaced rules, so large unrelated regexes cannot exhaust browser storage',async()=>{
+  const f=fixture(),huge={...raw(0),id:'player-beautifier',scriptName:'玩家美化',replaceString:'x'.repeat(3000000)};f.ctx.extensionSettings.regex.push(huge);
+  f.sandbox.localStorage.setItem=(key,value)=>{if(value.length>1000000)throw Error('exceeded the quota');f.store.set(key,value);};
+  const checked=await f.updates.check(),receipt=await f.updates.apply(checked);assert.equal(receipt.stored,true);assert.equal(f.writes.length,1);
+  const saved=JSON.parse(f.store.get('dream_fixed_update_receipt_v1'));assert.deepEqual(saved.backup[0].list.map(rule=>rule.id),ids);
+});
+test('a full browser storage no longer blocks the regex update',async()=>{
+  const f=fixture();f.sandbox.localStorage.setItem=()=>{throw Error('exceeded the quota');};
+  const checked=await f.updates.check(),receipt=await f.updates.apply(checked);assert.equal(receipt.stored,false);assert.equal(f.writes.length,1);
+  assert.match(f.ctx.extensionSettings.regex[0].replaceString,/const VERSION="1\.1\.0"/);
+});
+test('an oversized old receipt is left alone on startup and shrinks on an explicit check',async()=>{
+  const f=fixture(),scope={type:'global'},old={schema:1,phase:'submitted',expected:[{id:ids[0],scope}],backup:[{option:scope,list:[{id:ids[0],replace_string:'old'},{id:'other',replace_string:'y'.repeat(200000)}]}]};
+  f.store.set('dream_fixed_update_receipt_v1',JSON.stringify(old));vm.runInContext(sources[2],f.sandbox);
+  assert.equal(JSON.parse(f.store.get('dream_fixed_update_receipt_v1')).backup[0].list.length,2);
+  await f.sandbox.DreamReleaseUpdates.check();
+  const saved=JSON.parse(f.store.get('dream_fixed_update_receipt_v1'));assert.deepEqual(saved.backup,[{option:scope,list:[{id:ids[0],replace_string:'old'}]}]);
 });

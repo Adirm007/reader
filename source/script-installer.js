@@ -83,7 +83,7 @@
       assertIdentity(env,external);var api=env.host.ReaderCore,status=env.host.__readerStandaloneStatus;
       if(!env.startedStatus&&status&&status.id===ID&&status.token===token)env.startedStatus=status;
       if(status&&status.id===ID&&status.token===token&&status.phase==='failed')throw Error('读者脚本启动失败：'+status.error);
-      if(status&&status.id===ID&&status.token===token&&status.phase==='delegated')throw Error('读者已由其他宿主脚本运行，独立脚本未接管，原正则已保留');
+      if(status&&status.id===ID&&status.token===token&&status.phase==='delegated')throw Error('读者正由另一个读者脚本运行，本次安装未接管，原正则已保留；请在酒馆助手脚本库只保留一个「读者常驻脚本」后重试');
       if(api&&owns(api,token)&&api.runtimeVersion===version&&api.isAlive!==false){
         if(!readiness||readiness.api!==api){
           readiness={api:api,done:false,value:null,error:null};
@@ -178,14 +178,22 @@
       throw Error(message(error)+detail);
     }
   }
+  function appendGuard(pending,guard){
+    if(typeof guard!=='function')return;
+    if(!Array.isArray(pending.guards))throw Error('另一次读者脚本安装不支持合并检查，请稍后重试');
+    if(pending.guards.indexOf(guard)<0)pending.guards.push(guard);
+  }
+  function assertGuards(guards){guards.forEach(function(guard){guard();});}
   function install(artifact,assertCurrent,options){
     var env=environment(),scope=scopeOf(options),context=identity(env.host),pin=artifact&&artifact.metadata;
     if(typeof assertCurrent==='function')assertCurrent();
     var key=fingerprint({context:context,scope:scope,version:pin&&pin.version,sourceCommit:pin&&pin.sourceCommit,manifestSha256:pin&&pin.manifestSha256});
     var pending=env.host.__readerScriptInstallation;
-    if(pending){if(pending.key===key)return pending.promise;throw Error('另一次读者脚本安装尚未结束，请稍后重新检查');}
-    var job=performInstall(artifact,assertCurrent,options);
-    env.host.__readerScriptInstallation={key:key,promise:job};
+    if(pending){if(pending.key===key){appendGuard(pending,assertCurrent);return pending.promise;}throw Error('另一次读者脚本安装尚未结束，请稍后重新检查');}
+    // Callers share the write, but each caller's context and absence checks must still hold.
+    var guards=typeof assertCurrent==='function'?[assertCurrent]:[];
+    var job=performInstall(artifact,function(){assertGuards(guards);},options);
+    env.host.__readerScriptInstallation={key:key,promise:job,guards:guards};
     job.then(function(){if(env.host.__readerScriptInstallation&&env.host.__readerScriptInstallation.promise===job)delete env.host.__readerScriptInstallation;},function(){if(env.host.__readerScriptInstallation&&env.host.__readerScriptInstallation.promise===job)delete env.host.__readerScriptInstallation;});
     return job;
   }

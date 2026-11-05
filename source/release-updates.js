@@ -3,7 +3,24 @@
   'use strict';
   var client=root.DreamFixedReleaseClient;
   var PROJECTS=[{repository:'Adirm007/reader',label:'读者',id:'cfc0375e-3c5c-4ea1-8b7b-2093c7df0a11'},{repository:'Adirm007/Protelysion',label:'书海',id:'cfc0375e-3c5c-4ea1-8b7b-2093c7df0a12'}];
-  var RECEIPT='dream_fixed_update_receipt_v1';
+  var RECEIPT='dream_fixed_update_receipt_v1',MIGRATION_BACKUP='dream_reader_fixed_migration_backup_v1',LIGHT_BACKUP='dream_reader_light_backup_v1';
+  var READER_RULES=['cfc0375e-3c5c-4ea1-8b7b-2093c7df0a11','b1c5a3f2-1007-4e0a-9d7e-5a1e0c0d1007','67cdbb11-48d4-4c04-80d3-8300d24935f7'];
+  // Older builds saved every regex of every scope here and could fill the shared 5 MB browser storage.
+  // Keep only the rules an update replaced; anything unreadable is dropped.
+  function compactBackups(storage){
+    function shrink(key,fn){try{var raw=storage.getItem(key);if(!raw||raw.length<100000)return;var next=fn(JSON.parse(raw));if(next)storage.setItem(key,JSON.stringify(next));else storage.removeItem(key);}catch(e){try{storage.removeItem(key);}catch(e2){}}}
+    shrink(RECEIPT,function(r){if(!r||!Array.isArray(r.expected)||!Array.isArray(r.backup))return null;r.backup=r.backup.map(function(g){return {option:g.option,list:(g.list||[]).filter(function(rule){return r.expected.some(function(e){return e.id===rule.id&&JSON.stringify(e.scope)===JSON.stringify(g.option);});})};}).filter(function(g){return g.list.length;});return r;});
+    shrink(MIGRATION_BACKUP,function(b){if(!b||!Array.isArray(b.regexes))return null;b.regexes=b.regexes.filter(function(rule){return READER_RULES.indexOf(rule.id)>=0;});return b;});
+    shrink(LIGHT_BACKUP,function(b){if(!b||!Array.isArray(b.list))return null;b.list=b.list.filter(function(rule){return READER_RULES.indexOf(rule.id)>=0;});return b;});
+  }
+  // A backup never blocks an update: the replaced rules are small and remain downloadable from the immutable release.
+  function storeBackup(win,key,value){
+    var text=JSON.stringify(value),storage;
+    try{storage=win.localStorage;storage.setItem(key,text);return true;}catch(e){}
+    try{compactBackups(storage);storage.setItem(key,text);return true;}catch(e){}
+    try{storage.removeItem(key);}catch(e){}
+    return false;
+  }
   function host(){
     var candidates=[];try{candidates.push(root.top);}catch(e){}try{candidates.push(root.parent);}catch(e){}candidates.push(root);
     for(var i=0;i<candidates.length;i++)try{var w=candidates[i],h=w&&w.TavernHelper;if(h&&typeof h.getTavernRegexes==='function')return {window:w,helper:h};}catch(e){}
@@ -39,6 +56,8 @@
     return {host:h,lists:lists,projects:projects,errors:errors,context:contextKey(h.window),fingerprint:JSON.stringify(lists)};
   }
   async function check(options){
+    // Backup housekeeping belongs to an explicit update check, never to normal runtime startup.
+    try{compactBackups(host().window.localStorage);}catch(e){}
     var snapshot=scan();
     var projects=snapshot.projects.filter(function(p){return !options||!options.repositories||options.repositories.indexOf(p.repository)>=0;});
     var results=await Promise.allSettled(projects.map(function(p){return client.latest(p.repository);}));
@@ -91,9 +110,9 @@
       var fresh=finalSnapshot.lists.find(function(s){return JSON.stringify(s.option)===JSON.stringify(g.option);});
       if(guard.assertSafe(before.host.window,g.option,fresh.list).rawFingerprint!==rawBefore[index])throw Error('正则原始设置已变化，请重新检查');
     });
-    var receipt={schema:1,phase:'submitted',startedAt:Date.now(),context:before.context,expected:expected,backup:before.lists};
-    // Saving the backup is a prerequisite; quota/private-mode errors abort before mutation.
-    before.host.window.localStorage.setItem(RECEIPT,JSON.stringify(receipt));
+    var replaced=before.lists.map(function(g){return {option:g.option,list:g.list.filter(function(rule){return expected.some(function(e){return e.id===rule.id&&JSON.stringify(e.scope)===JSON.stringify(g.option);});})};}).filter(function(g){return g.list.length;});
+    var receipt={schema:1,phase:'submitted',startedAt:Date.now(),context:before.context,expected:expected,backup:replaced};
+    receipt.stored=storeBackup(before.host.window,RECEIPT,receipt);
     if(assertCurrent)assertCurrent();
     var jobs=[];
     groups.filter(function(g){return g.changed;}).forEach(function(g){
@@ -102,7 +121,7 @@
     });
     var outcomes=await Promise.allSettled(jobs);
     var failed=outcomes.filter(function(r){return r.status==='rejected';});
-    if(failed.length){receipt.phase='partial';receipt.errors=failed.map(function(r){return String(r.reason&&r.reason.message||r.reason);});before.host.window.localStorage.setItem(RECEIPT,JSON.stringify(receipt));throw Error('部分正则提交失败，备份已保留；请重新检查实际版本：'+receipt.errors.join('；'));}
+    if(failed.length){receipt.phase='partial';receipt.errors=failed.map(function(r){return String(r.reason&&r.reason.message||r.reason);});receipt.stored=storeBackup(before.host.window,RECEIPT,receipt);throw Error('部分正则提交失败，'+(receipt.stored?'备份已保留':'浏览器存储空间不足，旧正则备份未保存（可从发布页重新下载旧版）')+'；请重新检查实际版本：'+receipt.errors.join('；'));}
     return receipt;
   }
   async function receiptStatus(){
@@ -126,7 +145,7 @@
     var file=await client.download(project.latest),doc=host().window.document,url=URL.createObjectURL(new Blob([file.bytes],{type:'application/json'})),a=doc.createElement('a');
     a.href=url;a.download=(project.repository==='Adirm007/reader'?'reader':'protelysion')+'-fixed.regex.json';doc.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(url);},5000);
   }
-  root.DreamReleaseUpdates=Object.freeze({scan:scan,check:check,apply:apply,receiptStatus:receiptStatus,exportBackup:exportBackup});
+  root.DreamReleaseUpdates=Object.freeze({scan:scan,check:check,apply:apply,receiptStatus:receiptStatus,exportBackup:exportBackup,storeBackup:storeBackup});
   root.openDreamReleaseUpdates=function(e,toastFn){
     if(e&&e.stopPropagation)e.stopPropagation();
     var doc=getCustomPersonaHostDocument(),shell=createCustomPersonaLibraryShell(doc,'检查更新','');
@@ -157,7 +176,7 @@
           if(!helperReady(checked.snapshot.host.helper))setStatus('当前助手不支持安全替换，请升级至 4.9.3 或更新版本，或从发布页手动导入。',true);
           else addButton('一键更新（'+candidates.length+' 项）',async function(){
             if(busy)return;busy=true;buttons.textContent='';setStatus('正在下载并校验更新；校验完成后替换正则……');
-            try{await apply(checked);setStatus('更新已提交，酒馆正在保存并重新加载界面。请重新打开此页核对结果。');}
+            try{var done=await apply(checked);setStatus('更新已提交，酒馆正在保存并重新加载界面。请重新打开此页核对结果。'+(done.stored?'':'浏览器存储空间不足，旧正则备份未保存，可从发布页重新下载旧版。'));}
             catch(err){setStatus(String(err&&err.message||err),true);addButton('重新检查',run);}
             finally{busy=false;}
           },true);

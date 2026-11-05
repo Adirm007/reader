@@ -7,6 +7,12 @@
   function current(){var h=host(),c=h.SillyTavern&&h.SillyTavern.getContext();if(!c)throw Error('当前角色不可用');return {id:c.characterId,chat:typeof c.getCurrentChatId==='function'?c.getCurrentChatId():c.chatId,avatar:c.characters&&c.characters[c.characterId]&&c.characters[c.characterId].avatar};}
   function capture(){var identity=JSON.stringify(current()),preset=root.DreamRegexUpdateGuard&&JSON.stringify(root.DreamRegexUpdateGuard.identity(host()));return function(){if(root.__readerControllerAlive===false||JSON.stringify(current())!==identity||preset&&preset!==JSON.stringify(root.DreamRegexUpdateGuard.identity(host())))throw Error('聊天、角色或预设已变化，请重新检查更新');};}
   function scan(){if(!root.DreamReleaseUpdates)throw Error('固定版正则检查模块不可用');return root.DreamReleaseUpdates.scan();}
+  // The 外链版 loader shares the light letter's rule ID; it is migrated the same way as a fixed renderer.
+  function linkedTarget(snapshot){
+    var found=[];snapshot.lists.forEach(function(group){group.list.forEach(function(rule,index){if(rule.id===LIGHT&&rule.script_name==='读者对话渲染-外链版'&&managed(rule)&&rule.enabled)found.push({regex:rule,index:index,scope:group.option,metadata:null,linked:true});});});
+    return found.length===1?found[0]:null;
+  }
+  function hasLinked(){try{return !!linkedTarget(scan());}catch(e){return false;}}
   function hasFixed(){try{return scan().projects.some(function(p){return p.repository===REPOSITORY&&p.installed.some(function(i){return i.regex.enabled;});});}catch(e){return false;}}
   function managed(r){return KNOWN.indexOf(r.id)>=0&&typeof r.find_regex==='string'&&r.find_regex.indexOf('<dream>')>=0;}
   function validateLight(regex,version){
@@ -21,8 +27,11 @@
     if(!selected||selected.repository!==REPOSITORY)throw Error('尚无可验证的读者脚本版');
     if(!root.ReaderScriptInstaller)throw Error('脚本安装模块不可用');
     var snapshot=scan(),project=snapshot.projects.find(function(p){return p.repository===REPOSITORY;});
-    if(snapshot.errors.length||!project||project.invalid.length||project.installed.length!==1)throw Error('固定版缺失、重复或部分正则范围无法读取，请先检查安装');
-    var target=project.installed[0];if(!target.regex.enabled)throw Error('当前固定版已停用，请先确认要迁移的版本');
+    if(snapshot.errors.length)throw Error('部分正则范围无法读取：'+snapshot.errors.join('；'));
+    var target=project&&!project.invalid.length&&project.installed.length===1?project.installed[0]:null;
+    if(!target||!target.regex.enabled){var linked=linkedTarget(snapshot);if(linked&&!(project&&project.installed.some(function(i){return i.regex.enabled;})))target=linked;}
+    if(!target)throw Error(project&&project.installed.length>1?'发现重复的读者固定版，请先处理重复安装':'没有可迁移的读者固定版或外链版正则');
+    if(!target.regex.enabled)throw Error('当前固定版已停用，请先确认要迁移的版本');
     snapshot.lists.forEach(function(group){group.list.forEach(function(rule){
       if(rule.id===LIGHT&&!managed(rule))throw Error('轻量信件 ID 已被其他规则使用，已保留原规则');
       if(rule!==target.regex&&rule.id!==target.regex.id&&managed(rule)&&rule.enabled)throw Error('发现其他已启用读者正则，请先处理重复安装');
@@ -32,7 +41,7 @@
     var group=snapshot.lists.find(function(g){return JSON.stringify(g.option)===JSON.stringify(target.scope);});
     var protection=root.DreamRegexUpdateGuard.assertSafe(host(),target.scope,group.list);
     var scripts=root.ReaderScriptInstaller.inspect({scope:target.scope.type});
-    return {status:'outdated',selected:selected,snapshot:snapshot,target:target,group:group,protection:protection,scripts:scripts,detail:'固定版可升级为常驻脚本；脚本就绪后切换轻量信件'};
+    return {status:'outdated',selected:selected,snapshot:snapshot,target:target,group:group,protection:protection,scripts:scripts,detail:(target.linked?'外链版':'固定版')+'将换成读者常驻脚本加轻量信件（脚本版正则）；脚本就绪后才替换正则'};
   }
   async function install(plan,assertCurrent){
     var guard=assertCurrent||capture(),client=root.DreamFixedReleaseClient;
@@ -65,25 +74,35 @@
     var h=fresh.host.helper,group=fresh.lists.find(function(g){return JSON.stringify(g.option)===JSON.stringify(plan.target.scope);});
     if(root.DreamRegexUpdateGuard.assertSafe(host(),plan.target.scope,group.list).rawFingerprint!==plan.protection.rawFingerprint)throw Error('原始正则设置已变化，请重新检查');
     var currentRule=group.list[plan.target.index];if(!currentRule||currentRule.id!==plan.target.regex.id)throw Error('原固定版发生变化，请重新检查');
-    host().localStorage.setItem('dream_reader_fixed_migration_backup_v1',JSON.stringify({schema:1,context:current(),scope:plan.target.scope,regexes:group.list,scriptId:installed.id,version:runtime.metadata.version}));
+    var stored=root.DreamReleaseUpdates.storeBackup(host(),'dream_reader_fixed_migration_backup_v1',{schema:1,context:current(),scope:plan.target.scope,regexes:group.list.filter(managed),scriptId:installed.id,version:runtime.metadata.version});
     guard();await h.replaceTavernRegexes(replacement,plan.target.scope);
     guard();var saved=h.getTavernRegexes(plan.target.scope),found=saved.filter(function(rule){return rule.id===LIGHT;});
     if(found.length!==1||found[0].replace_string!==regex.replaceString)throw Error('脚本已安装，轻量信件保存尚未确认；请重新检查');
-    return {detail:'已切换轻量信件 v'+runtime.metadata.version,scriptDetail:'酒馆助手常驻脚本已安装并就绪 v'+runtime.metadata.version,version:runtime.metadata.version,id:installed.id};
+    return {detail:'已切换轻量信件 v'+runtime.metadata.version+(stored===false?'；浏览器存储空间不足，旧正则备份未保存（可从发布页重新下载旧版）':''),scriptDetail:'酒馆助手常驻脚本已安装并就绪 v'+runtime.metadata.version,version:runtime.metadata.version,id:installed.id};
   }
   async function autoStart(){
-    var fixed=root.DREAM_READER_FIXED;
-    if(root.__readerHostApi||!fixed||!fixed.manifest||fixed.manifest.installMode!=='script')return;
-    var h=host(),identity=JSON.stringify(current()),key='__readerFixedMigrationPending';
+    if(root.__readerHostApi)return;
+    var fixed=root.DREAM_READER_FIXED,linked=!fixed&&hasLinked();
+    if(!linked&&(!fixed||!fixed.manifest||fixed.manifest.installMode!=='script'))return;
+    var h=host(),identity=JSON.stringify(current()),key='__readerFixedMigrationPending',version=linked?'linked':fixed.version,label=linked?'外链版':'固定版';
+    // Every rendered 外链 letter calls this; a failed attempt is not repeated until the page reloads.
+    if(linked&&h.__readerLinkedMigrationFailed===identity)return;
     if(h[key]&&h[key].identity===identity){
-      if(h[key].version===fixed.version)return h[key].promise;
+      if(h[key].version===version)return h[key].promise;
       return h[key].promise.catch(function(){}).then(function(){return autoStart();});
     }
-    var guard=capture(),job=(async function(){try{if(!hasFixed())return;var plan=await check({repository:REPOSITORY,version:fixed.version});guard();if(plan.target.metadata.version!==fixed.version)return;return await install(plan,guard);}catch(error){root.__readerMigrationError=String(error&&error.message||error);if(typeof root.showToast==='function')root.showToast('常驻脚本未完成安装：'+root.__readerMigrationError+'；原固定版已保留');throw error;}})();
-    h[key]={identity:identity,version:fixed.version,promise:job};
+    var guard=capture(),job=(async function(){try{
+      var selected;
+      if(linked){selected=await root.DreamFixedReleaseClient.latest(REPOSITORY);if(!selected)return;}
+      else{if(!hasFixed())return;selected={repository:REPOSITORY,version:fixed.version};}
+      var plan=await check(selected);guard();
+      if(linked?!plan.target.linked:plan.target.metadata.version!==fixed.version)return;
+      return await install(plan,guard);
+    }catch(error){if(linked)h.__readerLinkedMigrationFailed=identity;root.__readerMigrationError=String(error&&error.message||error);if(typeof root.showToast==='function')root.showToast('常驻脚本未完成安装：'+root.__readerMigrationError+'；原'+label+'已保留');throw error;}})();
+    h[key]={identity:identity,version:version,promise:job};
     function finished(){if(h[key]&&h[key].promise===job)delete h[key];}
     job.then(finished,finished);return job;
   }
-  root.ReaderFixedMigration=Object.freeze({check:check,install:install,hasFixed:hasFixed,autoStart:autoStart,validateLight:validateLight});
+  root.ReaderFixedMigration=Object.freeze({check:check,install:install,hasFixed:hasFixed,hasLinked:hasLinked,autoStart:autoStart,validateLight:validateLight});
 })(window);
 /* DREAM_FIXED_MIGRATION_END */

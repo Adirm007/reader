@@ -38,14 +38,26 @@ export async function build({ write = false, version } = {}) {
     disabled: false, runOnEdit: true, findRegex: '/<dream>「?((?:[^<]|<(?!dream\\b|\\/dream>))*?)」?<\\/dream>/g',
     replaceString, trimStrings: [], placement: [2], substituteRegex: 0, minDepth: null, maxDepth: 10, markdownOnly: true, promptOnly: false }];
   rules[0].replaceString = replaceString.replace('<!doctype html>', '<!-- READER_LIGHT_VERSION:' + version + ' --><!-- READER_RUNTIME:' + JSON.stringify({schema:1,version,kind:'light-letter'}) + ' --><!doctype html>');
-  const sizes = { runtime: Buffer.byteLength(runtime), letter: Buffer.byteLength(rules[0].replaceString), controller: Buffer.byteLength(controller) };
+  // The auto-regex owns this module just like the other core runtimes. Default code is bundled;
+  // only a manually confirmed selection is restored from local storage, never from the network.
+  // Allocate the default controller only if it is actually selected. A cached newer module must
+  // not create a second controller/asset object just to leave the bundled copy idle.
+  const bundled = 'const BUNDLED = (() => {\nlet module;\nfunction load() { return module ||= (() => {\n' + runtime.replace(/^export /gm, '') + '\nreturn {start, stop};\n})(); }\nreturn {version: ' + JSON.stringify(version) + ', start: options => load().start(options), stop: () => module?.stop()};\n})();';
+  const cardHost = (await read('source/card-host.mjs')).replace("import { BUNDLED } from 'reader:bundled';", () => bundled);
+  // Reuse only the pure digest fallback; loading the complete release verifier at startup is
+  // unnecessary. Normal starts must not instantiate a verifier, worker or update client.
+  const hashFallbacks = releaseTools[0].match(/  function softwareSHA256\(input\) \{[\s\S]*?\n  \}/g) || [];
+  if (hashFallbacks.length !== 1) throw new Error('Expected one software SHA-256 fallback');
+  const cardRuntime = hashFallbacks[0] + '\n;\n' + await read('source/hosted-runtime-store.js') + '\n;\n' + cardHost;
+  const sizes = { cardRuntime: Buffer.byteLength(cardRuntime), runtime: Buffer.byteLength(runtime), letter: Buffer.byteLength(rules[0].replaceString), controller: Buffer.byteLength(controller) };
   if (write) {
     await mkdir(new URL('dist/', root), { recursive: true });
     await writeFile(new URL('dist/reader-runtime.js', root), runtime);
+    await writeFile(new URL('dist/reader-card-runtime.js', root), cardRuntime);
     await writeFile(new URL('regex/读者对话渲染-脚本版.json', root), JSON.stringify(rules[0], null, 2) + '\n');
-    await writeFile(new URL('dist/core-build.json', root), JSON.stringify({ runtime: { sha256: hash(runtime), bytes: sizes.runtime }, letter: { sha256: hash(rules[0].replaceString), bytes: sizes.letter } }, null, 2) + '\n');
+    await writeFile(new URL('dist/core-build.json', root), JSON.stringify({ runtime: { sha256: hash(runtime), bytes: sizes.runtime }, cardRuntime: { sha256: hash(cardRuntime), bytes: sizes.cardRuntime }, letter: { sha256: hash(rules[0].replaceString), bytes: sizes.letter } }, null, 2) + '\n');
   }
-  return { rules, runtime, sizes };
+  return { rules, runtime, cardRuntime, sizes };
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) console.log((await build({ write: true, version: process.argv[2] })).sizes);

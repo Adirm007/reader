@@ -26,7 +26,8 @@ export function fixedReaderFixture(options={}){
  const originalScripts=clone([playerScript]);
  const character=(avatar)=>({avatar,data:{extensions:{regex_scripts:[],tavern_helper:{scripts:clone(originalScripts)}}}});
  const context={characterId:0,chatId:'reader-chat',characters:[character('reader.png'),character('other.png')],extensionSettings:{regex:[],tavern_helper:{script:{scripts:clone(originalScripts),enabled:{global:true,characters:['reader.png','other.png']}}}},chatCompletionSettings:{extensions:{regex_scripts:[]}},getCurrentChatId:()=>context.chatId,getPresetManager:()=>({getSelectedPresetName:()=> 'test preset'}),getRequestHeaders:()=>({'Content-Type':'application/json','X-CSRF-Token':'fixture'}),mainApi:'openai'};
- const ownedRegexes=scope==='global'?context.extensionSettings.regex:context.characters[0].data.extensions.regex_scripts;ownedRegexes.push(fixed(options.fixedVersion||'2.0'));
+ const ownedRegexes=scope==='global'?context.extensionSettings.regex:context.characters[0].data.extensions.regex_scripts;
+ ownedRegexes.push(options.linked?{...fixed('2.0'),id:LIGHT_ID,scriptName:'读者对话渲染-外链版',replaceString:'<script>/* 外链加载器 */</script>'}:fixed(options.fixedVersion||'2.0'));
  const originalRegexes=clone(ownedRegexes);
  if(options.containerDisabled){const enabled=context.extensionSettings.tavern_helper.script.enabled;if(scope==='global')enabled.global=false;else enabled.characters=[];}
  persistedTrees=clone(scope==='global'?context.extensionSettings.tavern_helper.script.scripts:context.characters[0].data.extensions.tavern_helper.scripts);
@@ -40,6 +41,8 @@ export function fixedReaderFixture(options={}){
   if(!managed||managed.enabled===false||options.noBoot)return;
   const data=managed.data.reader_runtime;
   if(options.delegated){root.__readerStandaloneStatus={id:SCRIPT_ID,token:data.ownerToken,phase:'delegated'};calls.push('script-delegated');return;}
+  // Like standalone-bootstrap: a runtime without a script owner (the card's auto-regex) is replaced.
+  const previous=root.ReaderCore;if(previous&&previous.isAlive!==false&&!previous.scriptOwner){previous.stop();calls.push('external-stopped');}
   root.ReaderCore={scriptOwner:{id:SCRIPT_ID,token:data.ownerToken,scope},runtimeVersion:data.version,isAlive:true,ready:options.readyForVersion?options.readyForVersion(data.version):options.ready||Promise.resolve(options.readyFails?null:{running:true}),stop(){this.isAlive=false;if(root.ReaderCore===this)delete root.ReaderCore;}};
   calls.push('script-start');
  };

@@ -84,8 +84,8 @@ test('the saved helper module starts the real reader after reload and survives o
   await page.evaluate(()=>{__ctx.characterId=1;__ctx.chatId='other';emit('CHAT_CHANGED');});
   await page.waitForFunction(()=>!window.ReaderCore&&__readerStandaloneStatus.phase==='paused');
   assert.equal(await page.locator('#reader-core-controller,#reader-core-launcher,#dfb').count(),0);
-  await page.evaluate(()=>{__ctx.characterId=0;__ctx.chatId='a';window.ReaderCore={isAlive:true,scriptOwner:null,external:true,stop(){throw Error('external host must remain untouched');}};window.__external=ReaderCore;boot();});
-  await page.waitForFunction(()=>__readerStandaloneStatus.phase==='delegated');
-  assert.equal(await page.evaluate(()=>ReaderCore===__external),true);assert.deepEqual(errors,[]);
+  await page.evaluate(()=>{__ctx.characterId=0;__ctx.chatId='a';window.ReaderCore={isAlive:true,scriptOwner:null,external:true,stop(){this.isAlive=false;window.__externalStopped=true;if(window.ReaderCore===this)delete window.ReaderCore;}};window.__external=ReaderCore;boot();});
+  await page.waitForFunction(()=>window.__externalStopped&&window.ReaderCore?.scriptOwner?.token&&__readerStandaloneStatus.phase==='ready');
+  assert.equal(await page.evaluate(()=>ReaderCore===__external),false);assert.deepEqual(errors,[]);
  }finally{await browser.close();await new Promise(resolve=>server.close(resolve));}
 });
