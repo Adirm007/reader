@@ -48,7 +48,7 @@ test('Booksea music uses no startup/album-selection request and plays one verifi
   await page.waitForFunction(()=>readerMusic.loading);while(!releaseHold)await new Promise(resolve=>setTimeout(resolve,5));
   assert.ok(await page.evaluate(first=>__revoked.includes(first),first));
   await page.evaluate(()=>switchAlbum('咖啡馆'));hold=false;releaseHold();
-  assert.equal(await page.evaluate(()=>__pending),false);assert.equal(await page.evaluate(()=>audio.paused),true);assert.ok(!(await page.locator('audio').getAttribute('src')).startsWith('blob:'));
+  assert.equal(await page.evaluate(()=>__pending),false);assert.equal(await page.evaluate(()=>audio.paused),true);assert.ok(!((await page.locator('audio').getAttribute('src'))||'').startsWith('blob:'));
   failPrimary=true;await page.evaluate(()=>switchAlbum('书海'));const before=requests.length;
   assert.equal(await page.evaluate(()=>togglePlay()),true);assert.equal(requests.length-before,2);assert.match(requests.at(-1),/cdn\.jsdelivr\.net/);
 
@@ -72,5 +72,36 @@ test('Booksea music uses no startup/album-selection request and plays one verifi
 
   const last=await page.locator('audio').getAttribute('src');await page.evaluate(()=>readerMusic.dispose());
   assert.equal(await page.locator('audio').getAttribute('src'),null);assert.ok(await page.evaluate(last=>__revoked.includes(last),last));assert.deepEqual(errors,[]);
+ }finally{await browser.close();await new Promise(resolve=>server.close(resolve));}
+});
+
+test('all six hosted Reader MP3s decode in Chromium through the real lazy verified player',{skip:!chromium||!existsSync(chrome),timeout:60000},async()=>{
+ const html='<!doctype html><html><body><audio id="bgm-player"></audio><div id="record-btn"></div><div id="track-btn"></div><div id="track-list"></div><script>window.showToast=function(){};window.DreamFixedReleaseClient={sha256:async function(bytes){return Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",bytes)),n=>n.toString(16).padStart(2,"0")).join("");}};</script><script src="/album.js"></script><script src="/music.js"></script></body></html>';
+ const server=createServer((req,res)=>{res.setHeader('Content-Type',req.url.endsWith('.js')?'text/javascript; charset=utf-8':'text/html; charset=utf-8');res.end(req.url==='/album.js'?album:req.url==='/music.js'?music:html);});
+ await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+ const origin='http://127.0.0.1:'+server.address().port,browser=await chromium.launch({executablePath:chrome,headless:true,args:['--autoplay-policy=no-user-gesture-required']}),page=await browser.newPage(),requests=[];
+ await page.route('**/*',async route=>{
+  const url=route.request().url();if(url.startsWith(origin)||url.startsWith('blob:'))return route.continue();
+  const match=url.match(/https:\/\/(?:raw\.githubusercontent\.com\/Adirm007\/reader\/|cdn\.jsdelivr\.net\/gh\/Adirm007\/reader@)([a-f0-9]{40})\/audio\/(music\/[^/]+\.mp3)$/);
+  assert.ok(match,'Unexpected download: '+url);requests.push(url);
+  const bytes=await readFile(new URL('../audio/'+match[2],import.meta.url));
+  await route.fulfill({status:200,body:bytes,contentType:'audio/mpeg',headers:{'Access-Control-Allow-Origin':'*'}});
+ });
+ try{
+  await page.goto(origin);await page.evaluate(()=>{audio.muted=true;initPlaylist();});
+  assert.equal(requests.length,0);assert.equal(await page.locator('audio').getAttribute('src'),null);
+  const tracks=await page.evaluate(()=>ReaderBookseaAlbum.readerCatalog);
+  for(const track of tracks){
+   await page.evaluate(t=>{switchAlbum(t.album);playTrack(playlist.findIndex(s=>s.name===t.name));},track);
+   assert.equal(requests.length,tracks.indexOf(track));
+   assert.equal(await page.evaluate(()=>togglePlay()),true,track.name);
+   await page.waitForFunction(()=>audio.currentTime>.05&&!audio.paused);
+   assert.equal(requests.length,tracks.indexOf(track)+1);
+   assert.ok(requests.at(-1).endsWith('/audio/'+track.path));
+   assert.match(await page.locator('audio').getAttribute('src'),/^blob:/);
+   assert.equal(await page.evaluate(()=>playlist[currentTrackIndex].name),track.name);
+   assert.ok(await page.evaluate(()=>audio.duration>90));await page.evaluate(()=>readerMusic.pause());
+  }
+  await page.evaluate(()=>readerMusic.dispose());assert.equal(await page.locator('audio').getAttribute('src'),null);
  }finally{await browser.close();await new Promise(resolve=>server.close(resolve));}
 });

@@ -11,9 +11,10 @@ const plain=value=>JSON.parse(JSON.stringify(value));
 const digest=bytes=>createHash('sha256').update(new Uint8Array(bytes)).digest('hex');
 function deferred(){let resolve;const promise=new Promise(done=>resolve=done);return {promise,resolve};}
 function node(){const classes=new Set();return {style:{},children:[],textContent:'',innerHTML:'',classList:{add(...xs){xs.forEach(x=>classes.add(x));},remove(...xs){xs.forEach(x=>classes.delete(x));},contains:x=>classes.has(x)},appendChild(child){this.children.push(child);},addEventListener(){},setAttribute(){}};}
-function fixture({saved,current,fetcher}={}){
+function fixture({saved,current,fetcher,legacyPlaylist}={}){
  const values=new Map(),calls=[],revoked=[],blobs=new Map(),events=new Map(),elements=new Map();let serial=0;
  if(saved)values.set('dream_albums',JSON.stringify(saved));if(current)values.set('dream_current_album',current);
+ if(legacyPlaylist)values.set('dream_playlist',JSON.stringify(legacyPlaylist));
  const audio={paused:true,src:'',plays:0,loads:0,preload:'auto',pause(){this.paused=true;},play(){this.paused=false;this.plays++;return Promise.resolve();},load(){this.loads++;},removeAttribute(name){if(name==='src')this.src='';},getAttribute(name){return name==='src'?this.src||null:null;},addEventListener(name,listener){events.set(name,listener);}};
  elements.set('bgm-player',audio);
  for(const id of ['record-btn','track-btn','track-list'])elements.set(id,node());
@@ -94,4 +95,51 @@ test('changing tracks or disposing releases blobs and disposes pending downloads
 test('the existing external-song path remains direct and never uses the Booksea downloader',async()=>{
  const f=fixture(),url='https://example.test/custom.mp3';f.root.readerMusic.select(url);
  assert.equal(f.audio.src,url);assert.equal(f.calls.length,0);assert.equal(await f.root.readerMusic.play(url),true);assert.equal(f.audio.plays,1);assert.equal(f.calls.length,0);
+});
+
+test('six Reader-owned MP3s match their pinned catalog and retain the original album names',async()=>{
+ const f=fixture(),album=f.root.ReaderBookseaAlbum;
+ const expected=['四小天鹅','D大调卡农','G弦上的咏叹调',"Don't Know Why",'Fly Me to the Moon','最初之歌'];
+ assert.equal(album.readerCatalog.length,6);assert.match(album.readerCommit,/^[a-f0-9]{40}$/);
+ assert.deepEqual(plain(album.readerCatalog.map(t=>t.name)),expected);
+ for(const track of album.readerCatalog){
+  const bytes=await readFile(new URL('../audio/'+track.path,import.meta.url));
+  assert.equal(bytes.length,track.bytes,track.name);assert.equal(digest(bytes),track.sha256,track.name);
+  const song=album.readerSongs[track.id];
+  assert.equal(song.name,track.name);assert.ok(f.root.defaultAlbums[track.album].some(t=>t.name===track.name&&t.url===song.url));
+  assert.equal(song.url,'https://raw.githubusercontent.com/Adirm007/reader/'+album.readerCommit+'/audio/'+track.path);
+ }
+ assert.deepEqual(plain(f.root.albumOrder.slice(0,5).map(a=>f.root.albums[a].length)),[8,9,16,1,7]);
+ assert.equal(f.root.albums['失乐园'].filter(t=>t.url.startsWith('https://files.catbox.moe/')).length,16);
+});
+
+test('saved retired URLs migrate without changing player names, order, custom tracks or empty albums',()=>{
+ const initial=fixture(),album=initial.root.ReaderBookseaAlbum;
+ const retired=plain(album.readerCatalog).reverse().map(t=>({name:'玩家重命名 · '+t.name,url:t.legacyUrl}));
+ const custom={name:'自定义音乐',url:'https://example.test/custom.flac'};
+ const saved={'咖啡馆':[custom,...retired],'读者们':[],'失乐园':[],'收录':[],'私货':[]};
+ const f=fixture({saved,current:'咖啡馆'}),expected=[custom,...retired.map(t=>({...t,url:album.resolveUrl(t.url)}))];
+ assert.deepEqual(plain(f.root.albums['咖啡馆']),expected);
+ assert.deepEqual(JSON.parse(f.values.get('dream_albums'))['咖啡馆'],expected);
+ for(const a of ['读者们','失乐园','收录','私货'])assert.deepEqual(plain(f.root.albums[a]),[]);
+ assert.equal(f.root.albums['书海'].length,124);assert.equal(f.calls.length,0);
+ const legacy=fixture({legacyPlaylist:retired});assert.deepEqual(plain(legacy.root.albums['咖啡馆']),expected.slice(1));
+});
+
+test('Reader tracks load on demand with verified pinned mirrors and resolve retired play URLs',async()=>{
+ const good=new Uint8Array([1,2,3,4]),bad=new Uint8Array([4,3,2,1]);let attempt=0;
+ const f=fixture({fetcher:()=>new Response(++attempt===1?bad:good)}),album=f.root.ReaderBookseaAlbum,track=album.readerCatalog[0];
+ track.bytes=good.length;track.sha256=digest(good);
+ f.root.initPlaylist();assert.equal(f.audio.src,'');assert.equal(f.calls.length,0);
+ f.root.switchAlbum('读者们');f.root.switchAlbum('咖啡馆');assert.equal(f.audio.src,'');assert.equal(f.calls.length,0);
+ assert.equal(await f.root.readerMusic.play(track.legacyUrl),true);assert.equal(f.calls.length,2);
+ assert.equal(f.calls[0].url,'https://raw.githubusercontent.com/Adirm007/reader/'+album.readerCommit+'/audio/'+track.path);
+ assert.equal(f.calls[1].url,'https://cdn.jsdelivr.net/gh/Adirm007/reader@'+album.readerCommit+'/audio/'+track.path);
+ assert.match(f.audio.src,/^blob:/);assert.equal(f.audio.plays,1);assert.ok(f.root.readerMusic.isSelected(track.legacyUrl));
+ const first=f.audio.src;f.root.readerMusic.pause();await f.root.readerMusic.resume();assert.equal(f.calls.length,2);
+ f.root.readerMusic.dispose();assert.ok(f.revoked.includes(first));
+ const broken=fixture({fetcher:()=>new Response(bad)}),brokenTrack=broken.root.ReaderBookseaAlbum.readerCatalog[0];
+ brokenTrack.bytes=good.length;brokenTrack.sha256=digest(good);
+ assert.equal(await broken.root.readerMusic.play(brokenTrack.legacyUrl),false);assert.equal(broken.calls.length,2);
+ assert.equal(broken.audio.src,'');assert.equal(broken.audio.plays,0);
 });

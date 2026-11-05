@@ -8,29 +8,95 @@
   function encode(path){return path.split('/').map(encodeURIComponent).join('/');}
   var byUrl=new Map();
   var songs=catalog.map(function(track){var url=bases[0]+encode(track.path);byUrl.set(url,track);return {name:track.name,url:url};});
+  // Reader-owned replacements for the six retired Sharkpan links. Keep display names independent of file tags.
+  var readerCommit='f41532fd937412d5ee6130e290a05df98455a84f';
+  var readerCatalog=[
+  {
+    "id": "four-little-swans",
+    "name": "四小天鹅",
+    "path": "music/four-little-swans.mp3",
+    "bytes": 2376164,
+    "sha256": "a54b1684ec27562b57570231d89a6535e6d49b5d1d764fd8f32a2cbdb8f7eb53",
+    "album": "咖啡馆",
+    "legacyUrl": "https://sharkpan.xyz/f/xlYwuX/%E5%9B%9B%E5%B0%8F%E5%A4%A9%E9%B9%85.mp3"
+  },
+  {
+    "id": "canon-in-d",
+    "name": "D大调卡农",
+    "path": "music/canon-in-d.mp3",
+    "bytes": 5881380,
+    "sha256": "3af20f559d0351704be5cbeea1ec02c83082a30d59725405d526a02919ce9459",
+    "album": "咖啡馆",
+    "legacyUrl": "https://sharkpan.xyz/f/Vyv2fY/D%E5%A4%A7%E8%B0%83%E5%8D%A1%E5%86%9C.mp3"
+  },
+  {
+    "id": "air-on-the-g-string",
+    "name": "G弦上的咏叹调",
+    "path": "music/air-on-the-g-string.mp3",
+    "bytes": 6913325,
+    "sha256": "db6ceef0b48a9fbc45e581af97b37b5636a8bc16ec772bdbb79786ae261ad8ec",
+    "album": "咖啡馆",
+    "legacyUrl": "https://sharkpan.xyz/f/lm5Vux/G%E5%BC%A6%E4%B8%8A%E7%9A%84%E5%92%8F%E5%8F%B9%E8%B0%83.mp3"
+  },
+  {
+    "id": "dont-know-why",
+    "name": "Don't Know Why",
+    "path": "music/dont-know-why.mp3",
+    "bytes": 4503997,
+    "sha256": "a2196d2e9d88049562e28858bdc9e225233b787efac40ea9123100a478769df6",
+    "album": "咖啡馆",
+    "legacyUrl": "https://sharkpan.xyz/f/KkowHo/Don%27t%20Know%20Why.mp3"
+  },
+  {
+    "id": "fly-me-to-the-moon",
+    "name": "Fly Me to the Moon",
+    "path": "music/fly-me-to-the-moon.mp3",
+    "bytes": 3879570,
+    "sha256": "eb0baa9a9c4bf98bf17319f06385139b2c5cb8b1b679316686a42dba8fa5e948",
+    "album": "咖啡馆",
+    "legacyUrl": "https://sharkpan.xyz/f/EeNKfD/Fly%20Me%20to%20the%20Moon.mp3"
+  },
+  {
+    "id": "page-ninety-nine",
+    "name": "最初之歌",
+    "path": "music/page-ninety-nine.mp3",
+    "bytes": 4293392,
+    "sha256": "f6660c0cf6f2821a564f1a76a248f94fb832e510f6f769c897e18c9303963791",
+    "album": "读者们",
+    "legacyUrl": "https://sharkpan.xyz/f/Yyv7U1/Page%20Ninety-Nine.mp3"
+  }
+];
+  var readerBases=['https://raw.githubusercontent.com/Adirm007/reader/'+readerCommit+'/audio/','https://cdn.jsdelivr.net/gh/Adirm007/reader@'+readerCommit+'/audio/'];
+  var readerSongs={},aliases=new Map(),sourceBasesByUrl=new Map();
+  readerCatalog.forEach(function(track){
+    var url=readerBases[0]+encode(track.path);
+    readerSongs[track.id]={name:track.name,url:url};
+    byUrl.set(url,track);sourceBasesByUrl.set(url,readerBases);aliases.set(track.legacyUrl,url);
+  });
+  function resolveUrl(url){return aliases.get(url)||url;}
   function createPlayer(audio,report){
     var selected='',objectUrl=null,generation=0,intent=0,pending=null,controller=null,disposed=false;
     audio.preload='none';
     function release(){if(objectUrl){root.URL.revokeObjectURL(objectUrl);objectUrl=null;}}
     function cancel(){generation++;intent++;if(controller)controller.abort();controller=null;pending=null;}
     function select(url){
-      if(disposed)return;cancel();audio.pause();release();selected=String(url||'');
+      if(disposed)return;cancel();audio.pause();release();selected=String(resolveUrl(url)||'');
       if(selected&&!byUrl.has(selected))audio.src=selected;else audio.removeAttribute('src');
       audio.load();
     }
     function pause(){intent++;audio.pause();if(pending){generation++;if(controller)controller.abort();controller=null;pending=null;}}
     function current(ticket,url){return !disposed&&ticket===generation&&url===selected;}
     async function acquire(track,url){
-      var ticket=generation,aborter=null;
+      var ticket=generation,aborter=null,mirrors=sourceBasesByUrl.get(url)||bases;
       if(report)report('正在载入：'+track.name);
       var job=(async function(){
         var last;
-        for(var i=0;i<bases.length;i++){
+        for(var i=0;i<mirrors.length;i++){
           if(!current(ticket,url))return false;
           aborter=new root.AbortController();controller=aborter;
           var timer=root.setTimeout(function(){aborter.abort();},20000);
           try{
-            var response=await root.fetch(bases[i]+encode(track.path),{credentials:'omit',cache:'force-cache',signal:aborter.signal});
+            var response=await root.fetch(mirrors[i]+encode(track.path),{credentials:'omit',cache:'force-cache',signal:aborter.signal});
             if(!response.ok)throw Error('HTTP '+response.status);
             var announced=Number(response.headers.get('Content-Length'));
             if(announced>track.bytes)throw Error('配乐大小与清单不符');
@@ -53,6 +119,7 @@
       try{return await job;}finally{if(pending===job)pending=null;if(controller===aborter)controller=null;}
     }
     async function play(url){
+      url=resolveUrl(url);
       if(disposed)return false;if(selected!==url)select(url);
       var request=++intent,track=byUrl.get(selected),ticket=generation;
       try{
@@ -63,8 +130,8 @@
     }
     function dispose(){if(disposed)return;disposed=true;cancel();audio.pause();audio.removeAttribute('src');audio.load();release();root.removeEventListener('pagehide',dispose);}
     root.addEventListener('pagehide',dispose,{once:true});
-    return Object.freeze({select:select,play:play,resume:function(){return play(selected);},pause:pause,dispose:dispose,isSelected:function(url){return selected===url;},get loading(){return !!pending;}});
+    return Object.freeze({select:select,play:play,resume:function(){return play(selected);},pause:pause,dispose:dispose,isSelected:function(url){return selected===resolveUrl(url);},get loading(){return !!pending;}});
   }
-  root.ReaderBookseaAlbum=Object.freeze({repository:repository,commit:commit,songs:songs,catalog:catalog,createPlayer:createPlayer});
+  root.ReaderBookseaAlbum=Object.freeze({repository:repository,commit:commit,songs:songs,catalog:catalog,readerCommit:readerCommit,readerCatalog:readerCatalog,readerSongs:readerSongs,resolveUrl:resolveUrl,createPlayer:createPlayer});
 })(window);
 /* DREAM_BOOKSEA_ALBUM_END */

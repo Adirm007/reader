@@ -25,7 +25,7 @@ node --test tests/runtime.browser.test.mjs
 - `reader-transactions.js`：固定聊天、楼层、候选的状态提交及去重。
 - `booksea-host.js`：按需装载并保留书海窗口，收起时保留游玩现场。
 - `template-system.js`：原内嵌压缩模块的可维护源码。
-- `booksea-album.js`：书海第六专辑的 124 首曲目目录及单曲校验、加载和回收。
+- `booksea-album.js`：书海第六专辑的 124 首曲目、reader 自托管的六首替换曲目，以及单曲校验、加载和回收。
 - `reader-gacha.js`：大厅「命运抽卡」面板（`window.ReaderGacha`）。由 `gacha/` 打包生成，见下方「命运抽卡」，不要手改。
 
 ## 悬浮信封
@@ -48,6 +48,14 @@ node --test tests/runtime.browser.test.mjs
 第六张专辑收录书海当前发布版实际使用的全部 124 首 BGM，沿用原曲名。目录固定 `Adirm007/Protelysion` 的完整提交 `49353c8bdfb3fa5544e8a65179c690c1757fac26` 及每首 MP3 的大小、SHA-256；音频继续使用书海已托管的文件，不复制约 182 MiB 音频到读者脚本或正则。
 
 启动、打开歌单和切换专辑只读取目录；点击播放才下载当前曲目，校验后使用 Blob 播放。切歌、暂停、失去书海音频焦点或停止核心会取消未完成的播放意图，切歌和停止时回收旧 Blob。原五张专辑的自定义和空歌单保留，旧用户自动补上缺少的书海专辑。
+
+## reader 自托管曲目
+
+原 `sharkpan.xyz` 的六首失效曲目改由本仓库 `audio/music/` 托管：咖啡馆的「四小天鹅」「D大调卡农」「G弦上的咏叹调」「Don't Know Why」「Fly Me to the Moon」，以及读者们的「最初之歌」（原文件 `Page Ninety-Nine.mp3`）。前五首从 FLAC 转为 192 kbps、44.1 kHz、双声道 MP3；现有 MP3 不重编码。文件对应关系见 [`audio/README.md`](../audio/README.md)。
+
+`ReaderBookseaAlbum.readerCatalog` 保存六首的显示名称、旧 URL、文件路径、大小与 SHA-256；`readerCommit` 指向音频文件所在的完整提交。沿用书海的按需下载、SHA-256 验证、raw/jsDelivr 固定提交镜像、取消与 Blob 回收，不在初始化或选专辑时加载音频。
+
+`resolveUrl()` 只映射目录中六个完整旧 URL；默认歌单及 `dream_albums` / 旧 `dream_playlist` 读入时应用映射并保存。玩家重命名的曲目仍保留名称，删除、重排、自定义链接和空歌单不恢复成默认值；其他站点的音乐继续使用原链接。书海目录与来源不变。
 
 旧完整版和外链版保留兼容用途；两种渲染不要同时启用。兼容构建读取上述 legacy 源码，并注入共用事务模块，未指定版本号时保留原版本：
 
