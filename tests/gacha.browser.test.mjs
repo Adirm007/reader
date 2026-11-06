@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import { createRequire } from 'node:module';
-import { existsSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { build } from '../tools/build_core.mjs';
 
 let chromium;
@@ -25,6 +26,63 @@ window.tavern_events=Object.fromEntries(['CHAT_CHANGED','MESSAGE_RECEIVED','MESS
 window.__events=new Map();window.eventOn=(name,fn)=>{const s=__events.get(name)||new Set();s.add(fn);__events.set(name,s);return{stop:()=>s.delete(fn)}};window.emit=name=>{for(const f of __events.get(name)||[])f()};
 window.__ctx.eventTypes=window.tavern_events;window.__ctx.eventSource={makeFirst(name,fn){__events.set(name,new Set([fn,...(__events.get(name)||[])]));},removeListener(name,fn){__events.get(name)?.delete(fn);},async emit(name,...args){for(const f of __events.get(name)||[])await f(...args);}};
 </script></body></html>`;
+
+test('default standing art decodes in the lobby, appearance picker, gacha hero and casting overlay', { skip: !chromium || !existsSync(chrome), timeout: 60000 }, async () => {
+  const { runtime } = await build();
+  const image = readFileSync(new URL('../vendor/reader-art/cafe-default.bac5af7884aa.png', import.meta.url));
+  const server = createServer((request, response) => {
+    response.setHeader('Content-Type', request.url === '/runtime.js' ? 'text/javascript; charset=utf-8' : 'text/html; charset=utf-8');
+    response.end(request.url === '/runtime.js' ? runtime : fixture);
+  });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  const origin = `http://127.0.0.1:${server.address().port}`;
+  const browser = await chromium.launch({ executablePath: chrome, headless: true });
+  const page = await browser.newPage({ viewport: { width: 1280, height: 860 } });
+  await page.route('**/*', route => route.request().url().startsWith(origin) ? route.continue()
+    : route.request().resourceType() === 'image' ? route.fulfill({ contentType: 'image/png', body: image }) : route.abort());
+  const decodedImg = selector => page.waitForFunction(selector => {
+    const img = document.querySelector(selector);
+    return img?.complete && img.naturalWidth === 832 && img.naturalHeight === 1216;
+  }, selector);
+  const decodedBackground = (selector, pseudo = null) => page.evaluate(async ({ selector, pseudo }) => {
+    const value = getComputedStyle(document.querySelector(selector), pseudo).backgroundImage;
+    const match = /^url\("(.*)"\)$/.exec(value);
+    if (!match) return { present: false, decoded: false };
+    const image = new Image(); image.src = match[1];
+    try { await image.decode(); } catch { return { present: true, decoded: false }; }
+    return { present: true, decoded: image.naturalWidth === 832 && image.naturalHeight === 1216 };
+  }, { selector, pseudo });
+  try {
+    await page.goto(origin);
+    await page.evaluate(async () => {
+      window.runtimeModule = await import('/runtime.js'); runtimeModule.start(); await ReaderCore.ready;
+      const controller = document.getElementById('reader-core-controller').contentWindow;
+      controller.fetch = url => new Promise(resolve => {window.__releaseArtSearch = () => resolve(window.__mockFetch(url));});
+    });
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.locator('#dfb').click();
+    await decodedImg('#dlb-art');
+    await page.evaluate(() => ReaderCore.open('persona'));
+    await decodedImg('.dlb-pcard[data-id="default"] img');
+    await page.evaluate(() => ReaderCore.open('lobby'));
+    await page.locator('#dlb-overlay [data-dlb="gacha"]').first().click();
+    await page.locator('.bs-gacha').waitFor({ state: 'visible' });
+    assert.deepEqual(await decodedBackground('.gc-hero-fig'), { present: true, decoded: true }, 'the actual default PNG must render through the gacha CSS image variable');
+    await page.locator('.bs-gacha .gc-theme', { hasText: '奇幻' }).first().click();
+    const cast = page.locator('.bs-gacha .gc-actions button', { hasText: '撒网' });
+    await cast.click(); await page.locator('.bs-gacha .gc-actions button.is-armed').click();
+    await page.locator('.gc-cast').waitFor({ state: 'visible' });
+    assert.deepEqual(await decodedBackground('.gc-cast', '::before'), { present: true, decoded: true }, 'the casting overlay must render the same standing art');
+    if (process.env.READER_QA_DIR) {
+      mkdirSync(process.env.READER_QA_DIR, { recursive: true });
+      await page.screenshot({ path: join(process.env.READER_QA_DIR, 'default-art-casting.png') });
+    }
+    await page.evaluate(() => {window.__releaseArtSearch?.(); runtimeModule.stop();});
+  } finally {
+    await browser.close();
+    server.close();
+  }
+});
 
 test('lobby 命运抽卡 opens the gacha above the lobby: a paid big pool, a ten-draw into MVU, recycling, then cleanup with the reader', { skip: !chromium || !existsSync(chrome), timeout: 120000 }, async () => {
   const { runtime } = await build();
