@@ -62,7 +62,7 @@ function runtimeFixture({offline=false,hosted=false}={}){
 }
 test('an older host without persistent runtime support cannot silently install a library script',async()=>{
  const f=runtimeFixture(),api=f.root.ReaderUpdates.createCoordinator(f.root.ReaderUpdates.components(),()=>()=>{});
- const script=(await api.check()).find(item=>item.id==='script');assert.equal(script.status,'unavailable');assert.match(script.detail,/旧版角色卡.*不会自动创建独立脚本/);
+ const script=(await api.check()).find(item=>item.id==='script');assert.equal(script.status,'unavailable');assert.equal(script.plan.statusLabel,'等待主卡4.4');assert.equal(script.detail,'当前为主卡4.3最新版本，因加载方式调整，后续版本无法继续在此更新。需待主卡4.4版本发布后恢复检查更新');
  await api.apply();assert.equal(f.calls.includes('inspect-library'),false);assert.equal(f.calls.includes('verify:reader-runtime.js'),false);assert.equal(f.version,'1.0');
 });
 test('compatibility restoration never downloads code, checks releases or writes the script library',async()=>{

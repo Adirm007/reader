@@ -72,8 +72,8 @@
         return {status:latest&&client.compare(latest.version,version)>0?'outdated':'current',selected:latest,version:version,hosted:true,runningVersion:api.runtimeVersion,pendingVersion:pending,
           detail:'读者运行脚本（自动正则托管）：当前 v'+api.runtimeVersion+(pending&&pending!==api.runtimeVersion?'；已保存 v'+pending+'，下次启动生效':'')+(latest?'；最新 v'+latest.version:'；尚无正式发布')};
       }
-      return {status:'unavailable',selected:latest,version:api.runtimeVersion,
-        detail:'当前由旧版角色卡托管读者 v'+api.runtimeVersion+'；请更新命定之诗程序资源以支持保存手动选定版本，不会自动创建独立脚本'};
+      return {status:'unavailable',statusLabel:'等待主卡4.4',selected:latest,version:api.runtimeVersion,
+        detail:'当前为主卡4.3最新版本，因加载方式调整，后续版本无法继续在此更新。需待主卡4.4版本发布后恢复检查更新'};
     }
     var components=[];
     if(api&&!(root.ReaderFixedMigration&&(root.ReaderFixedMigration.hasFixed()||root.ReaderFixedMigration.hasLinked()))){
@@ -147,7 +147,7 @@
     renderHistory();
     var center=instance(),labels={current:'已是最新',outdated:'有可用更新',updated:'已更新',failed:'失败',unavailable:'不可自动更新'};
     function button(label,handler){buttons.appendChild(customPersonaButton(doc,label,'',handler));}
-    function render(results){renderHistory(results);info.textContent=results.map(function(item){return item.label+'：'+(labels[item.status]||item.status)+'\n'+item.detail;}).join('\n\n');}
+    function render(results){renderHistory(results);info.textContent=results.map(function(item){var label=item.status==='unavailable'&&item.plan&&item.plan.statusLabel||labels[item.status]||item.status;return item.label+'：'+label+'\n'+item.detail;}).join('\n\n');}
     async function run(){if(center.busy)return;buttons.textContent='';status.textContent='正在检查…';try{var results=await center.check();if(!overlay.isConnected)return;render(results);var count=results.filter(function(item){return item.status==='outdated';}).length;status.textContent=(root.__readerHostApi&&root.__readerHostApi.updateRestoreError?root.__readerHostApi.updateRestoreError+'；':'')+(count?'发现 '+count+' 项更新':'检查完成');if(count)button('更新可用项目（'+count+' 项）',async function(){if(center.busy)return;buttons.textContent='';try{var done=await center.apply(function(name){status.textContent='正在更新'+name+'…';});if(!overlay.isConnected)return;render(done);status.textContent=done.some(function(item){return item.status==='failed';})?'部分项目未完成，请重新检查':'更新完成';}catch(error){status.textContent=message(error);}button('重新检查',run);});}catch(error){status.textContent=message(error);}finally{if(overlay.isConnected){button('重新检查',run);button('关闭',shell.close);}}}
     run();return overlay;
   };
