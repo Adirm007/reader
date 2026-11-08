@@ -116,6 +116,7 @@
     envelope.__vx = Math.max(4, Math.min(Math.max(4, pW.innerWidth - (envelope.offsetWidth || 70) - 4), envelope.__vx));
     envelope.__vy = Math.max(4, Math.min(Math.max(4, pW.innerHeight - (envelope.offsetHeight || 50) - 4), envelope.__vy));
     pW.__dfbPos = { x: envelope.__vx, y: envelope.__vy };
+    envelope.__wakeTrack?.();
   });
   var originalOpen = openDreamLobby;
   openDreamLobby = function () {
