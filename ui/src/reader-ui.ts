@@ -2,16 +2,18 @@
  * It only draws. Every object that does something carries the same data-dlb attributes the legacy
  * renderer used, so the existing dlbClick chain performs all actions, prices and state changes. The
  * switch layer (source/reader-ui-switch.js) decides when this layer draws and feeds it the state. */
-import type { Hooks, LobbyState, Theme, ThemeKit } from './core/types';
+import type { Fragments, Hooks, LobbyState, Theme, ThemeKit } from './core/types';
 import { hydrate, hydrateHover, load, has } from './core/assets';
 import { fontFaceCss } from './core/fonts';
 import { esc, nameOf, priceOf, bookText, setText, each, pad2 } from './core/dom';
 import baseCss from './base.css';
+import { pageHTML } from './pages';
 import { cafe } from './themes/cafe/kit';
 import { summer } from './themes/summer/kit';
 import { ink } from './themes/ink/kit';
 
-export const READER_UI_VERSION = '4.0.0';
+export const READER_UI_VERSION = '4.1.0';
+const PAGES = ['persona', 'tuning', 'decouple', 'template', 'eggs'];
 
 const KITS: Record<Theme, ThemeKit> = { cafe, summer, ink };
 const SHORT: Record<Theme, string> = { cafe: 'u4c', summer: 'u4s', ink: 'u4i' };
@@ -29,6 +31,14 @@ function style(doc: Document, id: string, text: string): void {
   if (!text) { node?.remove(); return; }
   if (!node) { node = doc.createElement('style'); node.id = id; doc.head.appendChild(node); }
   if (node.textContent !== text) node.textContent = text;
+}
+
+/* The windows that open over the lobby (bookshelf, fate cards, forms, album, chess) are outside #u4r; the
+ * theme on <html> lets each kit's popups.css dress them. */
+function mark(doc: Document, t: Theme | null): void {
+  const el = doc.documentElement;
+  if (!el) return;
+  if (t) { if (el.getAttribute('data-u4-theme') !== t) el.setAttribute('data-u4-theme', t); } else el.removeAttribute('data-u4-theme');
 }
 
 function greet(root: Root, s: LobbyState, next: boolean): void {
@@ -87,7 +97,23 @@ function syncAll(root: Root, kind: string, s: LobbyState): void {
     setText(root, '[data-u4-appearance]', s.appearance.label);
     setText(root, '[data-u4-books]', bookText(s.books));
   }
+  if (kind === 'all') {
+    each(root, '[data-dlb="eggdisplay"]', el => el.classList.toggle('on', s.eggs?.display === '悬浮'));
+    each(root, '.q-sw', el => el.setAttribute('aria-pressed', String(el.classList.contains('on'))));
+  }
   kitOf(root.__u4?.theme).sync?.(root, kind, s);
+}
+
+/** The standing art is drawn once with the skeleton; after a new appearance was picked, swap it in place. */
+function syncHer(root: Root, s: LobbyState): void {
+  const t = root.__u4?.theme || 'cafe', want = `${t}/standing/${s.appearance.id}`;
+  each(root, '[data-u4-her]', el => {
+    if (el.getAttribute('data-u4-img') === want) return;
+    el.classList.remove('is-in', 'is-missing');
+    el.removeAttribute('data-u4-pending');
+    el.setAttribute('data-u4-img', want);
+    el.setAttribute('data-u4-fallback', s.standing || '');
+  });
 }
 
 const envelopeArt = new Map<string, string | null>();
@@ -98,7 +124,7 @@ export function createReaderUI() {
 
     /** Views drawn by this layer; the rest are still drawn by the legacy renderer inside its own skeleton. */
     supports(_theme: string, view: string): boolean {
-      return view === 'main' || view === 'lobby';
+      return view === 'main' || view === 'lobby' || PAGES.indexOf(view) >= 0;
     },
 
     /** localStorage.dream_ui_v4 = 'off' brings the legacy interface back. */
@@ -109,11 +135,13 @@ export function createReaderUI() {
     install(doc: Document, theme: string): void {
       const t = themeOf(theme);
       style(doc, 'dream-u4-style', fontFaceCss(t) + baseCss + kitOf(t).css);
+      mark(doc, t);
     },
 
     uninstall(doc: Document): void {
       style(doc, 'dream-u4-style', '');
       style(doc, 'dream-u4-envelope', '');
+      mark(doc, null);
     },
 
     skeleton(theme: string, s: LobbyState): string {
@@ -123,11 +151,16 @@ export function createReaderUI() {
         + `<div class="u4-view"><div class="u4-scene" aria-hidden="true">${kit.scene(s)}</div>`
         + `<main id="dlb-main" class="u4-main"></main></div>`
         + `<header id="dlb-topbar" class="u4-top"></header>`
-        + `<section id="dlb-sheet" class="dlb-sheet u4-sheet" style="display:none"></section></div>`;
+        + `<section id="dlb-sheet" class="u4-sheet" style="display:none"></section></div>`;
     },
 
     top(theme: string, page: string, s: LobbyState): string { return kitOf(theme).top(page, s); },
     main(theme: string, s: LobbyState): string { return kitOf(theme).main(s); },
+    /** A sub-page for #dlb-sheet; legacy fragments (decouple, disc, font, size lists) are embedded as they are. */
+    page(theme: string, page: string, s: LobbyState, fragments: Fragments = {}): string {
+      const t = themeOf(theme);
+      return pageHTML(t, page, s, kitOf(t).skin, fragments);
+    },
 
     /** After dlbGo filled the containers: bind display-only behaviour once, load art, sync. */
     mount(ov: HTMLElement, theme: string, hooks: Hooks): void {
@@ -148,12 +181,14 @@ export function createReaderUI() {
           const target = event.target as Element | null;
           const greeting = target?.closest?.('[data-u4-greet]');
           if (greeting && root.contains(greeting)) greet(root, hooks.state(), true);
-          if (target?.closest?.('[data-dlb]')) window.setTimeout(() => { if (root.isConnected) syncAll(root, 'all', hooks.state()); }, 0);
+          if (target?.closest?.('[data-dlb]')) window.setTimeout(() => { if (root.isConnected) { syncAll(root, 'all', hooks.state()); void hydrate(root); } }, 0);
         });
       }
       root.__u4.hooks = hooks;
       const s = hooks.state();
       greet(root, s, false);
+      syncHer(root, s);
+      root.setAttribute('data-u4-view', ov.querySelector('#dlb-sheet')?.innerHTML ? 'page' : 'main');
       root.__u4.minute = '';
       syncClock(root);
       syncAll(root, 'all', s);
@@ -180,8 +215,9 @@ export function createReaderUI() {
 
     /** Floating envelope (#dfb) look for the theme; empty string removes it. */
     installEnvelope(doc: Document, theme: string | null): void {
-      if (!theme) { style(doc, 'dream-u4-envelope', ''); return; }
+      if (!theme) { style(doc, 'dream-u4-envelope', ''); mark(doc, null); return; }
       const t = themeOf(theme), id = `${t}/envelope`;
+      mark(doc, t);
       const art = envelopeArt.get(id);
       let css = kitOf(t).envelopeCss;
       if (art) css = `#dfb.dream-fb{--u4-env:url("${art}")}` + css;

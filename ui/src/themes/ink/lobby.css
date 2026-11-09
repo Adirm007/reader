@@ -1,5 +1,6 @@
-/* 墨笺. Desk: straight-down view; the sheet is the page, the scroll with her lies on the left, objects sit
- * around the sheet's edges. Phones: the desk turns into a handscroll read from the top down. */
+/* 墨笺. Desk: straight-down view of the desk under a rainy window. The fresh sheet laid on the painted paper is
+ * the page; thread-bound volumes under the window are the other places; the scroll with her hangs on the right.
+ * Phones: the desk turns into a handscroll read from the top down. */
 #u4r.u4i {
   --xuan: #efe6d2; --xuan-l: #f6f0e2; --ink: #1d1b18; --ink-2: #3a3631; --ink-3: #6f695f; --ink-4: #a8a196;
   --cinnabar: #b8322a; --price: #a52a22; --celadon: #6f9c8f; --indigo: #2f4b6e; --gold: #c9a24c; --rose: #4a2c22;
@@ -17,14 +18,17 @@
   & .u4i-rain { position: absolute; inset: 0; overflow: hidden; pointer-events: none; opacity: .5; mix-blend-mode: multiply }
   & .u4i-rain::before { content: ""; position: absolute; left: -10%; right: -10%; top: -300px; bottom: 0; will-change: transform; animation: u4jnRain 9s linear infinite;
     background: repeating-linear-gradient(97deg, transparent 0 34px, rgba(60, 70, 80, .07) 34px 37px, transparent 37px 80px) 0 0 / 240px 300px }
-  & .u4i-scroll { position: absolute; left: 4.8%; top: 8.5%; width: 21.4%; height: 89%; display: flex; flex-direction: column; filter: drop-shadow(.6cqh 1.2cqh 1.2cqh rgba(20, 10, 6, .45)) }
+  & .u4i-scroll { position: absolute; left: 78.7%; top: 5%; width: 16.1%; height: 90%; display: flex; flex-direction: column; transform: rotate(-1.3deg); filter: drop-shadow(-.3cqh 1.6cqh .8cqh rgba(10, 6, 4, .55)) }
   & .u4i-scroll .rod { display: block; height: 2.2cqh; margin: 0 -1.2cqh; border-radius: 1.1cqh; background: linear-gradient(180deg, #7a4a30, #3e2216 60%, #2a170e) }
   & .u4i-scroll .rod.q-top { height: 1.6cqh; margin: 0 1cqh }
   & .u4i-scroll .rod::before, & .u4i-scroll .rod::after { content: ""; float: left; width: 1.6cqh; height: 100%; border-radius: 50%; background: radial-gradient(circle at 40% 35%, #e9d6a0, var(--gold) 50%, #6e5520) }
   & .u4i-scroll .rod::after { float: right }
-  & .u4i-scroll .mount { flex: 1; padding: 3cqh 1.5cqh 4cqh; background: repeating-linear-gradient(45deg, rgba(255, 255, 255, .03) 0 2px, transparent 2px 5px), linear-gradient(90deg, #c8b892, #ddd0ad 50%, #c8b892) }
-  & .u4i-scroll .painting { position: relative; height: 100%; overflow: hidden; background: var(--fiber), var(--u4-img, none) center / cover no-repeat, linear-gradient(180deg, #e9e2cf, #d9d0b8); box-shadow: inset 0 0 0 1px rgba(80, 60, 30, .25) }
-  & .u4i-scroll .her { position: absolute; left: 50%; bottom: -12%; height: 104%; width: auto; transform: translateX(-50%); mix-blend-mode: multiply; filter: saturate(.86) contrast(1.02) }
+  & .u4i-scroll .mount { flex: 1; display: flex; flex-direction: column; padding: 4cqh 1.6cqh 3cqh;
+    background: linear-gradient(90deg, rgba(255, 255, 255, .06), transparent 30%, rgba(0, 0, 0, .06)), repeating-linear-gradient(45deg, rgba(255, 255, 255, .04) 0 .3cqh, transparent .3cqh .9cqh), #b9c6c1 }
+  & .u4i-scroll .band { display: block; height: 2.2cqh; margin: 0 -1.6cqh 1.6cqh; background: #8fa49c; border-top: 1px solid rgba(0, 0, 0, .1); border-bottom: 1px solid rgba(0, 0, 0, .1) }
+  & .u4i-scroll .painting + .band { margin: 1.6cqh -1.6cqh 0 }
+  & .u4i-scroll .painting { position: relative; flex: 1; overflow: hidden; background: var(--fiber), linear-gradient(rgba(241, 232, 212, .45), rgba(241, 232, 212, .45)), var(--u4-img, none) center / cover no-repeat, linear-gradient(180deg, #f1e8d4, #e7dcc3); box-shadow: inset 0 0 0 1px rgba(80, 60, 40, .25) }
+  & .u4i-scroll .her { position: absolute; left: 44%; bottom: -10%; height: 100%; width: auto; transform: translateX(-50%); mix-blend-mode: multiply; filter: sepia(.12) saturate(.88) contrast(1.02) }
 
   /* ---------- chrome: time slip top-left, the seal top-right ---------- */
   & .u4i-slip { position: absolute; left: 16px; top: 10px; display: flex; align-items: baseline; gap: 10px; padding: 8px 14px 8px 12px; color: var(--ink-2);
@@ -37,26 +41,27 @@
   & .u4i-seal { position: absolute; right: 18px; top: 12px; width: 52px; height: 52px; transition: transform .2s }
   & .u4i-seal svg { width: 100%; height: 100%; filter: drop-shadow(0 3px 5px rgba(0, 0, 0, .4)) }
   & .u4i-seal:hover { transform: rotate(-4deg) scale(1.05) }
-  & .u4i-mark { position: absolute; left: 16px; top: 64px; width: 34px; height: 64px; padding-top: 10px; color: #f6ead8; font-size: 20px; text-align: center;
+  & .u4i-mark { position: absolute; left: min(360px, 40cqw); top: 0; width: 34px; height: 64px; padding-top: 10px; color: #f6ead8; font-size: 20px; text-align: center;
     background: linear-gradient(180deg, var(--indigo), #1f3550); clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 86%, 0 100%) }
 
   /* ---------- the sheet ---------- */
-  & .u4i-sheet { position: absolute; left: 28.6%; top: 15%; width: 58.6%; height: 72%; padding: 3.4cqh 3cqh 3cqh; transform: rotate(-.35deg);
+  & .u4i-sheet { position: absolute; left: 21.6%; top: 34.4%; width: 56.4%; height: 55.2%; padding: 3cqh 3cqh 2.6cqh; transform: rotate(-.3deg);
     background: var(--fiber), linear-gradient(180deg, var(--xuan-l), var(--xuan)); box-shadow: 0 .4cqh .8cqh rgba(20, 10, 6, .3), 0 2cqh 3cqh rgba(20, 10, 6, .25) }
   & .u4i-sheet::after { content: ""; position: absolute; inset: 0; pointer-events: none; mix-blend-mode: multiply; opacity: .5;
     background: linear-gradient(115deg, transparent 0 22%, rgba(80, 90, 100, .09) 22% 24%, transparent 24% 52%, rgba(80, 90, 100, .07) 52% 54%, transparent 54%), linear-gradient(25deg, transparent 0 60%, rgba(80, 90, 100, .06) 60% 62%, transparent 62%) }
-  & .u4i-title { position: absolute; right: 2.6cqh; top: 3cqh; margin: 0; writing-mode: vertical-rl; display: flex; gap: 1.6cqh; align-items: flex-start; font-size: max(30px, 5.6cqh); line-height: 1; letter-spacing: .14em; color: var(--ink) }
-  & .u4i-title small { font: var(--fs-s)/1.8 var(--u4-body); letter-spacing: .2em; color: var(--ink-3); max-height: 34cqh }
+  & .u4i-title { position: absolute; right: 2.4cqh; top: 3cqh; bottom: 2.6cqh; margin: 0; writing-mode: vertical-rl; display: flex; flex-wrap: nowrap; gap: 1.6cqh; align-items: flex-start; font-size: max(28px, 4.8cqh); line-height: 1; letter-spacing: .14em; color: var(--ink) }
+  & .u4i-title .q-tt { flex: none; white-space: nowrap }
+  & .u4i-title small { flex: 0 1 auto; min-height: 0; overflow: hidden; font: var(--fs-s)/1.8 var(--u4-body); letter-spacing: .2em; color: var(--ink-3); max-height: 24cqh }
 
   /* almanac page: the daily reservation */
-  & .u4i-almanac { position: absolute; right: 11cqh; top: 3.2cqh; width: 46% }
+  & .u4i-almanac { position: absolute; right: 10.4cqh; top: 3cqh; width: 47% }
   & .u4i-almanac .frame { position: relative; display: flex; gap: 0; border: 2px solid var(--cinnabar); outline: 1px solid var(--cinnabar); outline-offset: 3px; background: rgba(255, 252, 244, .35) }
   & .u4i-almanac .yi { display: grid; place-items: center; width: 7cqh; font-size: max(30px, 5.4cqh); color: var(--cinnabar); border-left: 1px solid rgba(184, 50, 42, .5); order: 2 }
   & .u4i-almanac ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, 1fr); flex: 1 }
   & .u4i-almanac li + li { border-left: 1px solid rgba(184, 50, 42, .5) }
   & .u4i-almanac .col { position: relative; display: flex; flex-direction: column; align-items: center; gap: .8cqh; width: 100%; height: 100%; padding: 2cqh .4cqh 1.4cqh; color: var(--ink) }
   & .u4i-almanac .col .q-nm { writing-mode: vertical-rl; font-size: max(22px, 3.8cqh); letter-spacing: .3em; line-height: 1 }
-  & .u4i-almanac .col .q-ds { writing-mode: vertical-rl; font-size: var(--fs-s); color: var(--ink-3); letter-spacing: .2em; min-height: 12cqh }
+  & .u4i-almanac .col .q-ds { writing-mode: vertical-rl; font-size: var(--fs-s); color: var(--ink-3); letter-spacing: .2em; min-height: 11cqh }
   & .u4i-almanac .col .q-pr { font-size: var(--fs-s); color: var(--ink-3); white-space: nowrap }
   & .u4i-almanac .col .q-pr b { font: 700 max(14px, 1.9cqh) var(--u4-body); color: var(--price) }
   & .u4i-almanac .col .circle { position: absolute; left: 50%; top: .6cqh; width: 8cqh; height: 11cqh; transform: translateX(-50%); opacity: 0; transition: opacity .3s }
@@ -77,11 +82,11 @@
   & .u4i-almanac .imprint { position: absolute; left: -3cqh; bottom: -1cqh; width: 11cqh; height: 11cqh; opacity: 0; pointer-events: none; mix-blend-mode: multiply }
 
   /* flower papers: today's specials */
-  & .u4i-papers { position: absolute; left: 3cqh; top: 3.2cqh; width: 36% }
+  & .u4i-papers { position: absolute; left: 3cqh; top: 3cqh; width: 37% }
   & .u4i-papers h2 { display: flex; align-items: baseline; gap: 1cqh; margin: 0 0 1.4cqh; font-size: max(22px, 3.2cqh); color: var(--ink) }
   & .u4i-papers h2 small { font: var(--fs-s) var(--u4-body); color: var(--ink-3); letter-spacing: .2em }
   & .u4i-papers .q-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.6cqh }
-  & .u4i-flower { position: relative; display: flex; flex-direction: column; align-items: center; gap: .8cqh; padding: 1.6cqh .6cqh 1.4cqh; min-height: 40cqh; color: var(--ink); transition: transform .3s ease;
+  & .u4i-flower { position: relative; display: flex; flex-direction: column; align-items: center; gap: .8cqh; padding: 1.6cqh .6cqh 1.4cqh; min-height: 38cqh; color: var(--ink); transition: transform .3s ease;
     box-shadow: .2cqh .5cqh .8cqh rgba(40, 20, 10, .2) }
   & .u4i-flower.q-yuan { background: var(--fiber), linear-gradient(180deg, #f6e1dc, #f2d6cf) }
   & .u4i-flower.xi { background: var(--fiber), linear-gradient(180deg, #f5ead6, #efe1c4) }
@@ -94,50 +99,61 @@
   & .u4i-flower:is(:hover, :focus-visible) { transform: translateY(-1cqh) rotate(-1deg) }
 
   /* her inscription beside the painting */
-  & .u4i-inscribe { position: absolute; left: 20.6%; top: 14%; width: 4.4%; height: 46%; display: flex; flex-direction: column; align-items: center; gap: 1cqh; color: var(--ink) }
-  & .u4i-inscribe .line { writing-mode: vertical-rl; font: var(--fs-m)/1.7 var(--u4-body); letter-spacing: .14em; max-height: 44cqh; overflow: hidden; text-shadow: 0 0 .5cqh rgba(239, 230, 210, .8) }
+  & .u4i-inscribe { position: absolute; left: 90.2%; top: 11.6%; width: 3.6%; height: 40%; display: flex; flex-direction: column; align-items: center; gap: 1cqh; color: var(--ink) }
+  & .u4i-inscribe .line { writing-mode: vertical-rl; font: var(--fs-m)/1.7 var(--u4-body); letter-spacing: .14em; max-height: 32cqh; overflow: hidden; text-shadow: 0 0 .5cqh rgba(239, 230, 210, .8) }
   & .u4i-inscribe .chop { width: 3cqh; height: 3cqh; min-width: 20px; min-height: 20px; display: grid; place-items: center; font: normal max(13px, 1.7cqh)/1 var(--brush); color: #f6ead8; background: var(--cinnabar); border-radius: 2px }
   & .u4i-inscribe.is-turn .line { animation: u4jnBleed .7s ease-out }
 
-  & .u4i-notice { position: absolute; left: 65.6%; top: 89.4%; display: flex; align-items: baseline; gap: 1cqh; padding: .6cqh 1.6cqh; color: var(--ink); background: var(--fiber), #e9dfc6; box-shadow: 0 .4cqh .8cqh rgba(20, 10, 6, .35); transform: rotate(1deg) }
-  & .u4i-notice span { font-size: max(17px, 2.3cqh) }
-  & .u4i-notice small { font-size: var(--fs-s); color: var(--ink-3) }
+  /* ---------- under the window: thread-bound volumes, the other places of the study ---------- */
+  & .u4i-books { position: absolute; left: 22.6%; top: 13.2%; display: flex; gap: 1.1cqh; align-items: flex-start }
+  & .vol { position: relative; width: 6.6cqh; min-width: 42px; height: 17.6cqh; background: linear-gradient(90deg, #25344a 0 1.1cqh, #2d3f59 1.1cqh);
+    box-shadow: .4cqh .8cqh 1cqh rgba(10, 8, 6, .45); transform: rotate(-1.4deg); transition: transform .22s }
+  & .vol:nth-child(even) { transform: rotate(1.2deg) translateY(.8cqh) }
+  & .vol:nth-child(3n) { background: linear-gradient(90deg, #3a2f28 0 1.1cqh, #4a3b31 1.1cqh) }
+  & .vol::before { content: ""; position: absolute; left: .35cqh; top: 1.2cqh; bottom: 1.2cqh; width: .4cqh; background: repeating-linear-gradient(180deg, #e9e0cc 0 .35cqh, transparent .35cqh 3.2cqh) }
+  & .vol .tt { position: absolute; right: .8cqh; top: 1.2cqh; width: 3cqh; min-width: 19px; min-height: 11cqh; padding: .5cqh 0; display: flex; justify-content: center; writing-mode: vertical-rl;
+    font: 700 max(12.5px, 1.5cqh)/1.1 var(--u4-body); letter-spacing: .14em; color: var(--ink); background: var(--fiber), #efe6d0; box-shadow: 0 0 0 1px rgba(0, 0, 0, .15) }
+  & .vol .sub { position: absolute; left: 50%; bottom: -1.6cqh; transform: translateX(-50%); padding: .1cqh .5cqh; font: 12px/1.5 var(--u4-sans); color: #f6ead8; background: var(--cinnabar); white-space: nowrap; box-shadow: 0 1px 2px rgba(0, 0, 0, .4) }
+  & .vol:is(:hover, :focus-visible) { transform: translateY(-1cqh) rotate(0) }
 
-  /* ---------- objects on the desk ---------- */
-  & .u4i-objs { display: contents }
+  /* the painted inkstone: a pebble in the ink pond is the random ripple */
+  & .u4i-pond { position: absolute; left: 5.4%; top: 17.6%; width: 14.4%; height: 16.6% }
+  & .u4i-pond .ripple { position: absolute; left: 30%; top: 28%; width: 42%; height: 42%; pointer-events: none }
+  & .u4i-pond .ripple circle { fill: none; stroke: rgba(230, 236, 240, .75); stroke-width: 1.2; opacity: 0; transform-origin: 50% 50%; transform-box: fill-box }
+  & .u4i-pond:is(:hover, :focus-visible) .ripple circle { animation: u4jnRing 1.6s ease-out infinite }
+  & .u4i-pond .ripple circle:nth-child(2) { animation-delay: .4s }
+  & .u4i-pond .ripple circle:nth-child(3) { animation-delay: .8s }
+  & .u4i-pond .slip { position: absolute; left: 48%; top: 96%; transform: rotate(2deg) }
+  &.u4-fx-ripple .u4i-pond .ripple circle { animation: u4jnRing 1.6s ease-out 2 }
+
+  /* paper slips that name things on the desk */
+  & .slip { display: inline-block; padding: .3cqh 1cqh; font: var(--fs-s)/1.5 var(--u4-body); letter-spacing: .08em; color: var(--ink); white-space: nowrap; background: var(--fiber), var(--xuan-l); box-shadow: 0 .2cqh .5cqh rgba(20, 10, 6, .4) }
+  & .slip b { font-weight: 700; color: var(--price) }
+
+  /* ---------- the two objects that stay out on the desk ---------- */
   & .u4i-obj { position: absolute; display: flex; flex-direction: column; align-items: center; transition: transform .3s ease, filter .3s }
   & .u4i-obj .u4-2f { width: 100% }
-  & .u4i-obj .u4-2f img { filter: drop-shadow(0 .8cqh .8cqh rgba(20, 10, 6, .45)) }
-  & .u4i-obj .q-tag { display: flex; flex-direction: column; align-items: center; margin-top: -.2cqh; padding: .25cqh .8cqh .3cqh; color: var(--ink); background: var(--xuan-l); box-shadow: 0 .2cqh .5cqh rgba(20, 10, 6, .4); white-space: nowrap }
-  & .u4i-obj .q-tag b { font: 700 var(--fs-s) var(--u4-body); letter-spacing: .14em }
-  & .u4i-obj .q-tag small { display: block; max-height: 0; overflow: hidden; opacity: 0; font-size: var(--fs-s); color: var(--ink-3); transition: opacity .2s, max-height .2s }
+  & .u4i-obj .u4-2f img { filter: drop-shadow(.3cqh .8cqh .8cqh rgba(15, 10, 6, .45)) }
+  & .u4i-obj .slip { margin-top: -.6cqh; transform: rotate(-1.5deg) }
   & .u4i-obj:is(:hover, :focus-visible) { transform: translateY(-.5cqh); filter: brightness(1.05) }
-  & .u4i-obj:is(:hover, :focus-visible) .q-tag small { max-height: 3em; opacity: 1 }
-  & .o-ink { left: 40%; top: .5%; width: 9.4% }
-  & .o-album { left: 53.6%; top: .2%; width: 9.4% }
-  & .o-books { left: 65.4%; top: .4%; width: 8.2% }
-  & .o-sticks { left: 25.6%; top: 62%; width: 3.4% }
-  & .o-seals { left: 87.8%; top: 36%; width: 9.6% }
-  & .o-type { left: 87.8%; top: 52%; width: 9.6% }
-  & .o-box { left: 87.8%; top: 68%; width: 9.6% }
-  & .o-coins { left: 78.4%; top: 86.6%; width: 6.6% }
-  & .o-tea { left: 50.4%; top: 85.4%; width: 6% }
-  & .o-chess { left: 57%; top: 84.6%; width: 7.6% }
+  & .o-sticks { left: 64.4%; top: 2.6%; width: 6.4% }
+  & .o-coins { left: 12.4%; top: 74%; width: 9.4% }
 
-  /* ---------- gramophone ---------- */
-  & .u4i-phono { position: absolute; left: 30%; top: 81.6%; width: 19%; display: grid; grid-template-columns: 46% 1fr; align-items: center; gap: 1cqh }
-  & .u4i-phono .set { position: relative; display: block }
-  & .u4i-phono .set .u4-2f img { filter: drop-shadow(0 .8cqh .8cqh rgba(20, 10, 6, .45)) }
-  & .u4i-phono .q-disc { position: absolute; left: 30%; top: 30%; width: 34%; aspect-ratio: 1; border-radius: 50%; opacity: 0; pointer-events: none;
-    background: conic-gradient(from 0deg, rgba(255, 255, 255, .0), rgba(255, 255, 255, .25) 10%, rgba(255, 255, 255, 0) 20%, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, .18) 60%, rgba(255, 255, 255, 0) 70%) }
-  &.u4-playing .u4i-phono .q-disc { opacity: 1; animation: u4jnSpin 2.4s linear infinite }
-  & .u4i-phono .q-label { padding: .6cqh 1cqh; background: var(--fiber), var(--xuan-l); box-shadow: 0 .3cqh .6cqh rgba(20, 10, 6, .35); transform: rotate(-1deg) }
+  /* ---------- the turntable, seen from above ---------- */
+  & .u4i-phono { position: absolute; left: 43.6%; top: 86.4%; width: 9.6% }
+  & .u4i-phono .set { display: block; width: 100% }
+  & .u4i-phono .set svg { display: block; width: 100%; height: auto; filter: drop-shadow(0 .6cqh .8cqh rgba(0, 0, 0, .5)) }
+  & .u4i-phono .q-disc { transform-box: view-box; transform-origin: 50px 50px }
+  &.u4-playing .u4i-phono .q-disc { animation: u4jnSpin 2.4s linear infinite }
+  & .u4i-phono .arm { transform-box: view-box; transform-origin: 102px 20px; transform: rotate(-16deg); transition: transform .6s ease }
+  &.u4-playing .u4i-phono .arm { transform: none }
+  & .u4i-phono .slip { position: absolute; right: 108%; top: 34%; min-width: 24cqh; max-width: 30cqh; padding: .6cqh 1cqh; white-space: normal; transform: rotate(-1.5deg) }
   & .u4i-phono .q-tt { margin: 0; font-size: var(--fs-s); white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
   & .u4i-phono .q-row { margin: .2cqh 0 0; font-size: var(--fs-s); color: var(--ink-3); white-space: nowrap }
   & .u4i-phono .q-row button { color: var(--indigo); text-decoration: underline; text-underline-offset: 2px; font: inherit }
   & .u4i-phono .bar { display: block; height: 2px; margin-top: .4cqh; background: rgba(58, 54, 49, .15) }
   & .u4i-phono #dlb-jbar { display: block; height: 100%; width: 0; background: var(--cinnabar); transition: width .4s linear }
-  & .u4i-tracks, & #dlb-trackpop.jn-track-layer { position: absolute; left: 0; bottom: 100%; width: 150%; max-height: 52cqh; overflow: auto; margin-bottom: 1cqh; padding: 1.4cqh 1.6cqh; z-index: 8; color: var(--ink);
+  & .u4i-tracks, & #dlb-trackpop.jn-track-layer { position: absolute; right: 0; bottom: 100%; width: 300%; max-height: 52cqh; overflow: auto; margin-bottom: 1cqh; padding: 1.4cqh 1.6cqh; z-index: 8; color: var(--ink);
     background: var(--fiber), var(--xuan-l); box-shadow: 0 1.2cqh 2.4cqh rgba(20, 10, 6, .5); border-top: 3px solid var(--cinnabar) }
   & .u4i-tracks .tp-head { font: var(--fs-s) var(--brush); color: var(--ink-3); padding-bottom: .6cqh; border-bottom: 1px solid rgba(184, 50, 42, .35) }
   & .u4i-tracks .tp-item { display: flex; gap: .8cqh; padding: .6cqh .2cqh; font-size: var(--fs-s); cursor: pointer; border-bottom: 1px dotted rgba(58, 54, 49, .25) }
@@ -147,7 +163,7 @@
   /* ---------- acknowledgements ---------- */
   &.u4-fx-daily .u4i-almanac .imprint { animation: u4jnSeal .4s cubic-bezier(.3, 1.5, .5, 1) forwards }
   &.u4-fx-special .u4i-papers .q-row { animation: u4jnLift .9s ease-out }
-  &.u4-fx-ripple .o-ink .u4-2f { animation: u4jnRipple 1.2s ease-out }
+
 }
 
 @keyframes u4jnRain { to { transform: translate3d(-30px, 300px, 0) } }
@@ -155,12 +171,12 @@
 @keyframes u4jnSeal { 0% { opacity: 0; transform: rotate(-8deg) scale(1.25) } 60% { opacity: .95 } 100% { opacity: .9; transform: rotate(-8deg) scale(1) } }
 @keyframes u4jnLift { 30% { transform: translateY(-1.2cqh) } 100% { transform: none } }
 @keyframes u4jnBleed { from { opacity: 0; filter: blur(3px) } to { opacity: 1; filter: none } }
-@keyframes u4jnRipple { 0% { filter: none } 30% { filter: brightness(1.15) drop-shadow(0 0 1cqh rgba(111, 156, 143, .8)) } 100% { filter: none } }
+@keyframes u4jnRing { 0% { opacity: 0; transform: scale(.4) } 20% { opacity: .9 } 100% { opacity: 0; transform: scale(1.25) } }
 
 /* ---------- phones: the desk becomes a handscroll ---------- */
 @container u4 (aspect-ratio < 5/6) or (height < 560px) {
   #u4r.u4i {
-    & .u4-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 10px; background: linear-gradient(180deg, rgba(43, 29, 23, .96), rgba(43, 29, 23, .86)) }
+    & #dlb-topbar.u4-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 10px; background: linear-gradient(180deg, rgba(43, 29, 23, .96), rgba(43, 29, 23, .86)) }
     & .u4i-slip { position: static; padding: 6px 10px; gap: 8px }
     & .u4i-slip .q-t { font-size: 16px }
     & .u4i-slip .q-d { display: none }
@@ -168,7 +184,7 @@
     & .u4i-mark { position: static; height: 44px }
     & .u4i-plate.q-wide { display: none }
     & .u4i-plate.q-tall { display: block; background-position: center 30% }
-    & .u4i-scroll { left: 50%; top: 4%; width: 54%; height: 92%; transform: translateX(-50%) }
+    & .u4i-scroll { left: 50%; top: 4%; width: 54%; height: 92%; transform: translateX(-50%) rotate(-.6deg) }
     & .u4i-scroll .rod { height: 12px }
     & .u4i-scroll .mount { padding: 12px 8px 16px }
     & .u4-main { display: flex; flex-direction: column; gap: 18px; padding: 18px 14px 32px; background: var(--fiber), linear-gradient(180deg, var(--xuan-l), var(--xuan)); box-shadow: inset 0 10px 14px -10px rgba(20, 10, 6, .5) }
@@ -187,14 +203,19 @@
     & .u4i-almanac .yi { width: 44px; font-size: 30px }
     & .u4i-papers .q-row { gap: 10px }
     & .u4i-flower { min-height: 210px }
-    & .u4i-notice { order: 2; align-self: flex-start }
-    & .u4i-objs { order: 3; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px 8px; align-items: end; padding-top: 14px; border-top: 1px solid rgba(184, 50, 42, .4) }
-    & .u4i-obj { position: relative; left: auto; top: auto; width: auto; min-height: 44px }
-    & .u4i-obj .u4-2f { width: 78%; aspect-ratio: 1; display: grid; place-items: end center }
-    & .u4i-obj .u4-2f img { max-height: 100%; width: auto; max-width: 100% }
-    & .u4i-obj .u4-2f .f2 { left: 50%; transform: translateX(-50%); top: auto; bottom: 0 }
-    & .u4i-obj .q-tag small { max-height: none; opacity: 1; white-space: normal; text-align: center }
-    & .u4i-phono { order: 4; grid-template-columns: 34% 1fr }
+    & .u4i-books { order: 2; position: relative; left: auto; top: auto; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 22px 10px; padding: 14px 4px 18px; border-top: 1px solid rgba(184, 50, 42, .4) }
+    & .vol { width: auto; height: 120px; min-width: 0 }
+    & .vol .tt { width: 22px; right: 7px; top: 10px; min-height: 84px; font-size: 13px }
+    & .vol .sub { bottom: -12px }
+    & .u4i-pond, & .u4i-obj { position: relative; left: auto; top: auto; width: auto; height: auto }
+    & .u4i-pond { order: 3; display: flex; align-items: center; gap: 10px; min-height: 64px; padding: 6px 10px; background: radial-gradient(ellipse 34px 26px at 40px 50%, #1d2022 60%, #4a4640 66%, transparent 70%) }
+    & .u4i-pond .ripple { position: relative; left: auto; top: auto; width: 60px; height: 60px; flex: none }
+    & .u4i-pond .slip { position: static; transform: none }
+    & .u4i-obj { order: 4; flex-direction: row; gap: 12px; min-height: 64px }
+    & .u4i-obj .u4-2f { width: 72px; flex: none }
+    & .u4i-obj .slip { margin: 0; transform: none }
+    & .u4i-phono { order: 6; position: relative; left: auto; top: auto; width: auto; display: grid; grid-template-columns: 96px 1fr; gap: 12px; align-items: center }
+    & .u4i-phono .slip { position: static; min-width: 0; max-width: none; transform: none }
     & .u4i-tracks, & #dlb-trackpop.jn-track-layer { width: 100% }
   }
 }

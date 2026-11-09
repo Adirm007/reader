@@ -2,7 +2,9 @@
  * pinned to its cork board (ferry tickets, notes, a postage-meter stamp) and set out on the ledge below. */
 import type { LobbyState, ThemeKit } from '../../core/types';
 import { act, esc, twoFrame, priceOf, nameOf, bookText } from '../../core/dom';
-import css from './lobby.css';
+import lobbyCss from './lobby.css';
+import pagesCss from './pages.css';
+import popupsCss from './popups.css';
 import envelopeCss from './envelope.css';
 
 const WEEK = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
@@ -62,28 +64,43 @@ const BOTTLES: { k: string; nm: string; ds: string; pr: number; hue: number }[] 
 ];
 function cooler(): string {
   return '<section class="u4s-cooler" aria-labelledby="u4sx-sp"><h2 id="u4sx-sp" class="u4s-disp">今日特调<small>冰柜里的弹珠汽水</small></h2><div class="ice">'
-    + BOTTLES.map(b => `<button type="button" class="u4s-bottle"${act('special', { k: b.k })} style="--hue:${b.hue}deg">${twoFrame('summer/prop-ramune', 'glass')}<span class="tagp"><b class="u4s-disp">买一份${b.nm}</b><small>${b.ds}</small><em>${b.pr} FP</em></span></button>`).join('')
-    + `<button type="button" class="u4s-bottle drift"${act('special', { k: '随机涟漪' })}>${twoFrame('summer/prop-driftbottle', 'glass')}<span class="tagp"><b class="u4s-disp">随机涟漪</b><small>捡到的漂流瓶</small><em>100 FP</em></span></button>`
+    + BOTTLES.map(b => `<button type="button" class="u4s-bottle"${act('special', { k: b.k })} style="--hue:${b.hue}deg" aria-label="买一份${b.nm}，${b.ds}，${b.pr} FP">${twoFrame('summer/prop-ramune', 'glass')}<span class="tagp"><b class="u4s-disp">${b.nm}</b><em>${b.pr}</em><small>${b.ds}</small></span></button>`).join('')
+    + `<button type="button" class="u4s-bottle drift"${act('special', { k: '随机涟漪' })} aria-label="随机涟漪，捡到的漂流瓶，100 FP">${twoFrame('summer/prop-driftbottle', 'glass')}<span class="tagp"><b class="u4s-disp">涟漪</b><em>100</em><small>捡到的漂流瓶</small></span></button>`
     + '</div></section>';
 }
 
-interface Obj { id: string; cls: string; attrs: string; name: string; note: string }
-function objects(s: LobbyState): Obj[] {
+/* The other services are pinned in a row along the bottom of the board: postcards, a flyer, a key tag. */
+const INK = '#1f6f9a';
+interface Pin { cls: string; attrs: string; name: string; note: string; pic: string; pin: string }
+function pinned(s: LobbyState): Pin[] {
   return [
-    { id: 'polaroids', cls: 'o-photo', attrs: act('page', { page: 'persona' }), name: '眼中的她', note: `<span data-u4-persona>${esc(s.persona.label)}</span> · <span data-u4-appearance>${esc(s.appearance.label)}</span>` },
-    { id: 'bookrack', cls: 'o-books', attrs: act('page', { page: 'tuning' }), name: '故事定调', note: `<span data-u4-books>${esc(bookText(s.books))}</span>` },
-    { id: 'tidepool', cls: 'o-pool', attrs: act('page', { page: 'decouple' }), name: '人格解耦', note: '潮池里的两个倒影' },
-    { id: 'stamps', cls: 'o-stamps', attrs: act('page', { page: 'template' }), name: '条目模仿', note: '照着世界书盖一条' },
-    { id: 'lockers', cls: 'o-lockers', attrs: act('page', { page: 'eggs' }), name: '彩蛋服务台', note: '显示 · 主题 · 美化' },
-    { id: 'parasol', cls: 'o-parasol', attrs: act('order', { text: '使用间章:小憩' }), name: '小憩片刻', note: '遮阳伞下 · 免费' },
-    { id: 'picnic', cls: 'o-picnic', attrs: act('chess'), name: '下一盘棋', note: '野餐垫上的棋盘' },
-    { id: 'shell', cls: 'o-shell', attrs: act('prayer'), name: '祷诗抽取', note: '贝壳里的诗 · 免费' },
-    { id: 'gacha', cls: 'o-gacha', attrs: act('gacha'), name: '命运抽卡', note: s.gachaPrice ? `${esc(s.gachaPrice)} FP 一颗` : '扭蛋机' },
+    { cls: 'p-photo', attrs: act('page', { page: 'persona' }), name: '眼中的她', note: `<span data-u4-persona>${esc(s.persona.label)}</span>`, pin: '#c8372d',
+      pic: `<span class="snap"><img alt="" data-u4-img="summer/avatar/${esc(s.appearance.id)}"></span>` },
+    { cls: 'p-book', attrs: act('page', { page: 'tuning' }), name: '故事定调', note: `<span data-u4-books>${esc(bookText(s.books))}</span>`, pin: '#f6c445',
+      pic: '<svg viewBox="0 0 60 60" aria-hidden="true"><rect x="12" y="6" width="36" height="50" rx="2" fill="#c9573f"/><rect x="12" y="6" width="5" height="50" fill="#a8432f"/><text x="33" y="27" text-anchor="middle" font-size="13" fill="#fbf8f0" font-weight="700">定</text><text x="33" y="44" text-anchor="middle" font-size="13" fill="#fbf8f0" font-weight="700">调</text></svg>' },
+    { cls: 'p-card', attrs: act('page', { page: 'decouple' }), name: '人格解耦', note: '潮池里的倒影', pin: '#1f6f9a',
+      pic: `<svg viewBox="0 0 60 60" aria-hidden="true"><rect x="4" y="10" width="52" height="40" fill="${INK}"/><circle cx="30" cy="27" r="8" fill="none" stroke="#fbf8f0" stroke-width="2"/><path d="M8 32h44" stroke="#fbf8f0" stroke-width="1.6"/><path d="M22 37a8 5 0 0 0 16 0" fill="none" stroke="#fbf8f0" stroke-width="1.6" stroke-dasharray="3 2"/></svg>` },
+    { cls: 'p-stamp', attrs: act('page', { page: 'template' }), name: '条目模仿', note: '照着盖一条', pin: '#c8372d',
+      pic: '<svg viewBox="0 0 60 60" aria-hidden="true"><rect x="8" y="10" width="44" height="40" fill="#fbf8f0"/><rect x="13" y="15" width="34" height="30" fill="none" stroke="#c8372d" stroke-width="2" stroke-dasharray="4 2"/><text x="30" y="37" text-anchor="middle" font-size="17" fill="#c8372d" font-weight="700">照</text></svg>' },
+    { cls: 'p-key', attrs: act('page', { page: 'eggs' }), name: '彩蛋服务台', note: '储物柜 · 设置', pin: '#f6c445',
+      pic: '<svg viewBox="0 0 60 60" aria-hidden="true"><path d="M30 4v12" stroke="#8a6b3e" stroke-width="1.4"/><circle cx="30" cy="34" r="18" fill="#e9c46a" stroke="#a07a32" stroke-width="2"/><circle cx="30" cy="34" r="13" fill="none" stroke="#a07a32" stroke-width="1"/><text x="30" y="40" text-anchor="middle" font-size="15" fill="#12404c" font-weight="700">07</text></svg>' },
+    { cls: 'p-extra', attrs: act('order', { text: '更新新闻' }), name: '新闻更新', note: '号外 · 免费', pin: '#1f6f9a',
+      pic: '<svg viewBox="0 0 60 60" aria-hidden="true"><rect x="8" y="6" width="44" height="50" fill="#fff3c4"/><text x="30" y="30" text-anchor="middle" font-size="16" fill="#c8372d" font-weight="700">号外</text><path d="M14 38h32M14 44h32M14 50h22" stroke="#4d6d74" stroke-width="1.4"/></svg>' },
+    { cls: 'p-card', attrs: act('order', { text: '使用间章:小憩' }), name: '小憩片刻', note: '遮阳伞下', pin: '#c8372d',
+      pic: `<svg viewBox="0 0 60 60" aria-hidden="true"><rect x="4" y="10" width="52" height="40" fill="${INK}"/><path d="M14 30a16 13 0 0 1 32 0z" fill="#fbf8f0"/><path d="M30 30v16M22 46h16" stroke="#fbf8f0" stroke-width="2" stroke-linecap="round"/></svg>` },
+    { cls: 'p-card', attrs: act('chess'), name: '下一盘棋', note: '野餐垫上', pin: '#f6c445',
+      pic: `<svg viewBox="0 0 60 60" aria-hidden="true"><rect x="4" y="10" width="52" height="40" fill="${INK}"/><g stroke="#fbf8f0" stroke-width="1.4"><path d="M16 18h28M16 26h28M16 34h28M16 42h28M16 18v24M30 18v24M44 18v24"/></g><circle cx="23" cy="26" r="4" fill="#c8372d" stroke="#fbf8f0"/><circle cx="37" cy="34" r="4" fill="#fbf8f0"/></svg>` },
   ];
 }
 
-function flyer(): string {
-  return `<button type="button" class="u4s-flyer"${act('order', { text: '更新新闻' })}>${PIN('#f6c445')}<b class="u4s-disp">号外</b><span>海边小报 · 今日新闻</span><small>免费取阅</small></button>`;
+function board(s: LobbyState): string {
+  return '<nav class="u4s-pins" aria-label="布告板上的其他服务">' + pinned(s).map((p, i) =>
+    `<button type="button" class="pinned ${p.cls}"${p.attrs} style="--r:${[-2.4, 1.6, -1, 2.2, -1.8, 1.2, -2, 1.8][i]}deg">${PIN(p.pin)}<span class="pic">${p.pic}</span><b class="u4s-disp">${p.name}</b><small>${p.note}</small></button>`).join('') + '</nav>';
+}
+
+function shore(s: LobbyState): string {
+  return `<button type="button" class="u4s-obj o-gacha"${act('gacha')}>${twoFrame('summer/prop-gacha')}<span class="q-tag"><b class="u4s-disp">命运抽卡</b><small>${s.gachaPrice ? esc(s.gachaPrice) + ' FP 一颗' : '扭蛋机'}</small></span></button>`
+    + `<button type="button" class="u4s-obj o-shell"${act('prayer')}>${twoFrame('summer/prop-shell')}<span class="q-tag"><b class="u4s-disp">祷诗</b><small>贝壳里的诗 · 免费</small></span></button>`;
 }
 
 function radio(s: LobbyState): string {
@@ -95,17 +112,14 @@ function radio(s: LobbyState): string {
 
 export const summer: ThemeKit = {
   id: 'summer',
-  css,
+  css: lobbyCss + pagesCss + popupsCss,
   envelopeCss,
   scene: s => '<div class="u4s-plate q-wide" data-u4-bg="summer/plate-wide"></div><div class="u4s-plate q-tall" data-u4-bg="summer/plate-tall"></div>'
-    + `<figure class="u4s-her"><img alt="" data-u4-img="summer/standing/${esc(s.appearance.id)}" data-u4-fallback="${esc(s.standing)}"></figure>`
+    + `<figure class="u4s-her"><img alt="" data-u4-her data-u4-img="summer/standing/${esc(s.appearance.id)}" data-u4-fallback="${esc(s.standing)}"></figure>`
     + '<div class="u4s-front q-wide" data-u4-bg="summer/plate-wide"></div><div class="u4s-front q-tall" data-u4-bg="summer/plate-tall"></div><div class="u4s-cork"></div>',
   top: page => '<svg width="0" height="0" class="u4-vh" aria-hidden="true"><defs><linearGradient id="u4sxAir" x1="0" x2="1"><stop offset="0" stop-color="#c8372d"/><stop offset=".5" stop-color="#c8372d"/><stop offset=".5" stop-color="#1f6f9a"/></linearGradient><pattern id="u4sxAirP" width="16" height="6" patternUnits="userSpaceOnUse"><rect width="8" height="6" fill="#c8372d"/><rect x="8" width="8" height="6" fill="#1f6f9a"/></pattern></defs></svg>'
     + clock() + tide() + (page === 'main' ? '' : back()) + flap(),
-  main: s => note() + meter() + tickets(s) + flyer() + '<i class="u4s-shade" aria-hidden="true"></i>' + cooler()
-    + '<nav class="u4s-objs" aria-label="邮局的墙边和海边">' + objects(s).map(o =>
-      `<button type="button" class="u4s-obj ${o.cls}"${o.attrs}>${twoFrame('summer/prop-' + o.id)}<span class="q-tag"><b class="u4s-disp">${o.name}</b><small>${o.note}</small></span></button>`).join('') + '</nav>'
-    + radio(s),
+  main: s => note() + meter() + tickets(s) + board(s) + '<i class="u4s-shade" aria-hidden="true"></i>' + cooler() + shore(s) + radio(s),
   date: d => `${d.getMonth() + 1}月${d.getDate()}日 · ${WEEK[d.getDay()]}`,
   greetings(s, hour) {
     const you = s.address ? s.address + '，' : '';
@@ -114,8 +128,20 @@ export const summer: ThemeKit = {
       '冰柜里的汽水刚换过冰。漂流瓶是今早捡的，里面写了什么我也不知道。',
       '贝壳里的诗不要钱，翻开就是你的。',
       '收音机里那盘卡带快放完了，卡带盒在旁边。',
-      '储物柜的钥匙在我这儿，想改设置就来找我。',
+      '储物柜的钥匙在板子上挂着，想改设置就去开 07 号。',
     ];
+  },
+  skin: {
+    pages: {
+      persona: { prop: 'summer/prop-polaroids', title: '眼中的她', lede: '晾在绳上的拍立得。行李牌上写着她的性子，相片是她今天的打扮。' },
+      tuning: { prop: 'summer/prop-bookrack', title: '故事定调', lede: '小店门口的平装书转架。挑一本定调，故事就照它的口吻往下写。' },
+      decouple: { prop: 'summer/prop-tidepool', title: '人格解耦', lede: '潮池里有两个倒影。另一个她，也可以有自己的名字和衣裳。' },
+      template: { prop: 'summer/prop-stamps', title: '条目模仿', lede: '柜台上的橡皮章和印台，照着世界书的格式盖一条新的。' },
+      eggs: { prop: 'summer/prop-lockers', title: '彩蛋服务台', lede: '邮局墙边的储物柜。一格放一样东西，开着的门挂着黄钥匙牌。' },
+    },
+    words: { who: '她是谁', look: '今天的打扮', address: '称呼', custom: '自己写一个', shelf: '书架', services: '柜台业务', pair: '主人格与倒影',
+      sea: '书海迷宫', toggles: '小开关', desk: '管理台', tools: '卡带与信纸' },
+    ornament: () => '<i class="q-tape q-a" aria-hidden="true"></i><i class="q-tape q-b" aria-hidden="true"></i>',
   },
   celebrate(root, kind) {
     const cls = kind.indexOf('日常:') === 0 ? 'u4-fx-daily' : 'u4-fx-special';

@@ -10,7 +10,7 @@
   --grain: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .33  0 0 0 0 .25  0 0 0 0 .16  0 0 0 .16 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
   --u4-ink: var(--chalk); --u4-focus: var(--amber);
   /* plate geometry (stage %) */
-  --front: 61.5%; --her-x: -2.7%; --her-y: 11%; --her-h: 141%;
+  --front: 71.8%; --her-x: 9%; --her-y: 26.3%; --her-h: 97.9%;
   background: #120b08; color: var(--chalk);
 
   & .u4c-chalkfont, & .u4c-handfont { font-family: var(--hand) }
@@ -22,13 +22,13 @@
   & .u4c-front { clip-path: inset(var(--front) 0 0 0) }
   & :is(.u4c-plate, .u4c-front).q-tall { display: none }
   & .u4c-plate.q-wide::after { content: ""; position: absolute; inset: 0; background: radial-gradient(ellipse 75% 72% at 45% 50%, transparent 55%, rgba(10, 5, 3, .5) 100%) }
-  & .u4c-rain { position: absolute; left: var(--rain-x, 72.5%); top: 0; width: var(--rain-w, 13%); height: 64%; overflow: hidden; opacity: .45; mix-blend-mode: screen;
+  & .u4c-rain { position: absolute; left: var(--rain-x, 81.5%); top: 0; width: var(--rain-w, 18.5%); height: 70%; overflow: hidden; opacity: .45; mix-blend-mode: screen;
     -webkit-mask: linear-gradient(180deg, #000 55%, transparent); mask: linear-gradient(180deg, #000 55%, transparent) }
   & .u4c-rain::before { content: ""; position: absolute; left: 0; right: 0; top: -240px; bottom: 0; will-change: transform;
     background: repeating-linear-gradient(103deg, transparent 0 9px, rgba(205, 228, 243, .2) 9px 10px, transparent 10px 23px) 0 0 / 120px 240px,
       repeating-linear-gradient(98deg, transparent 0 14px, rgba(205, 228, 243, .13) 14px 15px, transparent 15px 31px) 0 0 / 160px 240px;
     animation: u4cfRain 1.15s linear infinite }
-  & .u4c-pool { position: absolute; left: 34%; top: 18%; width: 38%; height: 66%; mix-blend-mode: screen; background: radial-gradient(closest-side, rgba(242, 180, 90, .16), transparent) }
+  & .u4c-pool { position: absolute; left: 36%; top: 30%; width: 34%; height: 62%; mix-blend-mode: screen; background: radial-gradient(closest-side, rgba(242, 180, 90, .16), transparent) }
   & .u4c-her { position: absolute; left: var(--her-x); top: var(--her-y); height: var(--her-h); aspect-ratio: 832 / 1216; margin: 0 }
   & .u4c-her img { width: 100%; height: 100%; object-fit: contain;
     filter: drop-shadow(-3px 0 6px rgba(242, 180, 90, .28)) drop-shadow(6px -2px 10px rgba(143, 179, 201, .38)) brightness(.93) contrast(1.04) saturate(.95) }
@@ -41,12 +41,12 @@
   & .u4c-closed { position: absolute; right: 22px; top: 0; width: 112px; transform-origin: 50% 5px }
   & .u4c-closed svg { display: block; width: 100%; height: auto; filter: drop-shadow(0 6px 8px rgba(0, 0, 0, .5)) }
   & .u4c-closed:hover { animation: u4cfSwing .9s ease-out }
-  & .u4c-backarrow { position: absolute; left: 20px; top: 84px; display: flex; align-items: center; gap: 6px; padding: 4px 8px; color: var(--chalk); font: 700 15px var(--hand) }
+  & .u4c-backarrow { position: absolute; left: 200px; top: 22px; display: flex; align-items: center; gap: 6px; padding: 4px 8px; color: var(--chalk); font: 700 15px var(--hand) }
   & .u4c-backarrow svg { width: 56px }
   & .u4c-fpmini { display: none }
 
   /* ---------- chalkboard: today's specials ---------- */
-  & .u4c-board { position: absolute; left: 44%; top: 5.5%; width: 30.5%; height: 35%; padding: 1.1cqh; border-radius: 3px;
+  & .u4c-board { position: absolute; left: 42.6%; top: 8.4%; width: 30.2%; height: 33.2%; padding: 1.1cqh; border-radius: 3px;
     background: linear-gradient(135deg, #6b4428, #3a2416 40%, #5b3a22 70%, #2e1c11); box-shadow: 0 1.2cqh 2.4cqh rgba(0, 0, 0, .55), inset 0 0 0 1px rgba(255, 220, 170, .12) }
   & .u4c-board .slate { position: relative; height: 100%; padding: 1.5cqh 2.2cqh 1.2cqh; border-radius: 2px; overflow: hidden;
     background: radial-gradient(ellipse 60% 50% at 30% 30%, rgba(255, 255, 255, .07), transparent 70%), radial-gradient(ellipse 50% 40% at 75% 80%, rgba(255, 255, 255, .05), transparent), var(--slate);
@@ -65,7 +65,7 @@
   & .u4c-board .foot { position: absolute; left: 2.2cqh; right: 2.2cqh; bottom: 1cqh; font-size: var(--fs-s); color: var(--chalk-2); letter-spacing: .05em }
 
   /* ---------- reservation book on its brass stand ---------- */
-  & .u4c-ledger { position: absolute; left: 38.4%; top: 50%; width: 25.6% }
+  & .u4c-ledger { position: absolute; left: 39.4%; top: 41.5%; width: 24.8% }
   & .u4c-ledger .q-book { position: relative; display: grid; grid-template-columns: 1.05fr 1fr; padding: .8cqh .9cqh 1.1cqh; border-radius: .6cqh .6cqh .4cqh .4cqh;
     background: linear-gradient(180deg, #5a2418, #3a140d); box-shadow: 0 1.6cqh 2.6cqh rgba(0, 0, 0, .6), inset 0 1px 0 rgba(255, 200, 170, .18); transform: perspective(900px) rotateX(8deg); transform-origin: 50% 100% }
   & .u4c-ledger .page { position: relative; min-height: 27cqh; padding: 1.6cqh 1.5cqh 1.2cqh; color: var(--ink); background: var(--grain), var(--paper) }
@@ -98,7 +98,7 @@
   & .u4c-ledger .stand { display: block; width: 84%; height: auto; margin: -.4cqh auto 0 }
 
   /* ---------- receipt printer and the till ---------- */
-  & .u4c-printer { position: absolute; left: 65%; top: 56.5%; width: 8.4% }
+  & .u4c-printer { position: absolute; left: 64.7%; top: 50.2%; width: 8.6% }
   & .u4c-printer .receipt { position: relative; margin: 0 auto; width: 94%; padding: 1.3cqh .8cqh .8cqh; font-family: var(--u4-mono); color: #2b2722; background: linear-gradient(180deg, #fbf8f1, #efeadf); transform-origin: 50% 100%;
     clip-path: polygon(0 1.2cqh, 6% 0, 12% 1.2cqh, 18% 0, 24% 1.2cqh, 30% 0, 36% 1.2cqh, 42% 0, 48% 1.2cqh, 54% 0, 60% 1.2cqh, 66% 0, 72% 1.2cqh, 78% 0, 84% 1.2cqh, 90% 0, 96% 1.2cqh, 100% 0, 100% 100%, 0 100%) }
   & .u4c-printer p { margin: 0; font-size: max(11px, 1.2cqh); line-height: 1.45; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
@@ -109,7 +109,7 @@
   & .u4c-printer .q-body { height: 8cqh; margin-top: -.2cqh; border-radius: .6cqh; background: linear-gradient(180deg, #3b3530, #1c1916); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12), 0 1cqh 1.2cqh rgba(0, 0, 0, .55) }
   & .u4c-printer .q-body::before { content: ""; display: block; margin: 0 auto; width: 80%; height: .6cqh; background: #0b0908; border-radius: 0 0 3px 3px }
   & .u4c-printer .q-body i { display: block; width: 1cqh; height: 1cqh; border-radius: 50%; margin: 2cqh 0 0 1.2cqh; background: radial-gradient(circle at 40% 35%, #ffd28a, #c06a18); box-shadow: 0 0 1cqh #f2b45a }
-  & .u4c-register { position: absolute; left: 74.6%; top: 61%; width: 10% }
+  & .u4c-register { position: absolute; left: 73.9%; top: 52.5%; width: 10% }
   & .u4c-register .reg-top { display: flex; align-items: stretch; gap: .6cqh; padding: .8cqh .8cqh .9cqh; border-radius: .8cqh .8cqh 0 0; background: linear-gradient(180deg, var(--brass-hi), var(--brass) 40%, var(--brass-lo)); box-shadow: inset 0 1px 0 rgba(255, 250, 220, .6) }
   & .u4c-register .q-flag { display: grid; place-items: center; padding: 0 .7cqh; font-size: max(12px, 1.4cqh); color: #2a1a0c; background: #e9d3a1; border-radius: 2px }
   & .u4c-register .drums { display: flex; gap: 2px; flex: 1 }
@@ -124,7 +124,7 @@
   & .u4c-register .plate { position: absolute; left: 50%; bottom: -1.2cqh; transform: translateX(-50%) }
 
   /* ---------- the table tent with her greeting ---------- */
-  & .u4c-tent { position: absolute; left: 22.5%; top: 63%; width: 12.5%; color: var(--ink) }
+  & .u4c-tent { position: absolute; left: 25.2%; top: 64.2%; width: 11.6%; color: var(--ink) }
   & .u4c-tent .face { position: relative; display: block; padding: 1.2cqh 1.3cqh 1.3cqh; background: var(--grain), linear-gradient(180deg, #f4e9d3, #e4d2ae);
     clip-path: polygon(4% 0, 96% 0, 100% 100%, 0 100%); box-shadow: 0 1cqh 1.2cqh rgba(0, 0, 0, .45) }
   & .u4c-tent .line { display: block; font-size: var(--fs-m); line-height: 1.6 }
@@ -132,7 +132,7 @@
   & .u4c-tent.is-turn .face { animation: u4cfTurn .5s ease-out }
 
   /* ---------- the record player ---------- */
-  & .u4c-juke { position: absolute; left: 4.8%; top: 66%; width: 11.6% }
+  & .u4c-juke { position: absolute; left: 4.6%; top: 64.5%; width: 11.8% }
   & .u4c-juke .deck { display: block; width: 100%; height: auto; filter: drop-shadow(0 1cqh 1cqh rgba(0, 0, 0, .55)) }
   & .u4c-juke .q-disc { transform-box: fill-box; transform-origin: 50% 50% }
   &.u4-playing .u4c-juke .q-disc { animation: u4cfSpin 3.2s linear infinite }
@@ -153,8 +153,24 @@
   & .u4c-tracks .tp-item .idx { font-family: var(--latin); color: var(--ink-2) }
   & .u4c-tracks .tp-item .nm2 { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
 
-  /* ---------- the rest of the shop: objects with their brass plates ---------- */
-  & .u4c-objs { display: contents }
+  /* ---------- the menu card hanging from the shelf: every other service ---------- */
+  & .u4c-menu { position: absolute; left: 5.4%; top: 12.2%; width: 15%; transform: rotate(-1.4deg); transform-origin: 50% -4%; color: var(--ink) }
+  & .u4c-menu .string { position: absolute; left: 50%; top: -4.4cqh; width: 9cqh; height: 4.6cqh; transform: translateX(-50%) }
+  & .u4c-menu .card { position: relative; padding: 2.2cqh 1.7cqh 1.3cqh; background: var(--grain), linear-gradient(180deg, #f6ecd6, #eadbbb);
+    box-shadow: 0 1.4cqh 2.2cqh rgba(0, 0, 0, .55), 0 0 0 1px rgba(60, 40, 20, .25) }
+  & .u4c-menu .card::before { content: ""; position: absolute; inset: .8cqh; border: 1px solid rgba(43, 33, 26, .5); outline: 3px double rgba(43, 33, 26, .22); outline-offset: -6px; pointer-events: none }
+  & .u4c-menu .logo { margin: 0; text-align: center; font: italic 400 max(19px, 2.7cqh)/1 var(--latin); color: var(--wax) }
+  & .u4c-menu .rule { display: block; width: 70%; height: 1.1cqh; margin: .7cqh auto .3cqh }
+  & .u4c-menu ul { list-style: none; margin: 0; padding: 0 }
+  & .u4c-menu li + li { border-top: 1px dotted rgba(43, 33, 26, .38) }
+  & .u4c-menu button { display: block; width: 100%; padding: .72cqh .4cqh .66cqh; color: var(--ink); transition: background .2s, padding .2s }
+  & .u4c-menu .q-nm { display: block; font: 700 max(14px, 1.72cqh)/1.3 var(--hand); letter-spacing: .1em }
+  & .u4c-menu .q-ds { display: block; margin-top: .1cqh; font: max(12px, 1.3cqh)/1.35 var(--u4-sans); color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+  & .u4c-menu button:is(:hover, :focus-visible) { background: rgba(158, 42, 32, .07); padding-left: 1cqh }
+  & .u4c-menu button:is(:hover, :focus-visible) .q-nm { color: var(--wax) }
+  & .u4c-menu button:is(:hover, :focus-visible) .q-nm::after { content: "  ›" }
+
+  /* ---------- the poem jar and the fortune box, standing on the counter ---------- */
   & .u4c-obj { position: absolute; display: flex; flex-direction: column; align-items: center; gap: .2cqh; transition: transform .25s ease, filter .25s ease }
   & .u4c-obj .u4-2f { width: 100% }
   & .u4c-obj .u4-2f img { filter: drop-shadow(0 .9cqh .8cqh rgba(0, 0, 0, .5)) }
@@ -162,16 +178,8 @@
   & .u4c-obj .q-tag small { display: block; max-height: 0; overflow: hidden; opacity: 0; margin-top: .3cqh; padding: 0 .6cqh; font: var(--fs-s)/1.35 var(--u4-sans); color: var(--chalk); text-shadow: 0 1px 2px #000; white-space: nowrap; transition: opacity .2s, max-height .2s }
   & .u4c-obj:is(:hover, :focus-visible) { transform: translateY(-.5cqh); filter: brightness(1.07) }
   & .u4c-obj:is(:hover, :focus-visible) .q-tag small { max-height: 3em; opacity: 1 }
-  & .o-photo { left: 5.6%; top: 12%; width: 11% }
-  & .o-books { left: 76%; top: 7%; width: 8.5% }
-  & .o-mirror { left: 86.4%; top: 5.5%; width: 6.2% }
-  & .o-drawers { left: 76%; top: 30%; width: 8% }
-  & .o-type { left: 85.4%; top: 31.5%; width: 8.6% }
-  & .o-news { left: 15.6%; top: 46%; width: 7.6% }
-  & .o-chair { left: 85.6%; top: 51%; width: 9.4% }
-  & .o-chess { left: 85.4%; top: 73%; width: 9.8% }
-  & .o-jar { left: 15.2%; top: 66%; width: 6% }
-  & .o-fortune { left: 66.4%; top: 78%; width: 6.4% }
+  & .o-jar { left: 17.2%; top: 62.6%; width: 6.6% }
+  & .o-fortune { left: 84.4%; top: 63.4%; width: 5.6% }
 
   /* ---------- acknowledgements (only after the order went through) ---------- */
   &.u4-fx-daily .u4c-ledger .impress { animation: u4cfPress .34s cubic-bezier(.3, 1.6, .5, 1) forwards }
@@ -192,7 +200,7 @@
 /* ---------- phones: hero + walnut tray ---------- */
 @container u4 (aspect-ratio < 5/6) or (height < 560px) {
   #u4r.u4c {
-    & .u4-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 10px; background: linear-gradient(180deg, rgba(18, 11, 8, .97), rgba(18, 11, 8, .86)); box-shadow: 0 6px 12px rgba(0, 0, 0, .4) }
+    & #dlb-topbar.u4-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 10px; background: linear-gradient(180deg, rgba(18, 11, 8, .97), rgba(18, 11, 8, .86)); box-shadow: 0 6px 12px rgba(0, 0, 0, .4) }
     & .u4c-clock { position: static; gap: 8px }
     & .u4c-clock svg { width: 38px; height: 38px }
     & .u4c-clock b { font-size: 17px }
@@ -201,7 +209,9 @@
     & .u4c-fpmini b { font: 700 12px var(--latin); color: #2a1a0c; padding: 0 4px; background: #e9d3a1; border-radius: 2px }
     & .u4c-fpmini span { font: 17px var(--latin); color: #f4ead2; background: #1d1915; padding: 1px 6px; border-radius: 2px; letter-spacing: .05em; font-variant-numeric: tabular-nums }
     & .u4c-closed { position: static; width: 76px; margin: -6px 0 -12px }
-    & .u4c-backarrow { position: static }
+    & .u4c-backarrow { position: static; white-space: nowrap; font-size: 14px; padding: 4px 2px }
+    & .u4c-backarrow svg { width: 26px }
+    &[data-u4-view="page"] .u4c-fpmini, &[data-u4-view="page"] .u4c-clock small { display: none }
     & :is(.u4c-plate, .u4c-front).q-wide, & .u4c-rain, & .u4c-pool { display: none }
     & :is(.u4c-plate, .u4c-front).q-tall { display: block; background-position: center var(--tall-y, 40%) }
     & .u4c-front.q-tall { clip-path: inset(var(--front-t, 88%) 0 0 0) }
@@ -226,14 +236,21 @@
     & .u4c-cup .art { width: 40px; height: 34px }
     & .u4c-cup .q-nm { font-size: 16px }
     & .u4c-board .foot { left: 14px; right: 14px; bottom: 10px }
-    & .u4c-objs { order: 3; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px 8px; align-items: end; padding: 14px 6px 8px;
-      border-top: 1px solid rgba(255, 210, 160, .12); border-bottom: 1px solid rgba(0, 0, 0, .35) }
-    & .u4c-obj { position: relative; left: auto; top: auto; width: auto; min-height: 44px }
-    & .u4c-obj .u4-2f { width: 76%; aspect-ratio: 1; display: grid; place-items: end center }
-    & .u4c-obj .u4-2f img { max-height: 100%; width: auto; max-width: 100% }
-    & .u4c-obj .u4-2f .f2 { left: 50%; transform: translateX(-50%); top: auto; bottom: 0 }
-    & .u4c-obj .q-tag small { max-height: none; opacity: .85; white-space: normal; text-align: center }
-    & .u4c-juke { order: 4; display: grid; grid-template-columns: 38% 1fr; align-items: center; gap: 8px }
+    & .u4c-menu { order: 3; transform: none; margin-top: 18px }
+    & .u4c-menu .string { display: none }
+    & .u4c-menu .card { padding: 18px 14px 10px }
+    & .u4c-menu ul { display: grid; grid-template-columns: 1fr 1fr; column-gap: 14px }
+    & .u4c-menu li { border-bottom: 1px dotted rgba(43, 33, 26, .35) }
+    & .u4c-menu li + li { border-top: 0 }
+    & .u4c-menu button { padding: 9px 2px; min-height: 48px }
+    & .u4c-menu .q-ds { white-space: normal }
+    & .u4c-obj { position: relative; left: auto; top: auto; width: auto; min-height: 44px; flex-direction: row; gap: 10px; padding: 6px 4px }
+    & .u4c-obj .u4-2f { width: 64px; flex: none }
+    & .u4c-obj .q-tag { align-items: flex-start; margin: 0 }
+    & .u4c-obj .q-tag small { max-height: none; opacity: .9; white-space: normal }
+    & .o-jar { order: 4 }
+    & .o-fortune { order: 5 }
+    & .u4c-juke { order: 6; display: grid; grid-template-columns: 38% 1fr; align-items: center; gap: 8px }
     & .u4c-juke .slip { margin: 0 }
     & .u4c-tracks { width: 100%; bottom: 100%; max-height: 50vh }
   }
@@ -244,7 +261,7 @@
 @container u4 (aspect-ratio >= 5/6) and (height < 560px) {
   #u4r.u4c {
     --her-px: -40%; --her-py: -4%; --her-ph: 150%; --tall-y: 30%; --front-t: 82%;
-    & .u4-top { background: linear-gradient(180deg, rgba(18, 11, 8, .95), rgba(18, 11, 8, .7)) }
+    & #dlb-topbar.u4-top { background: linear-gradient(180deg, rgba(18, 11, 8, .95), rgba(18, 11, 8, .7)) }
     & .u4c-tent { margin-top: 10px; align-self: stretch; width: auto }
   }
 }

@@ -33,9 +33,10 @@
   & .u4-main { position: absolute; inset: 0; pointer-events: none }
   & .u4-main :is(button, [role="button"], .u4-hit, #dlb-trackpop) { pointer-events: auto }
   & .u4-amb { display: none; position: absolute; inset: -8%; background: var(--u4-img, none) center / cover; filter: blur(24px) brightness(.45) saturate(.85) }
-  & .u4-top { position: absolute; inset: 0; z-index: 6; pointer-events: none }
+  /* the legacy sheet styles #dlb-overlay #dlb-topbar as a static flex row; the id selector here wins over it */
+  & #dlb-topbar.u4-top { position: absolute; inset: 0; z-index: 8; display: block; margin: 0; padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none; pointer-events: none }
   & .u4-top :is(button, [role="timer"], [role="status"]) { pointer-events: auto }
-  & .u4-sheet { position: absolute; inset: 0; z-index: 7 }
+  & .u4-sheet { position: absolute; inset: 0; z-index: 5 }
 
   /* Two-frame props: the hover frame fades in over the normal frame once it has loaded. */
   & .u4-2f { position: relative; display: block }
@@ -70,7 +71,7 @@
 }
 @container u4 (aspect-ratio < 5/6) {
   #u4r {
-    & .u4-top { bottom: auto; height: 58px }
+    & #dlb-topbar.u4-top { bottom: auto; height: 58px }
     & .u4-view { top: 58px; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin }
     & .u4-scene { height: clamp(220px, 34cqh, 330px) }
   }
@@ -79,7 +80,8 @@
   #u4r {
     & .u4-view { display: grid; grid-template-columns: minmax(0, 40%) minmax(0, 1fr) }
     & .u4-scene { height: 100% }
-    & .u4-main { overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; padding-top: 52px }
-    & .u4-top { left: 40%; bottom: auto; height: 52px }
+    & .u4-main { overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin }
+    & .u4-view .u4-main.u4-main { padding-top: 60px }
+    & #dlb-topbar.u4-top { left: 40%; bottom: auto; height: 52px }
   }
 }

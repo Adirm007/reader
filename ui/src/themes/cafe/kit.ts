@@ -2,7 +2,9 @@
  * itself would print or write: the chalkboard, the reservation book, a till receipt, a table tent. */
 import type { LobbyState, ThemeKit } from '../../core/types';
 import { act, esc, twoFrame, priceOf, nameOf, bookText, each } from '../../core/dom';
-import css from './lobby.css';
+import lobbyCss from './lobby.css';
+import pagesCss from './pages.css';
+import popupsCss from './popups.css';
 import envelopeCss from './envelope.css';
 
 const WEEK = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
@@ -87,26 +89,32 @@ function register(): string {
     + '<span class="plate">收银</span></div></div>';
 }
 
-interface Obj { id: string; cls: string; attrs: string; name: string; note: string }
-function objects(s: LobbyState): Obj[] {
+/* Everything that is not on the counter is on the menu card hanging from the shelf: one object, one list. */
+interface Item { cls: string; attrs: string; name: string; note: string }
+function items(s: LobbyState): Item[] {
   return [
-    { id: 'photowall', cls: 'o-photo', attrs: act('page', { page: 'persona' }), name: '眼中的她', note: `<span data-u4-persona>${esc(s.persona.label)}</span> · <span data-u4-appearance>${esc(s.appearance.label)}</span>` },
-    { id: 'books', cls: 'o-books', attrs: act('page', { page: 'tuning' }), name: '故事定调', note: `<span data-u4-books>${esc(bookText(s.books))}</span>` },
-    { id: 'mirror', cls: 'o-mirror', attrs: act('page', { page: 'decouple' }), name: '人格解耦', note: '镜子里的另一个她' },
-    { id: 'typewriter', cls: 'o-type', attrs: act('page', { page: 'template' }), name: '条目模仿', note: '照着世界书写一条' },
-    { id: 'drawers', cls: 'o-drawers', attrs: act('page', { page: 'eggs' }), name: '彩蛋服务台', note: '显示 · 主题 · 美化' },
-    { id: 'newspaper', cls: 'o-news', attrs: act('order', { text: '更新新闻' }), name: '新闻更新', note: '今夜的报纸 · 免费' },
-    { id: 'armchair', cls: 'o-chair', attrs: act('order', { text: '使用间章:小憩' }), name: '小憩片刻', note: '扶手椅 · 免费' },
-    { id: 'chess', cls: 'o-chess', attrs: act('chess'), name: '下一盘棋', note: '窗边那张小桌' },
-    { id: 'jar', cls: 'o-jar', attrs: act('prayer'), name: '祷诗抽取', note: '抽一张诗笺 · 免费' },
-    { id: 'fortune', cls: 'o-fortune', attrs: act('gacha'), name: '命运抽卡', note: s.gachaPrice ? `${esc(s.gachaPrice)} FP 一张` : '占卜卡匣' },
+    { cls: 'm-persona', attrs: act('page', { page: 'persona' }), name: '眼中的她', note: `<span data-u4-persona>${esc(s.persona.label)}</span> · <span data-u4-appearance>${esc(s.appearance.label)}</span>` },
+    { cls: 'm-tuning', attrs: act('page', { page: 'tuning' }), name: '故事定调', note: `<span data-u4-books>${esc(bookText(s.books))}</span> · 1,000 起` },
+    { cls: 'm-decouple', attrs: act('page', { page: 'decouple' }), name: '人格解耦', note: '镜子里的另一个她' },
+    { cls: 'm-template', attrs: act('page', { page: 'template' }), name: '条目模仿', note: '照着世界书写一条' },
+    { cls: 'm-eggs', attrs: act('page', { page: 'eggs' }), name: '彩蛋服务台', note: '显示 · 主题 · 信封' },
+    { cls: 'm-news', attrs: act('order', { text: '更新新闻' }), name: '新闻更新', note: '今夜的报纸 · 免费' },
+    { cls: 'm-nap', attrs: act('order', { text: '使用间章:小憩' }), name: '小憩片刻', note: '扶手椅上歇一会儿 · 免费' },
+    { cls: 'm-chess', attrs: act('chess'), name: '下一盘棋', note: '窗边那张小桌' },
   ];
 }
 
-function backroom(s: LobbyState): string {
-  return '<nav class="u4c-objs" aria-label="店里的其他角落">' + objects(s).map(o =>
-    `<button type="button" class="u4c-obj ${o.cls}"${o.attrs}>${twoFrame('cafe/prop-' + o.id)}<span class="q-tag"><b>${o.name}</b><small>${o.note}</small></span></button>`
-  ).join('') + '</nav>';
+function menu(s: LobbyState): string {
+  return '<nav class="u4c-menu" aria-labelledby="u4cf-mn"><svg class="string" viewBox="0 0 90 46" aria-hidden="true"><path d="M8 44L45 5l37 39" fill="none" stroke="#c9b48a" stroke-width="1.3"/><circle cx="45" cy="5" r="3.4" fill="url(#u4cfBrass)" stroke="#3a2614" stroke-width=".8"/></svg>'
+    + '<div class="card"><p class="logo u4c-latin" id="u4cf-mn" aria-label="店里的其他服务">Café Nocturne</p><svg class="rule" viewBox="0 0 160 10" aria-hidden="true"><path d="M4 5h58M98 5h58" stroke="#9e2a20" stroke-width=".9"/><path d="M70 5c4-5 8-5 10 0s6 5 10 0" fill="none" stroke="#9e2a20" stroke-width="1.1"/></svg><ul>'
+    + items(s).map(m => `<li><button type="button" class="${m.cls}"${m.attrs}><span class="q-nm">${m.name}</span><span class="q-ds">${m.note}</span></button></li>`).join('')
+    + '</ul></div></nav>';
+}
+
+/* The two things that do stand on the counter besides the book and the till. */
+function counterProps(s: LobbyState): string {
+  return `<button type="button" class="u4c-obj o-jar"${act('prayer')}>${twoFrame('cafe/prop-jar')}<span class="q-tag"><b>祷诗</b><small>抽一张诗笺 · 免费</small></span></button>`
+    + `<button type="button" class="u4c-obj o-fortune"${act('gacha')}>${twoFrame('cafe/prop-fortune')}<span class="q-tag"><b>命运抽卡</b><small>${s.gachaPrice ? esc(s.gachaPrice) + ' FP 一张' : '占卜卡匣'}</small></span></button>`;
 }
 
 function juke(s: LobbyState): string {
@@ -128,14 +136,14 @@ function greeting(): string {
 
 export const cafe: ThemeKit = {
   id: 'cafe',
-  css,
+  css: lobbyCss + pagesCss + popupsCss,
   envelopeCss,
   scene: s => '<div class="u4c-plate q-wide" data-u4-bg="cafe/plate-wide"></div><div class="u4c-plate q-tall" data-u4-bg="cafe/plate-tall"></div>'
     + '<div class="u4c-rain"></div><div class="u4c-pool"></div>'
-    + `<figure class="u4c-her"><img alt="" data-u4-img="cafe/standing/${esc(s.appearance.id)}" data-u4-fallback="${esc(s.standing)}"></figure>`
+    + `<figure class="u4c-her"><img alt="" data-u4-her data-u4-img="cafe/standing/${esc(s.appearance.id)}" data-u4-fallback="${esc(s.standing)}"></figure>`
     + '<div class="u4c-front q-wide" data-u4-bg="cafe/plate-wide"></div><div class="u4c-front q-tall" data-u4-bg="cafe/plate-tall"></div>',
   top: page => `<svg width="0" height="0" class="u4-vh" aria-hidden="true"><defs>${BRASS}${CHALK}</defs></svg>` + clock() + fpMini() + (page === 'main' ? '' : back()) + closed(),
-  main: s => greeting() + ledger(s) + printer(s) + register() + specials() + backroom(s) + juke(s),
+  main: s => greeting() + ledger(s) + printer(s) + register() + specials() + menu(s) + counterProps(s) + juke(s),
   date: d => `${d.getMonth() + 1}月${d.getDate()}日 · ${WEEK[d.getDay()]}`,
   greetings(s, hour) {
     const you = s.address ? s.address + '，' : '';
@@ -147,6 +155,18 @@ export const cafe: ThemeKit = {
       '诗笺罐里的诗是免费的，抽到不喜欢的也不许退。',
       '要打烊了也没关系，你在，这里就还开着。',
     ];
+  },
+  skin: {
+    pages: {
+      persona: { prop: 'cafe/prop-photowall', title: '眼中的她', lede: '吧台后面的照片墙。名牌是她的性子，相片是她今天穿的那身。' },
+      tuning: { prop: 'cafe/prop-books', title: '故事定调', lede: '店角的书架。挑一本定调，故事就照着它的口吻往下写。' },
+      decouple: { prop: 'cafe/prop-mirror', title: '人格解耦', lede: '镜子里的那一位，也可以有自己的名字和衣裳。' },
+      template: { prop: 'cafe/prop-typewriter', title: '条目模仿', lede: '侧桌上的打字机，照着世界书的格式敲一条新的。' },
+      eggs: { prop: 'cafe/prop-drawers', title: '彩蛋服务台', lede: '后场的药柜。一个抽屉放一样东西，拉开就能换。' },
+    },
+    words: { who: '她是谁', look: '今天穿哪一身', address: '称呼', custom: '自己写一个', shelf: '书架', services: '可以点的', pair: '主人格与镜中人',
+      sea: '书海迷宫', toggles: '小开关', desk: '管理台', tools: '唱片与信纸' },
+    ornament: () => '<i class="q-clip" aria-hidden="true"></i>',
   },
   sync(root, kind, s) {
     if (kind !== 'all' && kind !== 'fp') return;

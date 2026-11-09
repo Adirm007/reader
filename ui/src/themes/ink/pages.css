@@ -1,0 +1,152 @@
+/* 墨笺 sub-pages: a handscroll unrolled across the desk, read from the right. The title column stands at the
+ * right end under the object the page is about (album, book case, seals, type tray, stationery box); the
+ * contents run to its left on paper ruled with faint cinnabar columns. Personas are name slips, outfits are
+ * album leaves in silk mounts, switches are the cells of a curio shelf that get a red seal when on. */
+#u4r.u4i {
+  & .u4-sheet { display: grid; place-items: center; padding: 84px 2.6cqw 2.6cqh; overflow: hidden;
+    background: radial-gradient(ellipse 80% 70% at 50% 55%, rgba(30, 20, 14, .25), rgba(24, 16, 12, .72)) }
+  & .u4-page { display: flex; flex-direction: column; width: min(1240px, 100%); max-height: min(760px, 100%); min-height: 0; animation: u4jnUnroll .5s cubic-bezier(.2, .8, .2, 1) }
+  & .u4-page .q-sheet { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: minmax(0, 1fr); flex: 0 1 auto; min-height: min(520px, 100%); margin: 0 2.6cqh; padding: 2.6cqh 0;
+    background: linear-gradient(180deg, #8fa49c 0 1.4cqh, #b9c6c1 1.4cqh 2.6cqh, transparent 2.6cqh calc(100% - 2.6cqh), #b9c6c1 calc(100% - 2.6cqh) calc(100% - 1.4cqh), #8fa49c calc(100% - 1.4cqh));
+    box-shadow: 0 2cqh 4cqh rgba(10, 6, 4, .55) }
+  & .u4-page .q-rod { position: absolute; top: -1.2cqh; bottom: -1.2cqh; width: 2.6cqh; z-index: 1; border-radius: 1.3cqh;
+    background: linear-gradient(90deg, #2a170e, #6b4a2c 45%, #3a2414); box-shadow: 0 1cqh 1.4cqh rgba(0, 0, 0, .5) }
+  & .u4-page .q-rod::before, & .u4-page .q-rod::after { content: ""; position: absolute; left: -.3cqh; right: -.3cqh; height: 2.4cqh; border-radius: .6cqh; background: linear-gradient(90deg, #b38a43, #e9d7a8 50%, #b38a43) }
+  & .u4-page .q-rod::before { top: -.6cqh }
+  & .u4-page .q-rod::after { bottom: -.6cqh }
+  & .u4-page .q-rod.q-l { left: -2.6cqh }
+  & .u4-page .q-rod.q-r { right: -2.6cqh }
+
+  /* the title column at the right end */
+  /* the object on top; under it the title column and, to its left, the lede columns, read right to left */
+  & .u4-page .q-head { order: 2; display: grid; grid-template-columns: auto auto; grid-template-areas: "mark mark" "lede title"; justify-content: center; align-content: start; column-gap: 1.6cqh; row-gap: 2.2cqh; min-width: clamp(150px, 15cqw, 210px); padding: 2.6cqh 1.8cqh 2.2cqh;
+    background: var(--fiber), linear-gradient(180deg, #f4ecda, #ebe0c8); border-left: 1px solid rgba(184, 50, 42, .45) }
+  & .u4-page .q-mark { grid-area: mark; justify-self: center; display: block; width: min(150px, 13cqw); filter: drop-shadow(0 .8cqh .8cqh rgba(20, 10, 6, .35)) }
+  & .u4-page .q-mark .u4-2f img { max-height: 22cqh; width: auto; max-width: 100%; margin: 0 auto }
+  & .u4-page .q-title { grid-area: title; margin: 0; writing-mode: vertical-rl; white-space: nowrap; font: max(30px, 4.6cqh)/1 var(--brush); letter-spacing: .14em; color: var(--ink) }
+  & .u4-page .q-lede { grid-area: lede; margin: 0; writing-mode: vertical-rl; max-height: 32cqh; font: var(--fs-s)/1.9 var(--u4-body); letter-spacing: .16em; color: var(--ink-3) }
+
+  /* the written part */
+  & .u4-page .q-body { order: 1; position: relative; min-height: 0; overflow: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: rgba(58, 54, 49, .3) transparent;
+    padding: 3.2cqh 3.4cqh 3cqh; color: var(--ink);
+    background: var(--fiber), repeating-linear-gradient(90deg, transparent 0 63px, rgba(184, 50, 42, .1) 63px 64px), linear-gradient(180deg, var(--xuan-l), var(--xuan)) }
+  & .u4-page .q-sec + .q-sec, & .u4-page .q-status + .q-sec { margin-top: 3.4cqh }
+  & .u4-page .q-h { display: flex; align-items: center; gap: 1cqh; margin: 0 0 1.6cqh; font: max(22px, 2.9cqh)/1.1 var(--brush); letter-spacing: .14em; color: var(--ink) }
+  & .u4-page .q-h::before { content: ""; width: 1.4cqh; height: 1.4cqh; min-width: 10px; min-height: 10px; background: var(--cinnabar); border-radius: 2px }
+  & .u4-page .q-note { margin: 1.4cqh 0 0; font: var(--fs-s)/1.7 var(--u4-body); color: var(--ink-3) }
+  & .u4-page .sv2 { font: var(--fs-s) var(--u4-body); color: var(--cinnabar); white-space: nowrap }
+  & .u4-page .sv2.dim { color: var(--ink-3) }
+
+  & .u4-page .q-row, & .q-fold { display: grid; grid-template-columns: minmax(0, auto) minmax(0, 1fr) auto 1.4em; align-items: baseline; column-gap: 1.4cqh; width: 100%; min-height: 46px;
+    padding: 1.2cqh .6cqh; color: var(--ink); border-bottom: 1px solid rgba(184, 50, 42, .32); transition: background .2s }
+  & .u4-page .q-row .q-nm, & .q-fold .q-nm { font: max(18px, 2.3cqh)/1.2 var(--brush); letter-spacing: .1em; white-space: nowrap }
+  & .u4-page .q-row .q-ds, & .q-fold .q-ds { font: var(--fs-s)/1.6 var(--u4-body); color: var(--ink-3); min-width: 0 }
+  & .u4-page .q-row .q-pr { font: 700 max(14px, 1.8cqh) var(--u4-body); color: var(--price); white-space: nowrap }
+  & .u4-page .q-row .q-chip { font: var(--fs-s) var(--u4-body); color: var(--ink-2); padding: 0 .8cqh; border: 1px solid rgba(58, 54, 49, .4); white-space: nowrap }
+  & .u4-page .q-go::before { content: "›"; font: 18px/1 var(--u4-body); color: var(--ink-3) }
+  & .q-fold .q-chev::before { content: "展"; display: inline-block; font: 13px var(--brush); color: var(--cinnabar) }
+  & .q-fold.on .q-chev::before { content: "收" }
+  & .u4-page .q-row:is(:hover, :focus-visible), & .q-fold:is(:hover, :focus-visible) { background: rgba(111, 156, 143, .1) }
+  & .u4-page .q-status { display: flex; align-items: baseline; gap: 1.4cqh; margin: 0; padding: 1.2cqh 1.6cqh; border: 1px solid rgba(184, 50, 42, .45); outline: 1px solid rgba(184, 50, 42, .3); outline-offset: 3px }
+  & .u4-page .q-status .q-k { font: var(--fs-s) var(--u4-body); letter-spacing: .3em; color: var(--ink-3) }
+  & .u4-page .q-status b { font: max(18px, 2.3cqh) var(--brush); letter-spacing: .1em }
+
+  /* 名签: name slips standing in a row */
+  & .q-picks { display: flex; flex-wrap: wrap; gap: 14px 12px }
+  & .q-pick { position: relative; display: flex; flex-direction: column; align-items: center; gap: 8px; width: 74px; min-height: 196px; padding: 14px 6px 12px; color: var(--ink);
+    background: var(--fiber), linear-gradient(180deg, #f8f2e4, #ece2cc); box-shadow: 0 0 0 1px rgba(58, 54, 49, .25), .3cqh .6cqh .8cqh rgba(40, 20, 10, .22); transition: transform .25s }
+  & .q-pick:nth-child(odd) { transform: rotate(-.8deg) }
+  & .q-pick .q-nm { writing-mode: vertical-rl; font: max(19px, 2.4cqh)/1 var(--brush); letter-spacing: .16em }
+  & .q-pick .q-ds { writing-mode: vertical-rl; font: 12.5px/1.5 var(--u4-body); letter-spacing: .1em; color: var(--ink-3); max-height: 112px; overflow: hidden }
+  & .q-pick:is(:hover, :focus-visible) { transform: translateY(-6px) }
+  & .q-pick.cur { background: var(--fiber), linear-gradient(180deg, #fbf4e6, #f1e3c6); box-shadow: 0 0 0 2px var(--cinnabar), .3cqh .8cqh 1cqh rgba(40, 20, 10, .28) }
+  & .q-pick.cur::after { content: "今"; position: absolute; left: 50%; bottom: -12px; width: 24px; height: 24px; margin-left: -12px; display: grid; place-items: center;
+    font: 15px/1 var(--brush); color: #f6ead8; background: var(--cinnabar); border-radius: 3px }
+  & .q-addr { margin-top: 2.4cqh }
+
+  /* 画册: twelve leaves in silk mounts */
+  & .q-photos { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 16px 14px }
+  & .q-photo { position: relative; display: flex; flex-direction: column; gap: 6px; padding: 9px 9px 8px; color: var(--ink); background: #b9c6c1;
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .08), 0 .4cqh .8cqh rgba(40, 20, 10, .25); transition: transform .25s }
+  & .q-photo .q-pic { display: block; aspect-ratio: 1; overflow: hidden; background: var(--fiber), #efe6d2; box-shadow: 0 0 0 1px rgba(80, 60, 40, .35) }
+  & .q-photo .q-pic img { width: 100%; height: 100%; object-fit: cover; filter: sepia(.1) saturate(.9) }
+  & .q-photo .q-nm { font: max(14px, 1.7cqh)/1.2 var(--brush); letter-spacing: .08em; text-align: center }
+  & .q-photo:is(:hover, :focus-visible) { transform: translateY(-4px) }
+  & .q-photo.cur { background: #8fa49c; box-shadow: 0 0 0 2px var(--cinnabar), 0 .6cqh 1cqh rgba(40, 20, 10, .3) }
+  & .q-photo.cur::after { content: "今"; position: absolute; right: 12px; top: 12px; width: 26px; height: 26px; display: grid; place-items: center;
+    font: 16px/1 var(--brush); color: #f6ead8; background: var(--cinnabar); border-radius: 3px; box-shadow: 0 0 0 2px rgba(246, 234, 216, .7) }
+
+  /* 小机关: cells of a curio shelf; a cell that is on carries a red seal */
+  & .q-switches { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; border: 2px solid #4a2c1e; background: #4a2c1e }
+  & .q-sw { position: relative; display: flex; flex-direction: column; gap: 4px; min-height: 118px; padding: 14px 52px 14px 14px; text-align: left; color: var(--ink);
+    background: var(--fiber), linear-gradient(180deg, #f3ebd9, #e8dcc2); box-shadow: inset 0 0 0 2px #4a2c1e, inset 0 0 0 3px rgba(255, 240, 210, .4); transition: background .2s }
+  & .q-sw .q-no { font: 12px var(--u4-body); letter-spacing: .2em; color: var(--ink-4) }
+  & .q-sw .q-nm { font: max(18px, 2.2cqh)/1.2 var(--brush); letter-spacing: .1em }
+  & .q-sw .q-ds { font: 12.5px/1.6 var(--u4-body); color: var(--ink-3) }
+  & .q-sw .sv2 { margin-top: auto; font-size: 12px }
+  & .q-sw .q-knob { position: absolute; right: 12px; top: 14px; width: 30px; height: 30px; border: 1.5px dashed rgba(184, 50, 42, .45); border-radius: 3px }
+  & .q-sw.on .q-knob { border: 0; background: var(--cinnabar); box-shadow: inset 0 0 0 2px rgba(246, 234, 216, .65); animation: u4jnSealIn .3s cubic-bezier(.3, 1.5, .5, 1) }
+  & .q-sw.on .q-knob::before { content: "启"; display: grid; place-items: center; height: 100%; font: 18px/1 var(--brush); color: #f6ead8 }
+  & .q-sw:is(:hover, :focus-visible) { background: var(--fiber), linear-gradient(180deg, #f8f1e2, #ede2ca) }
+
+  & .q-door { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-rows: auto; align-items: center; column-gap: 18px; width: 100%; min-height: 70px; padding: 12px 18px 12px 26px; color: #f6ead8; text-align: left;
+    background: linear-gradient(90deg, #25344a 0 14px, #2d3f59 14px); box-shadow: .3cqh .8cqh 1cqh rgba(10, 8, 6, .35) }
+  & .q-door .q-nm { padding: 10px 8px; font: max(18px, 2.2cqh)/1.2 var(--brush); letter-spacing: .1em; color: var(--ink); background: var(--fiber), #efe6d0 }
+  & .q-door .q-ds { font: var(--fs-s)/1.6 var(--u4-body); color: #d6dbe0; max-width: 36em }
+  & .q-door .sv2 { padding: 6px 12px; font: 15px var(--brush); color: #f6ead8; background: var(--cinnabar); border-radius: 3px }
+  & .q-door:is(:hover, :focus-visible) { filter: brightness(1.12) }
+
+  & .q-foldbody, & .u4-page .q-paper { margin: 8px 0 12px; padding: 14px; background: var(--fiber), rgba(255, 252, 244, .6); box-shadow: inset 0 0 0 1px rgba(184, 50, 42, .3) }
+  & .q-foldbody .q-sw { min-height: 0; margin-bottom: 10px }
+  & .q-themes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px }
+  & .q-theme { display: flex; flex-direction: column; gap: 5px; padding: 8px; color: var(--ink); background: #b9c6c1; box-shadow: 0 .4cqh .8cqh rgba(40, 20, 10, .25); transition: transform .2s }
+  & .q-theme .q-thumb { display: block; aspect-ratio: 16 / 9; background: #d6cdb6 var(--u4-img, none) center / cover; box-shadow: 0 0 0 1px rgba(80, 60, 40, .35) }
+  & .q-theme b { font: 17px var(--brush); letter-spacing: .1em }
+  & .q-theme small { font: 12px var(--u4-body); color: var(--ink-3) }
+  & button.q-theme:is(:hover, :focus-visible) { transform: translateY(-3px) }
+  & .q-theme.cur { background: #8fa49c; box-shadow: 0 0 0 2px var(--cinnabar) }
+  & .q-pref { display: flex; flex-direction: column; gap: 6px }
+  & .q-pref .q-k { font: 16px var(--brush); letter-spacing: .14em }
+  & .q-pref textarea { width: 100%; min-height: 88px; resize: vertical; padding: 8px 10px; font: 14px/1.8 var(--u4-body); color: var(--ink); border: 0; outline: 1px solid rgba(184, 50, 42, .4);
+    background: repeating-linear-gradient(90deg, transparent 0 31px, rgba(184, 50, 42, .14) 31px 32px), #fbf6ea }
+  & .q-prefbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-top: 8px }
+  & .q-save { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 6px 14px; font: 15px var(--brush); letter-spacing: .2em; color: #f6ead8; background: var(--cinnabar); border-radius: 3px }
+  & .q-mini { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; font: 14px var(--u4-body); color: var(--ink) }
+  & .q-mini b { font-weight: 400; color: var(--ink-3) }
+  & .dlb-minisw { position: relative; width: 34px; height: 18px; border-radius: 3px; background: #c9bfa9; transition: background .2s }
+  & .dlb-minisw::after { content: ""; position: absolute; left: 2px; top: 2px; width: 14px; height: 14px; background: #fbf6ea; transition: transform .2s }
+  & .dlb-minisw.on { background: var(--cinnabar) }
+  & .dlb-minisw.on::after { transform: translateX(16px) }
+  & .u4-page .dlb-paper { font-family: var(--u4-body) }
+}
+
+@keyframes u4jnUnroll { from { opacity: 0; clip-path: inset(0 0 0 100%) } to { opacity: 1; clip-path: inset(0 0 0 0) } }
+@keyframes u4jnSealIn { from { transform: scale(1.4) rotate(-10deg); opacity: 0 } }
+
+@container u4 (aspect-ratio < 5/6) or (height < 560px) {
+  #u4r.u4i {
+    & .u4-sheet { top: 58px; display: block; padding: 0; overflow-y: auto; overscroll-behavior: contain; background: var(--fiber), var(--xuan) }
+    & .u4-page { display: block; width: auto; height: auto; max-height: none; animation: none }
+    & .u4-page .q-sheet { display: flex; flex-direction: column; height: auto; min-height: 0; margin: 0; padding: 0; background: none; box-shadow: none }
+    & .u4-page .q-rod { display: none }
+    & .u4-page .q-head { order: 0; width: auto; min-width: 0; display: grid; grid-template-areas: none; grid-template-columns: 76px 1fr; grid-template-rows: auto auto; justify-content: stretch; row-gap: 4px; column-gap: 14px; align-items: center; padding: 16px 14px; border-left: 0; border-bottom: 1px solid rgba(184, 50, 42, .45) }
+    & .u4-page :is(.q-mark, .q-title, .q-lede) { grid-area: auto }
+    & .u4-page .q-mark { grid-row: 1 / 3; width: 76px }
+    & .u4-page .q-mark .u4-2f img { max-height: 84px }
+    & .u4-page .q-title { writing-mode: horizontal-tb; white-space: normal; font-size: 30px; letter-spacing: .12em }
+    & .u4-page .q-lede { writing-mode: horizontal-tb; max-height: none; font-size: 13px; line-height: 1.6; letter-spacing: .04em }
+    & .u4-page .q-body { overflow: visible; padding: 20px 14px 36px }
+    & .u4-page .q-row, & .q-fold { grid-template-columns: minmax(0, 1fr) auto 1.4em; row-gap: 2px }
+    & .u4-page .q-row .q-ds, & .q-fold .q-ds { grid-row: 2; grid-column: 1 / -1 }
+    & .q-pick { width: calc(25% - 9px); min-height: 170px }
+    & .q-door { grid-template-columns: minmax(0, 1fr) auto; row-gap: 8px; padding-left: 22px }
+    & .q-door .q-nm { justify-self: start }
+    & .q-door .q-ds { grid-row: 2; grid-column: 1 / -1 }
+    & .q-photos { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px 10px }
+    & .q-switches { grid-template-columns: 1fr 1fr }
+    & .q-themes { grid-template-columns: 1fr 1fr }
+  }
+}
+@container u4 (aspect-ratio >= 5/6) and (height < 560px) {
+  #u4r.u4i .u4-sheet { top: 0; padding-top: 58px }
+}

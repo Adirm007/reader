@@ -1,0 +1,124 @@
+/* Café Nocturne, the windows that open over the lobby. They keep their own markup and logic (bookshelf
+ * bs-*, fate cards gc-*, forms cpl-* and cp-*, album dgl-*, chess chess-*); this only gives them the shop's
+ * materials. The book corner is a walnut bookcase, the fate cards are read on green baize, forms are an
+ * order pad on a clipboard, the album is a leather photo album, chess is a board on the window table. */
+html[data-u4-theme="cafe"] {
+  --pc-wood: linear-gradient(180deg, #5a3622, #3b2418 45%, #2a1a12);
+  --pc-grain: repeating-linear-gradient(90deg, rgba(0, 0, 0, .06) 0 3px, transparent 3px 11px);
+  --pc-brass: linear-gradient(180deg, #f1d89a, #b8894a 55%, #8a6233);
+  --pc-paper: #f3e8d2; --pc-ink: #2b211a; --pc-ink2: #6d5a48; --pc-wax: #9e2a20; --pc-chalk: #eee7d6; --pc-chalk2: #c9c2b1;
+  --pc-hand: "u4 Cafe Hand", "LXGW WenKai", "Noto Serif CJK SC", serif;
+  --pc-latin: "u4 Cafe Latin", "Playfair Display", Georgia, serif;
+  --pc-body: "Noto Serif CJK SC", "Source Han Serif SC", "Songti SC", serif;
+  --pc-sans: "Noto Sans CJK SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+
+  /* ---------- the book corner: a walnut bookcase ---------- */
+  & #bs-overlay.bs-ov { background: radial-gradient(ellipse at 50% 40%, rgba(40, 24, 14, .55), rgba(8, 5, 3, .9)) !important; backdrop-filter: blur(3px); font-family: var(--pc-body) !important }
+  & #bs-overlay .bs-ct { max-width: 900px; padding: 30px 30px 24px; border: 0 !important; border-radius: 6px 6px 3px 3px !important; color: var(--pc-chalk);
+    background: var(--pc-grain), var(--pc-wood) !important;
+    box-shadow: inset 0 0 0 3px #1d100a, inset 0 0 0 5px rgba(224, 190, 122, .3), inset 0 14px 30px rgba(0, 0, 0, .45), 0 30px 70px rgba(0, 0, 0, .7) !important }
+  & #bs-overlay .bs-ct::before, & #bs-overlay .bs-ct::after { display: none !important }
+  & #bs-overlay .bs-hd { display: table; margin: 0 auto 10px; padding: 7px 28px 6px 34px; font: 700 21px/1.2 var(--pc-hand) !important; letter-spacing: .45em !important; color: #2a1c10 !important; text-shadow: 0 1px 0 rgba(255, 240, 200, .6) !important;
+    background: var(--pc-brass); box-shadow: inset 0 1px 0 rgba(255, 250, 220, .7), 0 3px 6px rgba(0, 0, 0, .5); border-radius: 2px }
+  & #bs-overlay .bs-lamp { display: none }
+  & #bs-overlay .bs-persona-label { color: var(--pc-chalk2) !important; font: 13px var(--pc-sans) !important; text-align: center; letter-spacing: .1em; margin-bottom: 14px }
+  & #bs-overlay .bs-x { color: var(--pc-chalk2) !important; font-size: 30px !important }
+  & #bs-overlay .bs-opt-row { justify-content: center; margin-bottom: 12px }
+  & #bs-overlay .bs-opt-label { color: var(--pc-chalk) !important; font: 13px var(--pc-sans) !important; letter-spacing: .08em !important }
+  & #bs-overlay .bs-toggle { background: #1d140f !important; border: 1px solid #b8894a !important }
+  & #bs-overlay .bs-toggle::after { background: var(--pc-brass) !important }
+  & #bs-overlay .bs-toggle.bs-on { background: var(--pc-wax) !important }
+  /* the banned list is an index card tucked into the case */
+  & #bs-overlay .bs-ban-area { margin: 0 auto 18px; max-width: 560px; padding: 12px 16px 10px !important; color: var(--pc-ink); border: 0 !important; border-radius: 1px !important; transform: rotate(-.6deg);
+    background: repeating-linear-gradient(180deg, transparent 0 23px, rgba(43, 106, 160, .16) 23px 24px) 0 34px, linear-gradient(180deg, transparent 0 30px, rgba(158, 42, 32, .4) 30px 31px, transparent 31px), var(--pc-paper) !important;
+    box-shadow: 0 6px 12px rgba(0, 0, 0, .45) !important }
+  & #bs-overlay .bs-ban-title { font: 700 15px var(--pc-hand) !important; color: var(--pc-ink) !important; letter-spacing: .2em !important }
+  & #bs-overlay .bs-ban-input { background: transparent !important; border: 0 !important; border-bottom: 1px solid rgba(43, 33, 26, .45) !important; border-radius: 0 !important; color: var(--pc-ink) !important; font: 14px var(--pc-sans) !important; box-shadow: none !important }
+  & #bs-overlay .bs-ban-add { color: #fff4e2 !important; background: var(--pc-wax) !important; border: 0 !important; border-radius: 2px !important; font: 13px var(--pc-sans) !important }
+  & #bs-overlay .bs-ban-tag { color: var(--pc-ink) !important; background: #fffaf0 !important; border: 1px solid rgba(43, 33, 26, .3) !important; border-radius: 1px !important }
+  & #bs-overlay .bs-ban-count { color: var(--pc-ink2) !important }
+  & #bs-overlay .bs-empty { color: var(--pc-chalk2) !important; font: 16px var(--pc-hand) !important; letter-spacing: .2em }
+  /* shelves are planks; spines keep their cloth colours and get gold-foil bands */
+  & #bs-overlay .bs-shelf { background: linear-gradient(180deg, rgba(0, 0, 0, .28), rgba(0, 0, 0, .05) 30%, rgba(0, 0, 0, .35)) !important; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .3) }
+  & #bs-overlay .bs-shelf::after { height: 14px !important; background: var(--pc-grain), linear-gradient(180deg, #7a5134, #4a2d1a 60%, #2a170c) !important; box-shadow: 0 6px 10px rgba(0, 0, 0, .6), inset 0 1px 0 rgba(255, 220, 170, .25) !important }
+  & #bs-overlay .bs-bk { border-radius: 2px 3px 3px 2px !important }
+  & #bs-overlay .bs-gl, & #bs-overlay .bs-gl2 { background: none !important; border-top: 2px solid rgba(236, 204, 140, .85) !important; border-bottom: 1px solid rgba(236, 204, 140, .6) !important; height: 6px !important; opacity: 1 !important }
+  & #bs-overlay .bs-sp { font-family: var(--pc-hand) !important; color: #f6e7c4 !important; text-shadow: 0 1px 1px rgba(0, 0, 0, .7) !important }
+  & #bs-overlay .bs-btn { display: inline-block; padding: 9px 22px !important; font: 700 14px var(--pc-sans) !important; letter-spacing: .14em !important; color: #2a1c10 !important;
+    background: var(--pc-brass) !important; border: 0 !important; border-radius: 2px !important; box-shadow: inset 0 1px 0 rgba(255, 250, 220, .7), 0 3px 6px rgba(0, 0, 0, .5) !important; text-shadow: none !important }
+  & #bs-overlay .bs-btn:hover { filter: brightness(1.08) }
+  /* the detail is a bookplate */
+  & .bs-dt { color: var(--pc-ink) !important; border: 0 !important; border-radius: 2px !important; background: var(--pc-paper) !important; box-shadow: inset 0 0 0 8px var(--pc-paper), inset 0 0 0 9px rgba(43, 33, 26, .55), inset 0 0 0 12px var(--pc-paper), inset 0 0 0 13px rgba(43, 33, 26, .3), 0 24px 60px rgba(0, 0, 0, .7) !important }
+  & .bs-dt::before, & .bs-dt::after { display: none !important }
+  & .bs-dt-ti { font: 700 24px/1.3 var(--pc-hand) !important; color: var(--pc-ink) !important; text-shadow: none !important }
+  & .bs-dt-au { color: var(--pc-wax) !important; font-family: var(--pc-body) !important }
+  & .bs-dt-dc { color: var(--pc-ink) !important; text-shadow: none !important; border-color: rgba(158, 42, 32, .25) !important; font-family: var(--pc-body) !important }
+  & .bs-dt-sep { background: linear-gradient(90deg, transparent, rgba(158, 42, 32, .5), transparent) !important }
+  & .bs-dt-x { color: var(--pc-ink2) !important; background: none !important }
+  & .bs-dt .bs-btn { color: #fff4e2 !important; background: var(--pc-wax) !important; box-shadow: 0 2px 0 #5a1610 !important }
+
+  /* ---------- fate cards: read on the green baize of the card table ---------- */
+  & .bs-gacha {
+    --gc-corners: linear-gradient(transparent, transparent);
+    --gc-shell: radial-gradient(ellipse 70% 60% at 50% 35%, rgba(255, 230, 170, .08), transparent 70%), repeating-linear-gradient(45deg, rgba(255, 255, 255, .012) 0 2px, transparent 2px 5px), linear-gradient(180deg, #24382c, #18271f 60%, #121d17);
+    --gc-shell-line: #6e4e26; --gc-shell-inset: #2a170c;
+    --gc-panel: rgba(17, 27, 21, .82); --gc-raise: linear-gradient(160deg, rgba(43, 62, 50, .92), rgba(21, 33, 26, .92)); --gc-on: linear-gradient(160deg, rgba(110, 78, 38, .9), rgba(58, 38, 20, .92));
+    --gc-btn: #2a1a12; --gc-btn-line: #b8894a; --gc-btn-inset: #1d120c; --gc-btn-hover: #3e2a1c;
+    --gc-hero: radial-gradient(ellipse 30% 90% at 85% 42%, rgba(242, 180, 90, .16), transparent 72%), linear-gradient(90deg, #142019 0%, rgba(20, 32, 25, .95) 36%, rgba(30, 46, 37, .85) 62%, rgba(40, 58, 46, .6) 100%), #142019;
+    --gc-hero-fade: linear-gradient(0deg, #142019 22%, rgba(20, 32, 25, .85) 44%, rgba(20, 32, 25, 0) 74%);
+    --gc-banner: linear-gradient(110deg, rgba(17, 27, 21, .95) 35%, rgba(17, 27, 21, .6)); --gc-box: rgba(12, 19, 15, .8);
+    --gc-card-back: radial-gradient(ellipse at 50% 45%, #6b2a1e, #3e130c 55%, #1d0805); --gc-card-front: linear-gradient(180deg, #2b1d14, #120b07 72%);
+    --gc-cast: radial-gradient(ellipse at 50% 60%, rgba(40, 62, 49, .92), rgba(12, 19, 15, .95));
+    --gc-stage-bg: #0d1511; --gc-stage-vig: #050806;
+  }
+  & .bs-gacha .gc-shell { border: 0 !important; border-radius: 8px;
+    box-shadow: inset 0 0 0 12px #3b2418, inset 0 0 0 13px #1d100a, inset 0 0 0 15px rgba(224, 190, 122, .45), inset 0 0 40px 14px rgba(0, 0, 0, .55), 0 26px 80px rgba(0, 0, 0, .8) !important }
+  & .bs-gacha .gc-head { padding-left: 34px; padding-right: 30px; padding-top: 24px }
+  & .bs-gacha :is(.gc-title h2, .gc-h3, .gc-dir strong, .gc-hero h3, .gc-sheet-head h3, .gc-pool-head h3) { font-family: var(--pc-hand) !important; letter-spacing: .14em }
+  & .bs-gacha .gc-h3::before { background: var(--pc-wax) !important; border-radius: 50% }
+
+  /* ---------- forms: an order pad on a clipboard ---------- */
+  & :is(#cpl-overlay, #cp-overlay) { background: radial-gradient(ellipse at 50% 40%, rgba(40, 24, 14, .55), rgba(8, 5, 3, .88)) !important; backdrop-filter: blur(3px) }
+  & :is(#cpl-overlay .cpl-card, #cp-overlay .cp-card) { position: relative; color: var(--pc-ink) !important; border: 0 !important; border-radius: 3px !important; font-family: var(--pc-sans) !important;
+    background: repeating-linear-gradient(180deg, transparent 0 27px, rgba(43, 106, 160, .1) 27px 28px), var(--pc-paper) !important;
+    box-shadow: 0 0 0 10px #6b4429, 0 0 0 11px #2a170c, 0 30px 70px rgba(0, 0, 0, .7) !important; overflow: visible !important }
+  & :is(#cpl-overlay .cpl-card, #cp-overlay .cp-card)::before { content: ""; position: absolute; left: 50%; top: -22px; width: 130px; height: 30px; margin-left: -65px; z-index: 3; border-radius: 5px 5px 3px 3px;
+    background: var(--pc-brass); box-shadow: inset 0 1px 0 rgba(255, 250, 220, .7), 0 3px 5px rgba(0, 0, 0, .5) }
+  & :is(#cpl-overlay .cpl-head, #cp-overlay .cp-head) { background: none !important; border-bottom: 1px solid rgba(158, 42, 32, .45) !important }
+  & :is(#cpl-overlay .cpl-title, #cp-overlay .cp-title) { font: 700 22px var(--pc-hand) !important; color: var(--pc-ink) !important; letter-spacing: .2em !important; text-shadow: none !important; background: none !important; -webkit-text-fill-color: currentColor !important }
+  & :is(#cpl-overlay .cpl-sub, #cp-overlay .cp-sub) { color: var(--pc-ink2) !important; font-family: var(--pc-sans) !important }
+  & :is(#cpl-overlay .cpl-close, #cp-overlay .cp-close) { color: var(--pc-ink2) !important; background: none !important; border: 0 !important }
+  & :is(#cpl-overlay, #cp-overlay) :is(label, .cp-label, .cpl-label, [class*="-lbl"]) { color: var(--pc-ink) !important }
+  & :is(#cpl-overlay, #cp-overlay) :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea) { color: var(--pc-ink) !important; background: rgba(255, 252, 244, .75) !important; border: 0 !important; border-bottom: 1px solid rgba(43, 33, 26, .45) !important; border-radius: 0 !important; box-shadow: none !important; font-family: var(--pc-sans) !important }
+  & :is(#cpl-overlay, #cp-overlay) :is(input, select, textarea):focus { outline: 2px solid rgba(158, 42, 32, .45) !important; outline-offset: 1px }
+  & :is(#cpl-overlay .cpl-btn, #cp-overlay .cp-btn) { color: var(--pc-ink) !important; background: transparent !important; border: 1px solid rgba(43, 33, 26, .55) !important; border-radius: 2px !important; box-shadow: none !important; font-family: var(--pc-sans) !important; text-shadow: none !important }
+  & :is(#cpl-overlay .cpl-btn-primary, #cp-overlay .cp-btn.primary, #cp-overlay .cp-btn-primary) { color: #fff4e2 !important; background: var(--pc-wax) !important; border-color: var(--pc-wax) !important; box-shadow: 0 2px 0 #5a1610 !important }
+  & #cpl-overlay .cpl-btn-danger { color: var(--pc-wax) !important; border-color: var(--pc-wax) !important }
+  & :is(#cpl-overlay, #cp-overlay) :is(.cpl-section, .cp-section, [class*="cpl-box"], [class*="cpl-item"]) { background: rgba(255, 252, 244, .5) !important; border-color: rgba(43, 33, 26, .25) !important; color: var(--pc-ink) !important }
+
+  /* ---------- the album: leather covers, cream pages, photo corners ---------- */
+  & #dgl-overlay { background: var(--pc-grain), linear-gradient(160deg, #57221a, #3a1610 55%, #2a0f0a) !important; color: var(--pc-chalk) !important }
+  & #dgl-overlay .dgl-head { background: none !important; border-bottom: 1px solid rgba(224, 190, 122, .35) !important }
+  & #dgl-overlay .dgl-title { font: 700 24px var(--pc-hand) !important; letter-spacing: .3em !important; background: linear-gradient(180deg, #f6e2a8, #c9974e 55%, #f0d08c) !important; -webkit-background-clip: text !important; background-clip: text !important; color: transparent !important; -webkit-text-fill-color: transparent !important }
+  & #dgl-overlay .dgl-sub { color: #e7d3ae !important }
+  & #dgl-overlay .dgl-body { background: var(--pc-paper) !important; box-shadow: inset 0 0 30px rgba(120, 90, 50, .3) !important }
+  & #dgl-overlay .dgl-cell { background: #fbf7ee !important; border: 0 !important; border-radius: 0 !important; box-shadow: 0 3px 6px rgba(43, 33, 26, .3) !important }
+  & #dgl-overlay .dgl-cap2 { color: var(--pc-ink) !important; font-family: var(--pc-hand) !important }
+  & #dgl-overlay :is(.dgl-btn, .dgl-pager button) { color: #2a1c10 !important; background: var(--pc-brass) !important; border: 0 !important; border-radius: 2px !important; box-shadow: 0 2px 4px rgba(0, 0, 0, .4) !important }
+  & #dgl-overlay .dgl-empty { color: var(--pc-ink2) !important; font-family: var(--pc-hand) !important }
+
+  /* ---------- chess: the board on the window table ---------- */
+  & #chess-overlay.chess-ov { background: radial-gradient(ellipse at 50% 45%, rgba(40, 24, 14, .55), rgba(8, 5, 3, .9)) !important; backdrop-filter: blur(3px) }
+  & #chess-overlay :is(.chess-select, .chess-game) { color: var(--pc-chalk) !important; border: 0 !important; border-radius: 6px !important; background: var(--pc-grain), var(--pc-wood) !important;
+    box-shadow: inset 0 0 0 3px #1d100a, inset 0 0 0 5px rgba(224, 190, 122, .3), 0 30px 70px rgba(0, 0, 0, .7) !important }
+  & #chess-overlay .chess-stitle { font: 700 22px var(--pc-hand) !important; color: var(--pc-chalk) !important; letter-spacing: .3em !important }
+  & #chess-overlay :is(.chess-cbtn, .chess-resign-btn) { color: #2a1c10 !important; background: var(--pc-brass) !important; border: 0 !important; border-radius: 2px !important; font: 700 15px var(--pc-hand) !important; letter-spacing: .14em; box-shadow: 0 3px 6px rgba(0, 0, 0, .5) !important }
+  & #chess-overlay .chess-status { color: var(--pc-chalk) !important; font-family: var(--pc-hand) !important }
+  & #chess-overlay .chess-board { box-shadow: 0 0 0 6px #2a170c, 0 0 0 8px #b8894a, 0 10px 24px rgba(0, 0, 0, .6) !important }
+  & #chess-overlay .chess-close { color: var(--pc-chalk2) !important }
+
+  /* the legacy panels are centred with width:100%; give the cloth a table's size */
+  & #chess-overlay .chess-select { width: min(600px, 92vw) !important; padding: 34px 28px 30px !important }
+  & #chess-overlay .chess-game { width: auto !important; max-width: 96vw; padding: 52px 26px 22px !important }
+  & #chess-overlay .chess-close { top: 10px !important; right: 12px !important }
+}

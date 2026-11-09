@@ -21,6 +21,32 @@ export interface LobbyState {
   /** Legacy (external) art, used only when the bundled manifest has no entry. */
   standing: string;
   avatar: string;
+  /** Lists and switches the sub-pages draw (filled by the switch layer from the same legacy getters). */
+  personas: { id: string; name: string; hint: string }[];
+  appearances: { id: string; name: string }[];
+  eggs: EggState;
+}
+
+export interface EggState {
+  display: string; unseal: boolean; silent: boolean; beautify: boolean; letterLimit: boolean; hideFloat: boolean;
+  yuan: boolean; yuanStream: boolean; yuanPref: string; api: string;
+  /** Which folds are open (legacy dlbEggOpen). */
+  open: { theme?: boolean; yuan?: boolean; disc?: boolean; font?: boolean; fsz?: boolean };
+}
+
+/** Legacy HTML fragments a sub-page embeds as-is (their own click handlers are bound by dlbAfterRender). */
+export interface Fragments { decouple?: string; disc?: string; font?: string; fsz?: string }
+
+export type PageId = 'persona' | 'tuning' | 'decouple' | 'template' | 'eggs';
+
+/** What one theme says and shows on the sub-pages; the markup is shared, the look is the theme's CSS. */
+export interface PageSkin {
+  /** Landmark object per page (a two-frame prop id without -f1/-f2) and the page's words. */
+  pages: Record<PageId, { prop: string; title: string; lede: string }>;
+  /** Group headings, e.g. { who: '她是谁', look: '今天的打扮', … }. */
+  words: Record<string, string>;
+  /** Optional ornament markup placed inside the sheet (tape, rods, seals). */
+  ornament?: (page: PageId) => string;
 }
 
 export interface Hooks {
@@ -39,6 +65,7 @@ export interface ThemeKit {
   date(d: Date): string;
   /** Theme-specific dynamic bits after the shared sync ran. */
   sync?(root: HTMLElement, kind: string, s: LobbyState): void;
+  skin: PageSkin;
   /** Success animation after a paid order went through. */
   celebrate?(root: HTMLElement, kind: string, s: LobbyState): void;
 }

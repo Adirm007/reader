@@ -102,9 +102,9 @@
    "h": 1216
   },
   "cafe/plate-wide": {
-   "path": "assets/ui/cafe/plate-wide.b3ad891e.webp",
-   "bytes": 134954,
-   "sha256": "b3ad891e07f5644780efd56fa96d45fecc2c85b03ea88408ad7415acd871b632",
+   "path": "assets/ui/cafe/plate-wide.1a152e57.webp",
+   "bytes": 81944,
+   "sha256": "1a152e574d015a90cb6290239c442435f23681d68af1a5af3514208ea9daed66",
    "w": 1344,
    "h": 768
   },
@@ -454,16 +454,16 @@
    "h": 629
   },
   "ink/plate-tall": {
-   "path": "assets/ui/ink/plate-tall.baf9d203.webp",
-   "bytes": 121458,
-   "sha256": "baf9d203089a39e9d00a8c30da576504439c99e3913bec7b076c3346f66bbd20",
+   "path": "assets/ui/ink/plate-tall.6da154ae.webp",
+   "bytes": 80072,
+   "sha256": "6da154ae00c8fbf16931d6b818500937e52e0a776312a3964d3221e7916b620a",
    "w": 832,
    "h": 1216
   },
   "ink/plate-wide": {
-   "path": "assets/ui/ink/plate-wide.6f669a88.webp",
-   "bytes": 120670,
-   "sha256": "6f669a882f31fa04a8d9e7a1f3e4237bc01fad526df735311c518a0f80ad71ee",
+   "path": "assets/ui/ink/plate-wide.c4e25327.webp",
+   "bytes": 91378,
+   "sha256": "c4e25327ae885a9ea589b546249d7268a865482a1962c424122bbc778eba9bd0",
    "w": 1344,
    "h": 768
   },

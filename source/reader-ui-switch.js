@@ -2,13 +2,14 @@
 // 新表现层（window.ReaderUI，ui/ 打包）的切换点。必须是最外层：脚本版放在 controller-adapter.js 之后，
 // 完整版放在 legacy-reader.js 与 template-system.js 之后。它只换「画什么」：动作仍由 dlbClick 链处理，
 // 计价、FP、事务、聊天变量都不经过这里。localStorage.dream_ui_v4 = 'off' 时每个函数都直接走旧实现。
-// ReaderUI 还没接管的子页（Phase 5 之前的人格、定调、彩蛋、解耦、条目模仿）仍用旧骨架整页绘制。
+// 五个子页（眼中的她、故事定调、人格解耦、条目模仿、彩蛋服务台）也由 ReaderUI 画：动作、id、.on/.cur/.sv2
+// 与旧版一致；人格解耦与唱片、笔迹、大小三个列表仍嵌旧函数生成的片段，由 dlbAfterRender 绑定。
 (function () {
   var UI = window.ReaderUI;
   if (!UI || typeof UI.skeleton !== 'function' || typeof dlbGo !== 'function') return;
   var legacy = {
     cafe: cfSkeleton, summer: sxSkeleton, ink: jnSkeleton, ensure: dlbEnsureCss, top: dlbTopHTML, main: dlbMainHTML,
-    go: dlbGo, clock: dlbClockSync, fp: dlbSyncFpDom, juke: dlbJukeSync, badges: dlbBadges, apply: applyVisualTheme,
+    go: dlbGo, page: dlbPageHTML, clock: dlbClockSync, fp: dlbSyncFpDom, juke: dlbJukeSync, badges: dlbBadges, apply: applyVisualTheme,
     rhythm: typeof handleRhythm === 'function' ? handleRhythm : null
   };
   function on() { try { return UI.enabled(window.localStorage); } catch (e) { return true; } }
@@ -37,8 +38,36 @@
       },
       gachaPrice: String(safe(function () { return dreamGachaPrice(); }, '')),
       standing: safe(function () { return getStandingArtUrl(); }, ''),
-      avatar: safe(function () { return getAvatarUrl(); }, '')
+      avatar: safe(function () { return getAvatarUrl(); }, ''),
+      personas: safe(function () { return PERSONA_ITEMS.map(function (x) { return { id: x.id, name: x.name, hint: x.hint || '' }; }); }, []),
+      appearances: safe(function () { return APPEARANCE_ITEMS.map(function (x) { return { id: x.id, name: x.name }; }); }, []),
+      eggs: {
+        display: safe(function () { return gLS(DK, 'inline') === 'float' ? '悬浮' : '默认'; }, '默认'),
+        unseal: safe(function () { return gLS(AK, 'off') === 'on'; }, false),
+        silent: !!safe(function () { return getSilentState(); }, false),
+        beautify: !!safe(function () { return getCafeEnvelopeBeautifyState(); }, false),
+        letterLimit: !!safe(function () { return getLetterLimitState(); }, false),
+        hideFloat: safe(function () { return gLS('dream_hide_persistent_float', 'off') === 'on'; }, false),
+        yuan: !!safe(function () { return getYuanPlusEnabled(); }, false),
+        yuanStream: !!safe(function () { return getYuanPlusStreamEnabled(); }, false),
+        yuanPref: String(safe(function () { return getYuanPlusPreference(); }, '')),
+        api: String(safe(function () { return dreamApiLabel(); }, '')),
+        open: safe(function () { return dlbEggOpen; }, {})
+      }
     };
+  }
+  // Legacy fragments a sub-page embeds; only the ones the page shows open are built.
+  function fragments(page) {
+    var f = {};
+    if (page === 'decouple') f.decouple = safe(function () { return renderPersonaDecoupleHTML(); }, '');
+    if (page === 'eggs') {
+      try { dlbYuanCache = getYuanPlusPreference(); } catch (e) {}
+      var open = safe(function () { return dlbEggOpen; }, {});
+      if (open.disc) f.disc = safe(function () { return buildDiscListHTML(); }, '');
+      if (open.font) f.font = safe(function () { return buildFontListHTML(); }, '');
+      if (open.fsz) f.fsz = safe(function () { return buildFSZHTML(); }, '');
+    }
+    return f;
   }
   var hooks = { state: state };
   function legacySkeleton(t) { return (legacy[t] || legacy.cafe)(); }
@@ -63,6 +92,7 @@
   };
   dlbTopHTML = function (page) { return fresh(dlbOv()) ? UI.top(theme(), page, state()) : legacy.top(page); };
   dlbMainHTML = function () { return fresh(dlbOv()) ? UI.main(theme(), state()) : legacy.main(); };
+  dlbPageHTML = function (page) { return fresh(dlbOv()) && UI.supports(theme(), page) ? UI.page(theme(), page, state(), fragments(page)) : legacy.page(page); };
   dlbGo = function (page) {
     var ov = dlbOv();
     if (ov) {

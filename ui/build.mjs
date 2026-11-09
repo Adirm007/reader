@@ -14,7 +14,12 @@ import {resolve, relative} from 'node:path';
 const here = fileURLToPath(new URL('.', import.meta.url));
 // Nesting is written for readability and flattened here; the oldest engines we support decide the target.
 const cssTarget = ['chrome105', 'safari16', 'firefox110'];
-const cssMin = async text => (await transform(text, {loader: 'css', minify: true, target: cssTarget, charset: 'utf8'})).code.trim();
+// A CSS parse warning means part of a sheet was silently dropped (an early */ in a comment did that once): fail.
+const cssMin = async (text, name = 'css') => {
+  const r = await transform(text, {loader: 'css', minify: true, target: cssTarget, charset: 'utf8', sourcefile: name});
+  if (r.warnings.length) throw new Error(`${name}: ` + r.warnings.map(w => `${w.text} (line ${w.location?.line})`).join('; '));
+  return r.code.trim();
+};
 const textFiles = {name: 'reader-ui-text', setup(b) {
   // The bundle needs only id -> sha8 (paths are derived); bytes, sizes and full digests stay in ui/assets.json.
   b.onLoad({filter: /assets\.json$/}, async a => {
@@ -25,7 +30,7 @@ const textFiles = {name: 'reader-ui-text', setup(b) {
     }));
     return {contents: JSON.stringify({repository: m.repository, commit: m.commit, files}), loader: 'json'};
   });
-  b.onLoad({filter: /\.css$/}, async a => ({contents: await cssMin(await readFile(a.path, 'utf8')), loader: 'text'}));
+  b.onLoad({filter: /\.css$/}, async a => ({contents: await cssMin(await readFile(a.path, 'utf8'), a.path.split('/src/').pop()), loader: 'text'}));
   b.onLoad({filter: /\.svg$/}, async a => ({contents: (await readFile(a.path, 'utf8')).replace(/>\s+</g, '><').replace(/\s{2,}/g, ' ').trim(), loader: 'text'}));
 }};
 

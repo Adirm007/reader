@@ -1,0 +1,109 @@
+/* Summer Post, the windows over the post office. Same markup and logic as before (bs-*, gc-*, cpl-* and cp-*,
+ * dgl-*, chess-*); the materials are the post office's: the book corner is the paperback rack outside the
+ * shop, fate cards come out of the capsule machine onto airmail paper, forms are registered-mail slips with
+ * the red-and-blue border, the album is a cork board of polaroids, chess is played on the picnic blanket. */
+html[data-u4-theme="summer"] {
+  --ps-sea: #1f6f9a; --ps-sea-d: #154e6e; --ps-paper: #fbf8f0; --ps-teal: #12404c; --ps-teal2: #4d6d74; --ps-coral: #f07a5f; --ps-citrus: #f6c445; --ps-post: #c8372d;
+  --ps-air: repeating-linear-gradient(135deg, #c8372d 0 14px, #fbf8f0 14px 22px, #1f6f9a 22px 36px, #fbf8f0 36px 44px);
+  --ps-disp: "u4 Summer Display", "Smiley Sans", "Noto Sans CJK SC", sans-serif;
+  --ps-latin: "u4 Summer Latin", "Jost", "Century Gothic", sans-serif;
+  --ps-sans: "Noto Sans CJK SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --ps-cork: radial-gradient(circle at 20% 30%, rgba(255, 255, 255, .12) 0 1px, transparent 2px) 0 0 / 7px 9px, radial-gradient(circle at 70% 60%, rgba(90, 55, 20, .25) 0 1px, transparent 2px) 0 0 / 11px 8px, linear-gradient(160deg, #d4ae80, #c39765 60%, #b98b58);
+
+  /* ---------- the book corner: the wire paperback rack ---------- */
+  & #bs-overlay.bs-ov { background: linear-gradient(180deg, rgba(207, 231, 241, .7), rgba(31, 111, 154, .45)) !important; backdrop-filter: blur(5px); font-family: var(--ps-sans) !important }
+  & #bs-overlay.bs-ov::before, & #bs-overlay.bs-ov::after { display: none !important }
+  & #bs-overlay .bs-ct { max-width: 900px; padding: 30px 30px 24px !important; color: var(--ps-teal) !important; border: 10px solid transparent !important; border-radius: 3px !important;
+    background: linear-gradient(var(--ps-paper), var(--ps-paper)) padding-box, var(--ps-air) border-box !important; box-shadow: 0 24px 60px rgba(21, 78, 110, .4) !important }
+  & #bs-overlay .bs-ct::before, & #bs-overlay .bs-ct::after { display: none !important }
+  & #bs-overlay .bs-hd { display: table; margin: 0 auto 10px; padding: 6px 22px; font: 24px/1.2 var(--ps-disp) !important; letter-spacing: .3em !important; color: var(--ps-paper) !important; background: var(--ps-sea) !important; text-shadow: none !important; transform: rotate(-1.2deg); box-shadow: 0 3px 6px rgba(21, 78, 110, .3) }
+  & #bs-overlay .bs-lamp { display: none }
+  & #bs-overlay .bs-persona-label { color: var(--ps-teal2) !important; font: 13px var(--ps-sans) !important; text-align: center; margin-bottom: 12px }
+  & #bs-overlay .bs-x { color: var(--ps-teal2) !important }
+  & #bs-overlay .bs-opt-row { justify-content: center; margin-bottom: 12px; background: none !important; border: 0 !important }
+  & #bs-overlay .bs-opt-label { color: var(--ps-teal) !important; font: 13px var(--ps-sans) !important }
+  & #bs-overlay .bs-toggle { background: #aab7bd !important; border: 0 !important }
+  & #bs-overlay .bs-toggle::after { background: #fff !important }
+  & #bs-overlay .bs-toggle.bs-on { background: var(--ps-sea) !important }
+  & #bs-overlay .bs-ban-area { margin: 0 auto 18px; max-width: 560px; padding: 12px 16px 10px !important; color: var(--ps-teal) !important; border: 0 !important; border-radius: 0 !important; transform: rotate(.8deg);
+    background: linear-gradient(90deg, transparent 0 calc(100% - 2px), rgba(18, 64, 76, .1) 0), #fff !important; box-shadow: 0 4px 10px rgba(21, 78, 110, .25) !important }
+  & #bs-overlay .bs-ban-title { font: 16px var(--ps-disp) !important; color: var(--ps-post) !important; letter-spacing: .1em !important }
+  & #bs-overlay .bs-ban-input { color: var(--ps-teal) !important; background: transparent !important; border: 0 !important; border-bottom: 1px dashed rgba(31, 111, 154, .5) !important; border-radius: 0 !important; box-shadow: none !important }
+  & #bs-overlay .bs-ban-add { color: #fff !important; background: var(--ps-post) !important; border: 0 !important; border-radius: 2px !important }
+  & #bs-overlay .bs-ban-tag { color: var(--ps-teal) !important; background: #f4e3b8 !important; border: 0 !important; border-radius: 0 !important }
+  & #bs-overlay .bs-ban-count { color: var(--ps-teal2) !important }
+  & #bs-overlay .bs-empty { color: var(--ps-teal2) !important; font: 16px var(--ps-disp) !important; letter-spacing: .1em }
+  & #bs-overlay .bs-shelf { background: none !important; box-shadow: none !important }
+  & #bs-overlay .bs-shelf::after { height: 6px !important; border: 0 !important; background: linear-gradient(180deg, #e9eef0, #9fb2ba) !important; border-radius: 3px !important; box-shadow: 0 3px 4px rgba(21, 78, 110, .25) !important }
+  & #bs-overlay .bs-bk { filter: saturate(.8) brightness(1.25); border: 0 !important; border-radius: 1px !important; box-shadow: 2px 3px 5px rgba(21, 78, 110, .3), inset -3px 0 0 rgba(255, 255, 255, .25) !important }
+  & #bs-overlay .bs-gl { background: #fff !important; height: 16px !important; opacity: .92 !important; border: 0 !important; top: 10px !important }
+  & #bs-overlay .bs-gl2 { display: none !important }
+  & #bs-overlay .bs-sp { font-family: var(--ps-disp) !important; color: #fff !important; text-shadow: 0 1px 2px rgba(0, 0, 0, .45) !important }
+  & #bs-overlay .bs-btn { padding: 10px 22px !important; font: 16px var(--ps-disp) !important; letter-spacing: .1em !important; color: #fff !important; background: var(--ps-sea) !important; border: 0 !important; border-radius: 2px !important; box-shadow: 0 4px 8px rgba(21, 78, 110, .3) !important; text-shadow: none !important }
+  & .bs-dt { color: var(--ps-teal) !important; border: 10px solid transparent !important; border-radius: 3px !important; background: linear-gradient(#fff, #fff) padding-box, var(--ps-air) border-box !important; box-shadow: 0 24px 60px rgba(21, 78, 110, .4) !important }
+  & .bs-dt::before, & .bs-dt::after { display: none !important }
+  & .bs-dt-ti { font: 24px var(--ps-disp) !important; color: var(--ps-teal) !important; text-shadow: none !important }
+  & .bs-dt-au { color: var(--ps-coral) !important }
+  & .bs-dt-dc { color: var(--ps-teal) !important; text-shadow: none !important; border-color: rgba(31, 111, 154, .25) !important; font-family: var(--ps-sans) !important }
+  & .bs-dt-sep { background: var(--ps-air) !important; height: 4px !important }
+  & .bs-dt-x { color: var(--ps-teal2) !important; background: none !important }
+
+  /* ---------- fate cards: capsules onto airmail paper ---------- */
+  & .bs-gacha {
+    --gc-corners: linear-gradient(transparent, transparent);
+    --gc-shell: radial-gradient(ellipse 50% 40% at 90% 0%, rgba(246, 196, 69, .18), transparent 70%), linear-gradient(180deg, #fffdf7, #fbf8f0);
+    --gc-shell-line: #1f6f9a; --gc-shell-inset: #fbf8f0;
+    --gc-pri: linear-gradient(180deg, #2b84b4, #1f6f9a 60%, #185d82); --gc-pri-hover: linear-gradient(180deg, #3592c2, #2479a8 60%, #1a6690); --gc-pri-line: #154e6e;
+    --gc-on: linear-gradient(160deg, #fff6d6, #f6e4a8); --gc-on-ink: #12404c;
+    --gc-card-back: repeating-linear-gradient(135deg, #c8372d 0 10px, #fbf8f0 10px 16px, #1f6f9a 16px 26px, #fbf8f0 26px 32px);
+  }
+  & .bs-gacha .gc-shell { border: 12px solid transparent !important; border-radius: 3px;
+    background: var(--gc-shell) padding-box, var(--ps-air) border-box !important; box-shadow: 0 24px 70px rgba(21, 78, 110, .45) !important }
+  & .bs-gacha :is(.gc-title h2, .gc-h3, .gc-dir strong, .gc-hero h3, .gc-sheet-head h3, .gc-pool-head h3) { font-family: var(--ps-disp) !important; font-weight: 400 !important; letter-spacing: .08em }
+  & .bs-gacha .gc-h3::before { background: var(--ps-coral) !important; border-radius: 50% }
+
+  /* ---------- forms: a registered-mail slip ---------- */
+  & :is(#cpl-overlay, #cp-overlay) { background: linear-gradient(180deg, rgba(207, 231, 241, .7), rgba(31, 111, 154, .45)) !important; backdrop-filter: blur(5px) }
+  & :is(#cpl-overlay .cpl-card, #cp-overlay .cp-card) { color: var(--ps-teal) !important; border: 10px solid transparent !important; border-radius: 3px !important; font-family: var(--ps-sans) !important;
+    background: linear-gradient(var(--ps-paper), var(--ps-paper)) padding-box, var(--ps-air) border-box !important; box-shadow: 0 24px 60px rgba(21, 78, 110, .4) !important }
+  & :is(#cpl-overlay .cpl-head, #cp-overlay .cp-head) { background: none !important; border-bottom: 2px solid var(--ps-sea) !important }
+  & :is(#cpl-overlay .cpl-title, #cp-overlay .cp-title) { font: 24px var(--ps-disp) !important; color: var(--ps-teal) !important; letter-spacing: .1em !important; background: none !important; text-shadow: none !important; -webkit-text-fill-color: currentColor !important }
+  & :is(#cpl-overlay .cpl-sub, #cp-overlay .cp-sub) { color: var(--ps-teal2) !important }
+  & :is(#cpl-overlay .cpl-close, #cp-overlay .cp-close) { color: var(--ps-teal2) !important; background: none !important; border: 0 !important }
+  & :is(#cpl-overlay, #cp-overlay) :is(label, .cp-label, .cpl-label, [class*="-lbl"]) { color: var(--ps-teal) !important }
+  & :is(#cpl-overlay, #cp-overlay) :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea) { color: var(--ps-teal) !important; background: #fff !important; border: 1px solid rgba(31, 111, 154, .45) !important; border-radius: 0 !important; box-shadow: none !important }
+  & :is(#cpl-overlay .cpl-btn, #cp-overlay .cp-btn) { color: var(--ps-sea) !important; background: #fff !important; border: 1px solid var(--ps-sea) !important; border-radius: 2px !important; box-shadow: none !important; text-shadow: none !important }
+  & :is(#cpl-overlay .cpl-btn-primary, #cp-overlay .cp-btn.primary, #cp-overlay .cp-btn-primary) { color: #fff !important; background: var(--ps-sea) !important }
+  & #cpl-overlay .cpl-btn-danger { color: var(--ps-post) !important; border-color: var(--ps-post) !important }
+  & :is(#cpl-overlay, #cp-overlay) :is(.cpl-section, .cp-section, [class*="cpl-box"], [class*="cpl-item"]) { background: #fff !important; border-color: rgba(31, 111, 154, .25) !important; color: var(--ps-teal) !important }
+
+  /* ---------- album: polaroids on the cork board ---------- */
+  & #dgl-overlay { background: var(--ps-cork) !important; color: var(--ps-teal) !important }
+  & #dgl-overlay .dgl-head { background: var(--ps-paper) !important; border-bottom: 0 !important; box-shadow: 0 4px 10px rgba(80, 50, 20, .25) }
+  & #dgl-overlay .dgl-title { font: 26px var(--ps-disp) !important; color: var(--ps-teal) !important; background: none !important; -webkit-text-fill-color: currentColor !important }
+  & #dgl-overlay .dgl-sub { color: var(--ps-teal2) !important }
+  & #dgl-overlay .dgl-body { background: none !important }
+  & #dgl-overlay .dgl-cell { padding: 7px 7px 26px !important; background: #fff !important; border: 0 !important; border-radius: 0 !important; box-shadow: .2cqh .6cqh .8cqh rgba(80, 50, 20, .28), 2px 4px 8px rgba(80, 50, 20, .25) !important }
+  & #dgl-overlay .dgl-cell:nth-child(odd) { transform: rotate(-1.5deg) }
+  & #dgl-overlay .dgl-cell:nth-child(even) { transform: rotate(1.3deg) }
+  & #dgl-overlay .dgl-cap2 { color: var(--ps-teal) !important; font-family: var(--ps-disp) !important }
+  & #dgl-overlay :is(.dgl-btn, .dgl-pager button) { color: #fff !important; background: var(--ps-sea) !important; border: 0 !important; border-radius: 2px !important }
+  & #dgl-overlay .dgl-empty { color: var(--ps-paper) !important; font-family: var(--ps-disp) !important; text-shadow: 0 1px 2px rgba(80, 50, 20, .5) }
+
+  /* ---------- chess on the picnic blanket ---------- */
+  & #chess-overlay.chess-ov { background: linear-gradient(180deg, rgba(207, 231, 241, .7), rgba(31, 111, 154, .45)) !important; backdrop-filter: blur(5px) }
+  & #chess-overlay :is(.chess-select, .chess-game) { color: var(--ps-teal) !important; border: 0 !important; border-radius: 4px !important;
+    background: repeating-linear-gradient(0deg, rgba(200, 55, 45, .55) 0 18px, transparent 18px 36px), repeating-linear-gradient(90deg, rgba(200, 55, 45, .55) 0 18px, transparent 18px 36px), #fbf8f0 !important;
+    box-shadow: 0 24px 60px rgba(21, 78, 110, .4) !important }
+  & #chess-overlay .chess-stitle { display: table; margin: 0 auto; padding: 4px 18px; font: 24px var(--ps-disp) !important; color: var(--ps-teal) !important; background: var(--ps-paper) !important }
+  & #chess-overlay :is(.chess-cbtn, .chess-resign-btn) { color: #fff !important; background: var(--ps-sea) !important; border: 0 !important; border-radius: 2px !important; font: 17px var(--ps-disp) !important; box-shadow: 0 3px 6px rgba(21, 78, 110, .3) !important }
+  & #chess-overlay .chess-colors > div > div:not(.chess-cbtn) { color: var(--ps-teal) !important; background: var(--ps-paper); padding: 2px 6px }
+  & #chess-overlay .chess-status { color: var(--ps-teal) !important; background: var(--ps-paper); font-family: var(--ps-disp) !important }
+  & #chess-overlay .chess-board { box-shadow: 0 0 0 6px #fff, 0 8px 18px rgba(80, 50, 20, .35) !important }
+  & #chess-overlay .chess-close { color: var(--ps-teal) !important }
+
+  /* the legacy panels are centred with width:100%; give the cloth a table's size */
+  & #chess-overlay .chess-select { width: min(600px, 92vw) !important; padding: 34px 28px 30px !important }
+  & #chess-overlay .chess-game { width: auto !important; max-width: 96vw; padding: 52px 26px 22px !important }
+  & #chess-overlay .chess-close { top: 10px !important; right: 12px !important }
+}
