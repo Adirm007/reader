@@ -1,0 +1,85 @@
+/* Shared behaviour of the v4 lobby: three layouts and the stage geometry. No look lives here.
+ * Everything is nested under the #u4r id: the legacy sheet resets `#dlb-overlay *`. */
+#dlb-overlay.u4-on { background: #0b0807 }
+
+#u4r {
+  position: absolute; inset: 0; overflow: hidden; container: u4 / size;
+  font: 15px/1.55 var(--u4-body); color: var(--u4-ink, #2b211a); text-align: left; letter-spacing: 0;
+  -webkit-font-smoothing: antialiased; -webkit-text-size-adjust: 100%;
+  --u4-body: "Noto Serif CJK SC", "Source Han Serif SC", "Noto Serif SC", "Songti SC", "STSong", "SimSun", serif;
+  --u4-sans: "Noto Sans CJK SC", "Source Han Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --u4-mono: "Nimbus Mono PS", "DejaVu Sans Mono", "Courier New", monospace;
+  --fs-s: max(12px, 1.42cqh); --fs-m: max(13px, 1.62cqh); --fs-l: max(15px, 2cqh); --fs-xl: max(18px, 2.6cqh);
+
+  & *, & *::before, & *::after { box-sizing: border-box }
+  & button {
+    font: inherit; color: inherit; background: none; border: 0; padding: 0; margin: 0; cursor: pointer;
+    text-align: inherit; -webkit-tap-highlight-color: transparent; touch-action: manipulation; border-radius: 0;
+  }
+  & button:focus-visible, & [tabindex]:focus-visible { outline: 2px solid var(--u4-focus, #f2b45a); outline-offset: 3px }
+  & img { display: block; max-width: none; user-select: none; -webkit-user-drag: none }
+  & svg { overflow: visible }
+  & .u4-vh { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap }
+  & [data-u4-img], & [data-u4-hover] { opacity: 0; transition: opacity .45s ease }
+  & [data-u4-img].is-in { opacity: 1 }
+  & [data-u4-bg] { background-image: var(--u4-img, none) }
+
+  /* Desk: a stage with the plates' 1.75 aspect, covering the window (≤5% cropped between 3:2 and 39:20). */
+  & .u4-view {
+    position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+    width: max(100cqw, calc(100cqh * 1.75)); height: max(100cqh, calc(100cqw / 1.75)); container: u4s / size;
+  }
+  & .u4-scene { position: absolute; inset: 0; overflow: hidden; pointer-events: none }
+  & .u4-main { position: absolute; inset: 0; pointer-events: none }
+  & .u4-main :is(button, [role="button"], .u4-hit, #dlb-trackpop) { pointer-events: auto }
+  & .u4-amb { display: none; position: absolute; inset: -8%; background: var(--u4-img, none) center / cover; filter: blur(24px) brightness(.45) saturate(.85) }
+  & .u4-top { position: absolute; inset: 0; z-index: 6; pointer-events: none }
+  & .u4-top :is(button, [role="timer"], [role="status"]) { pointer-events: auto }
+  & .u4-sheet { position: absolute; inset: 0; z-index: 7 }
+
+  /* Two-frame props: the hover frame fades in over the normal frame once it has loaded. */
+  & .u4-2f { position: relative; display: block }
+  & .u4-2f img { width: 100%; height: auto; transition-duration: .2s }
+  & .u4-2f .f2 { position: absolute; left: 0; top: 0; opacity: 0 }
+  & button:is(:hover, :focus-visible) .u4-2f.has-f2 .f2 { opacity: 1 }
+  & button:is(:hover, :focus-visible) .u4-2f.has-f2 .f1 { opacity: 0 }
+
+  &.u4-reduce *, &.u4-reduce *::before, &.u4-reduce *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #u4r *, #u4r *::before, #u4r *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important }
+}
+
+/* Squarish or very wide desks: contain the stage, fill the margins with the blurred plate. */
+@container u4 (aspect-ratio < 3/2) or (aspect-ratio > 39/20) {
+  #u4r .u4-view { width: min(100cqw, calc(100cqh * 1.75)); height: min(100cqh, calc(100cqw / 1.75)) }
+  #u4r .u4-amb { display: block }
+}
+
+/* Phones. Portrait: a top bar, the scene as a hero, then the tray scrolls under it.
+ * Short landscape: the hero on the left, the tray scrolling on the right. */
+@container u4 (aspect-ratio < 5/6) or (height < 560px) {
+  #u4r {
+    --fs-s: 12px; --fs-m: 13.5px; --fs-l: 16px; --fs-xl: 20px;
+    & .u4-amb { display: none }
+    & .u4-view { position: absolute; inset: 0; transform: none; width: auto; height: auto; container: none }
+    & .u4-scene { position: relative; overflow: hidden }
+    & .u4-main { position: relative; inset: auto; pointer-events: auto }
+  }
+}
+@container u4 (aspect-ratio < 5/6) {
+  #u4r {
+    & .u4-top { bottom: auto; height: 58px }
+    & .u4-view { top: 58px; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin }
+    & .u4-scene { height: clamp(220px, 34cqh, 330px) }
+  }
+}
+@container u4 (aspect-ratio >= 5/6) and (height < 560px) {
+  #u4r {
+    & .u4-view { display: grid; grid-template-columns: minmax(0, 40%) minmax(0, 1fr) }
+    & .u4-scene { height: 100% }
+    & .u4-main { overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; padding-top: 52px }
+    & .u4-top { left: 40%; bottom: auto; height: 52px }
+  }
+}

@@ -1,0 +1,770 @@
+{
+ "schema": 1,
+ "repository": "Adirm007/reader",
+ "commit": null,
+ "files": {
+  "cafe/plate-tall": {
+   "path": "assets/ui/cafe/plate-tall.25eb1514.webp",
+   "bytes": 114928,
+   "sha256": "25eb1514e94833e9560fc4fecc9edf98d03b9de86c393a7a2e778f7b7c45a7f8",
+   "w": 832,
+   "h": 1216
+  },
+  "cafe/plate-wide": {
+   "path": "assets/ui/cafe/plate-wide.b3ad891e.webp",
+   "bytes": 134954,
+   "sha256": "b3ad891e07f5644780efd56fa96d45fecc2c85b03ea88408ad7415acd871b632",
+   "w": 1344,
+   "h": 768
+  },
+  "cafe/prop-armchair-f1": {
+   "path": "assets/ui/cafe/prop-armchair-f1.3e02270a.webp",
+   "bytes": 20292,
+   "sha256": "3e02270a1ce30487e0a369177f43bb36508f0ea9e00d3fa11fce16717b5cf973",
+   "w": 333,
+   "h": 360
+  },
+  "cafe/prop-armchair-f2": {
+   "path": "assets/ui/cafe/prop-armchair-f2.c06003b5.webp",
+   "bytes": 21408,
+   "sha256": "c06003b5db80470b35f26ce7719a67ac8995b9835d75e140b07e5c81925321bf",
+   "w": 333,
+   "h": 360
+  },
+  "cafe/prop-books-f1": {
+   "path": "assets/ui/cafe/prop-books-f1.388e079a.webp",
+   "bytes": 26170,
+   "sha256": "388e079a0951f6d6f89f742e7dfde438de0ce090526b8c00b547ee1393da1827",
+   "w": 360,
+   "h": 294
+  },
+  "cafe/prop-books-f2": {
+   "path": "assets/ui/cafe/prop-books-f2.81a6786e.webp",
+   "bytes": 25442,
+   "sha256": "81a6786ed4cba2774a23277c25dfd558361f418dcffd235e1d35f9d04b42470d",
+   "w": 360,
+   "h": 294
+  },
+  "cafe/prop-chess-f1": {
+   "path": "assets/ui/cafe/prop-chess-f1.cb5dc48e.webp",
+   "bytes": 23478,
+   "sha256": "cb5dc48e23145eab52547baa9a4cc1a47f1aa1fa90af8ffd17aa1649a591ebf7",
+   "w": 335,
+   "h": 360
+  },
+  "cafe/prop-chess-f2": {
+   "path": "assets/ui/cafe/prop-chess-f2.598c6fba.webp",
+   "bytes": 23012,
+   "sha256": "598c6fbaec13acf3578f00f664ad5906f42dc9993bef94a31f4e602193c7ac95",
+   "w": 335,
+   "h": 360
+  },
+  "cafe/prop-drawers-f1": {
+   "path": "assets/ui/cafe/prop-drawers-f1.ed487ba1.webp",
+   "bytes": 23770,
+   "sha256": "ed487ba1ca3e6cacdc0e9904a8ec688c401417367fc13dd41bba5eaeabd6ac3e",
+   "w": 353,
+   "h": 360
+  },
+  "cafe/prop-drawers-f2": {
+   "path": "assets/ui/cafe/prop-drawers-f2.eac33306.webp",
+   "bytes": 23780,
+   "sha256": "eac333063a1c04285bd3df4739d061c5efa35728eff50bf4439d0f338b61d255",
+   "w": 353,
+   "h": 360
+  },
+  "cafe/prop-fortune-f1": {
+   "path": "assets/ui/cafe/prop-fortune-f1.af697376.webp",
+   "bytes": 17532,
+   "sha256": "af6973765fee1da5451ad54a94781a42a3117b776dc2e888543dcff31a91b90b",
+   "w": 304,
+   "h": 360
+  },
+  "cafe/prop-fortune-f2": {
+   "path": "assets/ui/cafe/prop-fortune-f2.e9ec460c.webp",
+   "bytes": 20106,
+   "sha256": "e9ec460cc61e05f9d533a85ac07d6a3aac0baab9e0f29e84c9082dcf611b9767",
+   "w": 304,
+   "h": 360
+  },
+  "cafe/prop-jar-f1": {
+   "path": "assets/ui/cafe/prop-jar-f1.76d3099b.webp",
+   "bytes": 18866,
+   "sha256": "76d3099b302e16e716ad1259076c85a4a3fbcf837655a1080d19daa60ca2a64d",
+   "w": 316,
+   "h": 360
+  },
+  "cafe/prop-jar-f2": {
+   "path": "assets/ui/cafe/prop-jar-f2.611f5382.webp",
+   "bytes": 22672,
+   "sha256": "611f5382c91decd674f6ba346a169df38a3a50fd6a2d223df35471d1fc4a2330",
+   "w": 316,
+   "h": 360
+  },
+  "cafe/prop-mirror-f1": {
+   "path": "assets/ui/cafe/prop-mirror-f1.5dcc292a.webp",
+   "bytes": 18580,
+   "sha256": "5dcc292a7f10d6d57b582175b7c670fed41bedc59399b0d87a07fadf309fed59",
+   "w": 198,
+   "h": 360
+  },
+  "cafe/prop-mirror-f2": {
+   "path": "assets/ui/cafe/prop-mirror-f2.48a1b59f.webp",
+   "bytes": 18194,
+   "sha256": "48a1b59f69e901957273b98dc3c7da231b941ae6ad91f3b01900010ffa98c762",
+   "w": 198,
+   "h": 360
+  },
+  "cafe/prop-newspaper-f1": {
+   "path": "assets/ui/cafe/prop-newspaper-f1.b498724d.webp",
+   "bytes": 20526,
+   "sha256": "b498724da6367f8cf167efbce348c4ac1e62e94f90a324912a659c19da884aeb",
+   "w": 360,
+   "h": 357
+  },
+  "cafe/prop-newspaper-f2": {
+   "path": "assets/ui/cafe/prop-newspaper-f2.11aa152f.webp",
+   "bytes": 21788,
+   "sha256": "11aa152ff07781153fb6acca7f3870f0505f6fd3fb1ed7fc1b09c268f07c18fb",
+   "w": 360,
+   "h": 357
+  },
+  "cafe/prop-photowall-f1": {
+   "path": "assets/ui/cafe/prop-photowall-f1.708459fc.webp",
+   "bytes": 26002,
+   "sha256": "708459fc667a2c68cff92a9b4bcaf69bf9665c648b26cd68d36ea4123c072d2c",
+   "w": 337,
+   "h": 360
+  },
+  "cafe/prop-photowall-f2": {
+   "path": "assets/ui/cafe/prop-photowall-f2.a7dcd840.webp",
+   "bytes": 24518,
+   "sha256": "a7dcd840556292b98d798c3942d40d4a6dd76894b348d29917ceee800525d30a",
+   "w": 337,
+   "h": 360
+  },
+  "cafe/prop-typewriter-f1": {
+   "path": "assets/ui/cafe/prop-typewriter-f1.8f898432.webp",
+   "bytes": 27072,
+   "sha256": "8f8984324d3b4f482ee4fe2beb49bac521f5ba1c83398c4a4e3f083e6907d207",
+   "w": 360,
+   "h": 357
+  },
+  "cafe/prop-typewriter-f2": {
+   "path": "assets/ui/cafe/prop-typewriter-f2.8e2acc7b.webp",
+   "bytes": 27496,
+   "sha256": "8e2acc7b0c42dd8b7721891dda734bdf110b4472cc7fd94c00fe74bdc6d31e8e",
+   "w": 360,
+   "h": 357
+  },
+  "cafe/standing/black_knit": {
+   "path": "assets/ui/cafe/standing-black_knit.d4978d2e.webp",
+   "bytes": 88264,
+   "sha256": "d4978d2eb17b676b4d33c4ced6e2aa9d14894360b272fe7aaf6275a8a2463965",
+   "w": 832,
+   "h": 1216
+  },
+  "cafe/standing/classic": {
+   "path": "assets/ui/cafe/standing-classic.a877a838.webp",
+   "bytes": 99936,
+   "sha256": "a877a838ec50c5a253c678843aaeac4d2ca8f8cff7e478b94ca798765f213dfb",
+   "w": 832,
+   "h": 1216
+  },
+  "cafe/standing/cold_look": {
+   "path": "assets/ui/cafe/standing-cold_look.779f85e9.webp",
+   "bytes": 94816,
+   "sha256": "779f85e9d164e71552839aec3193afe126e4cfbd6c267b906281c00b95e887e2",
+   "w": 832,
+   "h": 1216
+  },
+  "cafe/standing/default": {
+   "path": "assets/ui/cafe/standing-default.9afbe9dc.webp",
+   "bytes": 45420,
+   "sha256": "9afbe9dc0be44f8e73dd1e34633f655b7474cb76f960a322219fb3674409c7af",
+   "w": 832,
+   "h": 1216
+  },
+  "cafe/standing/dino_pajama": {
+   "path": "assets/ui/cafe/standing-dino_pajama.16ced72d.webp",
+   "bytes": 57272,
+   "sha256": "16ced72d8e20ade4a8065dbe8b61acbf909b5fef2dec464ad52f751d1f487e24",
+   "w": 832,
+   "h": 1216
+  },
+  "cafe/standing/jacket_work": {
+   "path": "assets/ui/cafe/standing-jacket_work.68bf0aa8.webp",
+   "bytes": 95618,
+   "sha256": "68bf0aa8b4c4646bd60efa9363726b5c84a4d2faa3261f7860eb5ce72251d58c",
+   "w": 832,
+   "h": 1216
+  },
+  "cafe/standing/knit_linen": {
+   "path": "assets/ui/cafe/standing-knit_linen.6a1cb6d6.webp",
+   "bytes": 75866,
+   "sha256": "6a1cb6d6eba8f8cef033520a88773fc84d01c265afa61ee8d2ed47eba4306a68",
+   "w": 832,
+   "h": 1216
+  },
+  "cafe/standing/nailong_pajama": {
+   "path": "assets/ui/cafe/standing-nailong_pajama.2dc76298.webp",
+   "bytes": 57546,
+   "sha256": "2dc76298eb651391e6bab52bd3a8afe17136d3cefd879e42b33b1dc3e692b24e",
+   "w": 832,
+   "h": 1216
+  },
+  "cafe/standing/victoria1": {
+   "path": "assets/ui/cafe/standing-victoria1.e37303e3.webp",
+   "bytes": 70272,
+   "sha256": "e37303e314f76b0a00f3377820e58a975352d3007dedd9696e5b17d0db0bd3e1",
+   "w": 832,
+   "h": 1216
+  },
+  "cafe/standing/western_short": {
+   "path": "assets/ui/cafe/standing-western_short.eed64d28.webp",
+   "bytes": 93636,
+   "sha256": "eed64d283b9223c55d1c823a053d32ae469a86151139c0f643295645dcae12e7",
+   "w": 832,
+   "h": 1216
+  },
+  "cafe/standing/white_hoodie": {
+   "path": "assets/ui/cafe/standing-white_hoodie.d6849ce5.webp",
+   "bytes": 96194,
+   "sha256": "d6849ce57b26650a3336c0abb372ac1ee78074d683bae698b1dc1cb4e23ef9dc",
+   "w": 832,
+   "h": 1216
+  },
+  "cafe/standing/white_mohair": {
+   "path": "assets/ui/cafe/standing-white_mohair.cb050802.webp",
+   "bytes": 79090,
+   "sha256": "cb0508024307a68752a6199b24c7b985f9181c5aff55aa6010070245e26332da",
+   "w": 832,
+   "h": 1216
+  },
+  "ink/plate-tall": {
+   "path": "assets/ui/ink/plate-tall.baf9d203.webp",
+   "bytes": 121458,
+   "sha256": "baf9d203089a39e9d00a8c30da576504439c99e3913bec7b076c3346f66bbd20",
+   "w": 832,
+   "h": 1216
+  },
+  "ink/plate-wide": {
+   "path": "assets/ui/ink/plate-wide.6f669a88.webp",
+   "bytes": 120670,
+   "sha256": "6f669a882f31fa04a8d9e7a1f3e4237bc01fad526df735311c518a0f80ad71ee",
+   "w": 1344,
+   "h": 768
+  },
+  "ink/prop-album-f1": {
+   "path": "assets/ui/ink/prop-album-f1.6b402d0f.webp",
+   "bytes": 23682,
+   "sha256": "6b402d0f16d30a4091a84e21ea41633cfac4ccf29b54d1e2189d9eb5128566a2",
+   "w": 360,
+   "h": 269
+  },
+  "ink/prop-album-f2": {
+   "path": "assets/ui/ink/prop-album-f2.b683ee1f.webp",
+   "bytes": 22664,
+   "sha256": "b683ee1f32289fc5d4c0bc8e3fd8a75410de27d7d2a8552e3d3f7ba5df25d7db",
+   "w": 360,
+   "h": 269
+  },
+  "ink/prop-bookcase-f1": {
+   "path": "assets/ui/ink/prop-bookcase-f1.9fb3c3a5.webp",
+   "bytes": 17108,
+   "sha256": "9fb3c3a558f596967763db51fe0c0f2dc5b90a4cf0274ae0d9ccfbe304b1bda0",
+   "w": 360,
+   "h": 348
+  },
+  "ink/prop-bookcase-f2": {
+   "path": "assets/ui/ink/prop-bookcase-f2.7daa6a01.webp",
+   "bytes": 21982,
+   "sha256": "7daa6a01cadbbffccf937c67938ef2392398e210a8cf3e479300adbf73f23612",
+   "w": 360,
+   "h": 348
+  },
+  "ink/prop-coins-f1": {
+   "path": "assets/ui/ink/prop-coins-f1.f77dac5b.webp",
+   "bytes": 12878,
+   "sha256": "f77dac5b27e15fdd295e14e5ab856157d8849e1cc3f98d05b24b246c8438fdd5",
+   "w": 312,
+   "h": 360
+  },
+  "ink/prop-coins-f2": {
+   "path": "assets/ui/ink/prop-coins-f2.31bf75d4.webp",
+   "bytes": 24234,
+   "sha256": "31bf75d493066bfb951d290f245be4b99954d087b1b0c0a87f309c614fe0b7dc",
+   "w": 312,
+   "h": 360
+  },
+  "ink/prop-gramophone-f1": {
+   "path": "assets/ui/ink/prop-gramophone-f1.f1374d74.webp",
+   "bytes": 17616,
+   "sha256": "f1374d74886ef531761d8d6a51672a81cdf4031c89df7350eb51d2e77c5178e2",
+   "w": 271,
+   "h": 360
+  },
+  "ink/prop-gramophone-f2": {
+   "path": "assets/ui/ink/prop-gramophone-f2.898cf34f.webp",
+   "bytes": 17548,
+   "sha256": "898cf34f717dd17b172f2c4bdd4ca1d7a8ddf7f96ba929a612d0f111a5c5cadd",
+   "w": 271,
+   "h": 360
+  },
+  "ink/prop-inkpool-f1": {
+   "path": "assets/ui/ink/prop-inkpool-f1.b348e377.webp",
+   "bytes": 15176,
+   "sha256": "b348e377696f3ad9038b1625d8e3120cd8182b54e83c9eed7ae19cfddba285eb",
+   "w": 360,
+   "h": 305
+  },
+  "ink/prop-inkpool-f2": {
+   "path": "assets/ui/ink/prop-inkpool-f2.966fd7f5.webp",
+   "bytes": 15840,
+   "sha256": "966fd7f5e933ad0673ba306623bc59aaed263f98b3d13ddfc814a3b75b1db66f",
+   "w": 360,
+   "h": 305
+  },
+  "ink/prop-seals-f1": {
+   "path": "assets/ui/ink/prop-seals-f1.416e5541.webp",
+   "bytes": 14234,
+   "sha256": "416e5541ee806b4270fbfed62da7b38735dcc992de6a17b962a21f8a41429989",
+   "w": 360,
+   "h": 213
+  },
+  "ink/prop-seals-f2": {
+   "path": "assets/ui/ink/prop-seals-f2.f072749b.webp",
+   "bytes": 15272,
+   "sha256": "f072749b14667a870cc2d8b6cb6ba6ebfc2e4d728d2acd4b4228f33a353b4792",
+   "w": 360,
+   "h": 213
+  },
+  "ink/prop-stationerybox-f1": {
+   "path": "assets/ui/ink/prop-stationerybox-f1.f03e4b9f.webp",
+   "bytes": 16154,
+   "sha256": "f03e4b9f9d7fab8722fd0a7298232c90c597309fc0d7a08baf47837e7c84a930",
+   "w": 360,
+   "h": 325
+  },
+  "ink/prop-stationerybox-f2": {
+   "path": "assets/ui/ink/prop-stationerybox-f2.21b2a2d7.webp",
+   "bytes": 16434,
+   "sha256": "21b2a2d724805d06f932890acdd81cb73e26eae84625e49013134f5ed7f5775c",
+   "w": 360,
+   "h": 325
+  },
+  "ink/prop-sticks-f1": {
+   "path": "assets/ui/ink/prop-sticks-f1.63c4fb79.webp",
+   "bytes": 13520,
+   "sha256": "63c4fb79a3231ee04adafd38d3d1627c1f25801bd10a933efd5d657517325411",
+   "w": 149,
+   "h": 360
+  },
+  "ink/prop-sticks-f2": {
+   "path": "assets/ui/ink/prop-sticks-f2.61aa1c6f.webp",
+   "bytes": 14234,
+   "sha256": "61aa1c6f2b9e950c4346f910cc9f40eac4ff15ba36092b0f36aeabedb6e43eef",
+   "w": 149,
+   "h": 360
+  },
+  "ink/prop-tea-f1": {
+   "path": "assets/ui/ink/prop-tea-f1.f3420816.webp",
+   "bytes": 21806,
+   "sha256": "f342081683c8ca5ff21bf2e46a41bc6a12cfcb83b07921ec4d1c66ecc8143fb4",
+   "w": 359,
+   "h": 360
+  },
+  "ink/prop-tea-f2": {
+   "path": "assets/ui/ink/prop-tea-f2.3c77f983.webp",
+   "bytes": 20952,
+   "sha256": "3c77f983925e863c0f9a6e645daace1b62dd599928b110919cd267082bb31b3d",
+   "w": 359,
+   "h": 360
+  },
+  "ink/prop-typetray-f1": {
+   "path": "assets/ui/ink/prop-typetray-f1.30d0930e.webp",
+   "bytes": 26204,
+   "sha256": "30d0930e5f80fdc13e03733f28a76955012250c171a1a513205b43441f6b81c6",
+   "w": 360,
+   "h": 276
+  },
+  "ink/prop-typetray-f2": {
+   "path": "assets/ui/ink/prop-typetray-f2.3f03c1eb.webp",
+   "bytes": 25678,
+   "sha256": "3f03c1eb07e8dfb3f8a6e0c3ff62f107a6ccdedd66ac07368e978021a7b6fcf5",
+   "w": 360,
+   "h": 276
+  },
+  "ink/prop-xiangqi-f1": {
+   "path": "assets/ui/ink/prop-xiangqi-f1.f835fec2.webp",
+   "bytes": 23920,
+   "sha256": "f835fec223898a0b71052bcadaee23741bf74be13ce1fbb5790bfc54639975ce",
+   "w": 358,
+   "h": 360
+  },
+  "ink/prop-xiangqi-f2": {
+   "path": "assets/ui/ink/prop-xiangqi-f2.45cf2da6.webp",
+   "bytes": 18928,
+   "sha256": "45cf2da69cbb5639140b6cf0b1f47ea5a4770c43f247085ec434da017cda36fe",
+   "w": 358,
+   "h": 360
+  },
+  "ink/scroll-bg": {
+   "path": "assets/ui/ink/scroll-bg.9c627912.webp",
+   "bytes": 30398,
+   "sha256": "9c6279128f258422a7f73fc3835fc3f98244f61366cf7b845479908d1144285d",
+   "w": 440,
+   "h": 768
+  },
+  "ink/standing/black_knit": {
+   "path": "assets/ui/ink/standing-black_knit.9835e389.webp",
+   "bytes": 87092,
+   "sha256": "9835e3894e7babc173d65c6c23fe423bbf82bfb209674f3e847290933e2523d6",
+   "w": 832,
+   "h": 1216
+  },
+  "ink/standing/classic": {
+   "path": "assets/ui/ink/standing-classic.a03504f5.webp",
+   "bytes": 100948,
+   "sha256": "a03504f5d55b9c89b42509ff498d32c1c5e112f6b4fba7b7c867da62a87cf8d4",
+   "w": 832,
+   "h": 1216
+  },
+  "ink/standing/cold_look": {
+   "path": "assets/ui/ink/standing-cold_look.55da91ae.webp",
+   "bytes": 88726,
+   "sha256": "55da91ae046e9b52b7fc435bf1914d14de6ba37592a30cd1f65c1988eac3e556",
+   "w": 832,
+   "h": 1216
+  },
+  "ink/standing/default": {
+   "path": "assets/ui/ink/standing-default.571ec09d.webp",
+   "bytes": 65776,
+   "sha256": "571ec09dabcef311ef8b15bdae48401d6f82cdc5f0a4da27ef7f36080f72da7f",
+   "w": 832,
+   "h": 1216
+  },
+  "ink/standing/dino_pajama": {
+   "path": "assets/ui/ink/standing-dino_pajama.4c5d69b8.webp",
+   "bytes": 120350,
+   "sha256": "4c5d69b857a446c7c6e58a5e05050eb21151856d559ac13eeb25d90e1a929b3f",
+   "w": 832,
+   "h": 1216
+  },
+  "ink/standing/jacket_work": {
+   "path": "assets/ui/ink/standing-jacket_work.6c4f894f.webp",
+   "bytes": 87714,
+   "sha256": "6c4f894f0974bc92d8bf65d0ac39e0f13dce7a1821288cca0f337a4a66e70a84",
+   "w": 832,
+   "h": 1216
+  },
+  "ink/standing/knit_linen": {
+   "path": "assets/ui/ink/standing-knit_linen.7cffd469.webp",
+   "bytes": 88550,
+   "sha256": "7cffd469ae25f7e87e11a6c1e09ea8c2e3d5a45ebb1f8895713f416e9454233a",
+   "w": 832,
+   "h": 1216
+  },
+  "ink/standing/nailong_pajama": {
+   "path": "assets/ui/ink/standing-nailong_pajama.68d07f1d.webp",
+   "bytes": 98754,
+   "sha256": "68d07f1d5de8a01f63af8e274476d4235fda2fc0bc0fb45defd6da581842e4c3",
+   "w": 832,
+   "h": 1216
+  },
+  "ink/standing/victoria1": {
+   "path": "assets/ui/ink/standing-victoria1.9dc62e72.webp",
+   "bytes": 79586,
+   "sha256": "9dc62e72555066c359d67bd5449ffeafe0fd56a89b8cf981ade9a23b64f6b546",
+   "w": 832,
+   "h": 1216
+  },
+  "ink/standing/western_short": {
+   "path": "assets/ui/ink/standing-western_short.7d27dbd9.webp",
+   "bytes": 77678,
+   "sha256": "7d27dbd97b0dea482be415f09b3292c8f317a59a577699cb64f095296bc3d8d7",
+   "w": 832,
+   "h": 1216
+  },
+  "ink/standing/white_hoodie": {
+   "path": "assets/ui/ink/standing-white_hoodie.3139f0f8.webp",
+   "bytes": 114440,
+   "sha256": "3139f0f8c578e9b8a928e349f51bd30505b03f1d36f6445f252afdf34024bed4",
+   "w": 832,
+   "h": 1216
+  },
+  "ink/standing/white_mohair": {
+   "path": "assets/ui/ink/standing-white_mohair.bfef4f1a.webp",
+   "bytes": 82722,
+   "sha256": "bfef4f1ab0c01d579fe142e9fb3beb1fc8aab9c4285718b081a78c367df5fe48",
+   "w": 832,
+   "h": 1216
+  },
+  "summer/plate-tall": {
+   "path": "assets/ui/summer/plate-tall.d2dc5e2b.webp",
+   "bytes": 104486,
+   "sha256": "d2dc5e2b6cd7fe3ad333ff6df1fa72ce75efe3691e6dec484dd04f166dd09e81",
+   "w": 832,
+   "h": 1216
+  },
+  "summer/plate-wide": {
+   "path": "assets/ui/summer/plate-wide.b8e29630.webp",
+   "bytes": 110098,
+   "sha256": "b8e29630970bd9b4a2424f6ca2331c097f96474ec15d4f93403237dc5f69cab7",
+   "w": 1344,
+   "h": 768
+  },
+  "summer/prop-bookrack-f1": {
+   "path": "assets/ui/summer/prop-bookrack-f1.2f340786.webp",
+   "bytes": 23250,
+   "sha256": "2f34078686bac50a606553a780b181e711021a99140b1d83d20fb1217a6623e7",
+   "w": 231,
+   "h": 360
+  },
+  "summer/prop-bookrack-f2": {
+   "path": "assets/ui/summer/prop-bookrack-f2.f5a1044e.webp",
+   "bytes": 23180,
+   "sha256": "f5a1044ebf35db61e1709f6877f181dd08be214977d82ae147fc24710c67cda9",
+   "w": 231,
+   "h": 360
+  },
+  "summer/prop-driftbottle-f1": {
+   "path": "assets/ui/summer/prop-driftbottle-f1.9a4b4822.webp",
+   "bytes": 18266,
+   "sha256": "9a4b48220f70f549aa2f51fb2bd2e741d40b7d84b445cd903a2cb613a6b6f96c",
+   "w": 234,
+   "h": 360
+  },
+  "summer/prop-driftbottle-f2": {
+   "path": "assets/ui/summer/prop-driftbottle-f2.6a2055a8.webp",
+   "bytes": 17964,
+   "sha256": "6a2055a8b13579cfc2728298724c50df95342e895d0226e607060c630065ad22",
+   "w": 234,
+   "h": 360
+  },
+  "summer/prop-gacha-f1": {
+   "path": "assets/ui/summer/prop-gacha-f1.6249f5b5.webp",
+   "bytes": 18112,
+   "sha256": "6249f5b518e222c833548e30bc76d96a4b10c37db3b0679d90ad758d44042d2b",
+   "w": 204,
+   "h": 360
+  },
+  "summer/prop-gacha-f2": {
+   "path": "assets/ui/summer/prop-gacha-f2.1e3e46d1.webp",
+   "bytes": 18034,
+   "sha256": "1e3e46d1638d6d6f99ce6a569073532ef1dd525cfa77b03ce0f85d33ae695159",
+   "w": 204,
+   "h": 360
+  },
+  "summer/prop-lockers-f1": {
+   "path": "assets/ui/summer/prop-lockers-f1.fa4019fd.webp",
+   "bytes": 20442,
+   "sha256": "fa4019fd0f4f93866e711e3a5940c39966d3ae3b4d7834f7a454975451899d0d",
+   "w": 348,
+   "h": 360
+  },
+  "summer/prop-lockers-f2": {
+   "path": "assets/ui/summer/prop-lockers-f2.946dec22.webp",
+   "bytes": 22628,
+   "sha256": "946dec22896779fa5633641547309bb4fd470339231f2d38eef4f67ac6134bed",
+   "w": 348,
+   "h": 360
+  },
+  "summer/prop-parasol-f1": {
+   "path": "assets/ui/summer/prop-parasol-f1.3963fe9f.webp",
+   "bytes": 27600,
+   "sha256": "3963fe9fd2933426fd05d6f6538d26984d77c55dda9f2724fbbbd5e1801087c2",
+   "w": 331,
+   "h": 360
+  },
+  "summer/prop-parasol-f2": {
+   "path": "assets/ui/summer/prop-parasol-f2.addcafdf.webp",
+   "bytes": 29914,
+   "sha256": "addcafdff394770df7f5eff8edc33283a4e1343a925d199b77f459191cbd78ce",
+   "w": 331,
+   "h": 360
+  },
+  "summer/prop-picnic-f1": {
+   "path": "assets/ui/summer/prop-picnic-f1.cc55011f.webp",
+   "bytes": 26464,
+   "sha256": "cc55011fbd304bbcf2d09c69a3555e113b0cf816dd213a5360866a5f4f960b1b",
+   "w": 360,
+   "h": 283
+  },
+  "summer/prop-picnic-f2": {
+   "path": "assets/ui/summer/prop-picnic-f2.79ee4a3b.webp",
+   "bytes": 26180,
+   "sha256": "79ee4a3b216658d4957e9d21a3e661c0b1a7f81c63a743d391a22677e6a739eb",
+   "w": 360,
+   "h": 283
+  },
+  "summer/prop-polaroids-f1": {
+   "path": "assets/ui/summer/prop-polaroids-f1.c4e20385.webp",
+   "bytes": 18984,
+   "sha256": "c4e203857a99edcfd41362f298e27a705c12c1336f3552af7192751b26cbd4ea",
+   "w": 360,
+   "h": 190
+  },
+  "summer/prop-polaroids-f2": {
+   "path": "assets/ui/summer/prop-polaroids-f2.989a1324.webp",
+   "bytes": 20248,
+   "sha256": "989a1324ce8315ad58c1c6baa74340423c2e3cdb8a13ab3cd8e873013551db4a",
+   "w": 360,
+   "h": 190
+  },
+  "summer/prop-radio-f1": {
+   "path": "assets/ui/summer/prop-radio-f1.7731b612.webp",
+   "bytes": 25136,
+   "sha256": "7731b612dcd93005389fafe815f0026525cbcb7de93339a61377dc092aa4c147",
+   "w": 315,
+   "h": 360
+  },
+  "summer/prop-radio-f2": {
+   "path": "assets/ui/summer/prop-radio-f2.0db5a5e4.webp",
+   "bytes": 25912,
+   "sha256": "0db5a5e4a514af852b933698ab6bac8d02d17535b5255583434153fa7aef2ba0",
+   "w": 315,
+   "h": 360
+  },
+  "summer/prop-ramune-f1": {
+   "path": "assets/ui/summer/prop-ramune-f1.640205a6.webp",
+   "bytes": 15044,
+   "sha256": "640205a6c78a82ca5a6d18234fbe53468fd03db9988ff34dadfaa93b1fc339d5",
+   "w": 136,
+   "h": 360
+  },
+  "summer/prop-ramune-f2": {
+   "path": "assets/ui/summer/prop-ramune-f2.90fe1f22.webp",
+   "bytes": 15176,
+   "sha256": "90fe1f22de9996224abf40caae773eadd2db14a5145278b6e54e33a0b1be52d5",
+   "w": 136,
+   "h": 360
+  },
+  "summer/prop-shell-f1": {
+   "path": "assets/ui/summer/prop-shell-f1.a13fc083.webp",
+   "bytes": 12378,
+   "sha256": "a13fc0838f46188e95351652f164d95d2a9121ef61e8d997c593e861ff0bfe5a",
+   "w": 360,
+   "h": 346
+  },
+  "summer/prop-shell-f2": {
+   "path": "assets/ui/summer/prop-shell-f2.94c06876.webp",
+   "bytes": 20564,
+   "sha256": "94c0687644aec658ba0870ff6e60fd97a3193db3352e99e95df40c9a777298dd",
+   "w": 360,
+   "h": 346
+  },
+  "summer/prop-stamps-f1": {
+   "path": "assets/ui/summer/prop-stamps-f1.f2e017ac.webp",
+   "bytes": 27422,
+   "sha256": "f2e017ac867af67a01b9ad566d5f5a8d932d124ab543e19f00b1d1fe6342ba98",
+   "w": 360,
+   "h": 356
+  },
+  "summer/prop-stamps-f2": {
+   "path": "assets/ui/summer/prop-stamps-f2.afcbaea1.webp",
+   "bytes": 29256,
+   "sha256": "afcbaea152125505ec68f2082468df314ab16363d2b0ae1420961a50399a01b5",
+   "w": 360,
+   "h": 356
+  },
+  "summer/prop-tidepool-f1": {
+   "path": "assets/ui/summer/prop-tidepool-f1.81a84bdb.webp",
+   "bytes": 25492,
+   "sha256": "81a84bdba777f351d2811d90dc7ecac1114e64d20aecaab9dae1b012de306de0",
+   "w": 360,
+   "h": 302
+  },
+  "summer/prop-tidepool-f2": {
+   "path": "assets/ui/summer/prop-tidepool-f2.02279a0f.webp",
+   "bytes": 26804,
+   "sha256": "02279a0fd7edb79a399f4d2fe745994a74692b687884e50bd1d80ec22d6219a0",
+   "w": 360,
+   "h": 302
+  },
+  "summer/standing/black_knit": {
+   "path": "assets/ui/summer/standing-black_knit.f5b52f5f.webp",
+   "bytes": 91448,
+   "sha256": "f5b52f5f24dce1e1c5cbbc2d22fc3c385bad5dbb3ae18fdc93caea734b6f03ae",
+   "w": 832,
+   "h": 1216
+  },
+  "summer/standing/classic": {
+   "path": "assets/ui/summer/standing-classic.aa728449.webp",
+   "bytes": 132060,
+   "sha256": "aa7284497954adbb6663d41816d8ff7ca0f53bc8baf124cef3ffc71cf3b9e3ba",
+   "w": 832,
+   "h": 1216
+  },
+  "summer/standing/cold_look": {
+   "path": "assets/ui/summer/standing-cold_look.e5804f03.webp",
+   "bytes": 90668,
+   "sha256": "e5804f0312b3eccc2cba9f24aea8e4d5be9d91a4423e05595db9a673d7d5c2f9",
+   "w": 832,
+   "h": 1216
+  },
+  "summer/standing/default": {
+   "path": "assets/ui/summer/standing-default.bdc322c6.webp",
+   "bytes": 56666,
+   "sha256": "bdc322c6f0b9ca89bf3066a79d88451da4987ddab43612ee279edeef90e89e0e",
+   "w": 832,
+   "h": 1216
+  },
+  "summer/standing/dino_pajama": {
+   "path": "assets/ui/summer/standing-dino_pajama.9c8ba6e8.webp",
+   "bytes": 61042,
+   "sha256": "9c8ba6e80211576203fe6a272006f8225681929c0c143fbd16f30b4d65331c26",
+   "w": 832,
+   "h": 1216
+  },
+  "summer/standing/jacket_work": {
+   "path": "assets/ui/summer/standing-jacket_work.9c6fb828.webp",
+   "bytes": 138756,
+   "sha256": "9c6fb828b6d396a50c52eb73d85d4489723228c3018cc6cfed7ac9631b2c79e3",
+   "w": 832,
+   "h": 1216
+  },
+  "summer/standing/knit_linen": {
+   "path": "assets/ui/summer/standing-knit_linen.51b74fcd.webp",
+   "bytes": 100648,
+   "sha256": "51b74fcd8192367ad85637864b76abd97e172ecce04c4c81c31b5d841414b1fc",
+   "w": 832,
+   "h": 1216
+  },
+  "summer/standing/nailong_pajama": {
+   "path": "assets/ui/summer/standing-nailong_pajama.d2c9ee81.webp",
+   "bytes": 71486,
+   "sha256": "d2c9ee815971d8497d78acbdbeb667cdaab1d6c626b83748ae73f3376e9ce3c2",
+   "w": 832,
+   "h": 1216
+  },
+  "summer/standing/victoria1": {
+   "path": "assets/ui/summer/standing-victoria1.454feb56.webp",
+   "bytes": 86444,
+   "sha256": "454feb56a0b9bd30016de3295b8961c029e4dcb3e7974d5b9e1c1c6771d83164",
+   "w": 832,
+   "h": 1216
+  },
+  "summer/standing/western_short": {
+   "path": "assets/ui/summer/standing-western_short.b6cee789.webp",
+   "bytes": 87900,
+   "sha256": "b6cee7890189046480e230fcc0eabe0b8fc5b8f6cab220d973e13430411e47bd",
+   "w": 832,
+   "h": 1216
+  },
+  "summer/standing/white_hoodie": {
+   "path": "assets/ui/summer/standing-white_hoodie.ab7e72ed.webp",
+   "bytes": 91766,
+   "sha256": "ab7e72ed12d989c218ca90da6d9502df2f4270d3409a77517c2b77caaed01cda",
+   "w": 832,
+   "h": 1216
+  },
+  "summer/standing/white_mohair": {
+   "path": "assets/ui/summer/standing-white_mohair.97fb53a6.webp",
+   "bytes": 108948,
+   "sha256": "97fb53a6d4b7576a120b1060f7ae19f235db2ece0586b95963d9a2875c63e7bd",
+   "w": 832,
+   "h": 1216
+  }
+ }
+}

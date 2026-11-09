@@ -1,0 +1,24 @@
+/* The floating envelope (#dfb): an airmail postcard stuck in a mailbox slot. A new letter pushes the card up once. */
+#dfb.dream-fb {
+  width: 64px; height: 82px; border: 0; border-radius: 0; background: none; box-shadow: none; overflow: visible; cursor: pointer;
+  filter: drop-shadow(0 6px 8px rgba(21, 78, 110, .32)); transition: filter .2s;
+}
+#dfb.dream-fb > :is(.dream-fb-flap, .dream-fb-pocket, .dream-fb-seal) { display: none !important }
+#dfb.dream-fb::before {
+  content: ""; position: absolute; left: 8px; top: 0; width: 48px; height: 46px; transform: rotate(-6deg); transform-origin: 50% 100%;
+  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 46'><rect x='1' y='1' width='46' height='44' rx='1.5' fill='%23fbf8f0' stroke='%23d9cdb4'/><path d='M1 1h46v4H1z' fill='%23c8372d'/><path d='M4 1h6v4H4zM16 1h6v4h-6zM28 1h6v4h-6zM40 1h6v4h-6z' fill='%231f6f9a'/><rect x='31' y='9' width='12' height='14' fill='%23f6c445' stroke='%23c9573f' stroke-width='.8' stroke-dasharray='1.5 1'/><circle cx='26' cy='17' r='6' fill='none' stroke='%23c8372d' stroke-width='1'/><path d='M6 28h22M6 33h18M6 38h14' stroke='%2312404c' stroke-width='1.2' opacity='.5'/></svg>") center / contain no-repeat;
+}
+#dfb.dream-fb::after {
+  content: ""; position: absolute; left: 0; bottom: 0; width: 64px; height: 44px;
+  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 44'><path d='M4 14a28 12 0 0 1 56 0v30H4z' fill='%23c8372d'/><path d='M4 14a28 12 0 0 1 56 0' fill='none' stroke='%23e2564a' stroke-width='2'/><rect x='12' y='12' width='40' height='5' rx='2.5' fill='%231c1512'/><path d='M4 24h56' stroke='%23a52a20' stroke-width='1.2'/><rect x='24' y='29' width='16' height='9' rx='1' fill='%23fbf8f0' opacity='.9'/></svg>") center / contain no-repeat;
+}
+#dfb.dream-fb:hover, #dfb.dream-fb:focus-visible { filter: drop-shadow(0 8px 10px rgba(21, 78, 110, .4)) drop-shadow(0 0 5px rgba(246, 196, 69, .6)); outline: none }
+#dfb.dream-fb:hover::before { transform: translateY(-4px) rotate(-3deg); transition: transform .2s cubic-bezier(.3, 1.6, .5, 1) }
+#dfb.dream-fb.dream-shaking { animation: none !important }
+#dfb.dream-fb.dream-shaking::before { animation: u4sxFbPop .7s cubic-bezier(.3, 1.6, .5, 1) 1 }
+#dfb.dream-fb .dream-fb-badge {
+  position: absolute; top: 36px; right: -4px; left: auto; min-width: 20px; height: 20px; padding: 0 5px; display: grid; place-items: center;
+  font: 600 11px/1 "Jost", "Century Gothic", sans-serif; color: #fff; background: #f07a5f; border: 2px solid #fbf8f0; border-radius: 10px; box-shadow: 0 2px 5px rgba(21, 78, 110, .35);
+}
+@keyframes u4sxFbPop { 0% { transform: rotate(-6deg) } 35% { transform: translateY(-10px) rotate(2deg) } 70% { transform: translateY(-2px) rotate(-7deg) } 100% { transform: rotate(-6deg) } }
+@media (prefers-reduced-motion: reduce) { #dfb.dream-fb.dream-shaking::before { animation: none } }

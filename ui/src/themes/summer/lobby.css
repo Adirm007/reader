@@ -1,0 +1,213 @@
+/* Summer Post. Desk: the left two thirds is the post office wall (cork board above, a ledge below), the right
+ * third is the sea where she stands behind the breakwater. Phones: a sea-view hero, then a wire postcard rack. */
+#u4r.u4s {
+  --sea: #1f6f9a; --sea-d: #154e6e; --paper: #fbf8f0; --paper-s: #ece4d2; --teal: #12404c; --teal-2: #4d6d74;
+  --coral: #c9573f; --coral-b: #f07a5f; --citrus: #f6c445; --post: #c8372d; --cork: #c9a274;
+  --disp: "u4 Summer Display", "Smiley Sans", "Noto Sans CJK SC", sans-serif;
+  --latin: "u4 Summer Latin", "Jost", "URW Gothic", "Century Gothic", sans-serif;
+  --u4-ink: var(--teal); --u4-focus: var(--sea); --u4-body: var(--u4-sans);
+  --front: 74.6%; --her-x: 60%; --her-y: 9%; --her-h: 104%;
+  background: #cfe7f1; color: var(--teal);
+
+  & .u4s-disp { font-family: var(--disp); font-weight: 400 }
+  & .u4s-latin { font-family: var(--latin) }
+
+  /* ---------- scene ---------- */
+  & .u4s-plate, & .u4s-front { position: absolute; inset: 0; background: var(--u4-img, none) center / cover no-repeat; opacity: 0; transition: opacity .6s }
+  & .u4s-plate.is-in, & .u4s-front.is-in { opacity: 1 }
+  & .u4s-front { clip-path: inset(var(--front) 0 0 60%) }
+  & :is(.u4s-plate, .u4s-front).q-tall { display: none }
+  & .u4s-her { position: absolute; left: var(--her-x); top: var(--her-y); height: var(--her-h); aspect-ratio: 832 / 1216; margin: 0 }
+  & .u4s-her img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(-4px 3px 6px rgba(21, 78, 110, .25)) saturate(1.02) }
+  & .u4s-cork { position: absolute; left: 18.8%; top: 15.6%; width: 38.8%; height: 44%; border: .9cqh solid #e9dcc0; border-radius: 3px;
+    background: radial-gradient(circle at 20% 30%, rgba(255, 255, 255, .12) 0 1px, transparent 2px) 0 0 / 7px 9px, radial-gradient(circle at 70% 60%, rgba(90, 55, 20, .25) 0 1px, transparent 2px) 0 0 / 11px 8px, linear-gradient(160deg, #d4ae80, #c39765 60%, #b98b58);
+    box-shadow: inset 0 0 0 1px rgba(120, 80, 40, .3), inset 0 .6cqh 1.4cqh rgba(80, 50, 20, .25), .3cqh .8cqh 1.2cqh rgba(21, 78, 110, .25) }
+
+  /* ---------- chrome ---------- */
+  & .u4s-clock { position: absolute; left: 18px; top: 14px; display: flex; align-items: center; gap: 10px; padding: 6px 12px 6px 6px; background: rgba(251, 248, 240, .9); border-radius: 40px; box-shadow: 0 4px 10px rgba(21, 78, 110, .2) }
+  & .u4s-clock svg { width: 46px; height: 46px }
+  & .u4s-clock b { display: block; font: 600 20px/1 var(--latin); letter-spacing: .04em; color: var(--teal) }
+  & .u4s-clock small { display: block; font-size: 12.5px; color: var(--teal-2); margin-top: 3px }
+  & .u4s-tide { position: absolute; left: 22px; top: 76px; display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--sea-d) }
+  & .u4s-tide svg { width: 96px; height: 14px }
+  & .u4s-flap { position: absolute; right: 18px; top: 12px; width: 92px; transition: transform .2s }
+  & .u4s-flap svg { display: block; width: 100%; height: auto; filter: drop-shadow(0 5px 8px rgba(21, 78, 110, .3)) }
+  & .u4s-flap:hover { transform: translateY(-2px) rotate(-2deg) }
+  & .u4s-back { position: absolute; left: 20px; top: 100px; display: flex; align-items: center; gap: 6px; padding: 4px 10px; background: var(--paper); color: var(--teal); font: 15px var(--disp); box-shadow: 0 3px 8px rgba(21, 78, 110, .2) }
+  & .u4s-back svg { width: 34px }
+
+  /* pins */
+  & .pin { position: absolute; left: 50%; top: -.6cqh; width: 1.8cqh; height: 1.8cqh; min-width: 11px; min-height: 11px; margin-left: -.9cqh; border-radius: 50%; z-index: 2;
+    background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, .8), transparent 40%), var(--pin, #c8372d); box-shadow: .2cqh .4cqh .4cqh rgba(0, 0, 0, .35) }
+
+  /* ---------- notes on the board ---------- */
+  & .u4s-note { position: absolute; left: 20.6%; top: 18.6%; width: 12.4%; padding: 2cqh 1.4cqh 1.2cqh; text-align: left; color: var(--teal); transform: rotate(-2.2deg); transform-origin: 50% 0;
+    background: repeating-linear-gradient(180deg, transparent 0 2.6cqh, rgba(31, 111, 154, .16) 2.6cqh calc(2.6cqh + 1px)), #fffdf6; box-shadow: .3cqh .8cqh 1.2cqh rgba(80, 50, 20, .3) }
+  & .u4s-note .line { display: block; font-size: var(--fs-m); line-height: 1.6 }
+  & .u4s-note .sig { display: block; text-align: right; margin-top: .4cqh; font-size: var(--fs-s); color: var(--coral) }
+  & .u4s-note.is-turn { animation: u4sxFlutter .6s ease-out }
+  & .u4s-flyer { position: absolute; left: 33.8%; top: 18.2%; width: 7.4%; padding: 1.8cqh .9cqh 1cqh; color: var(--teal); text-align: center; transform: rotate(1.6deg);
+    background: linear-gradient(180deg, #fff9e6, #f6ecd2); box-shadow: .2cqh .6cqh 1cqh rgba(80, 50, 20, .3) }
+  & .u4s-flyer b { display: block; font-size: max(20px, 2.8cqh); color: var(--post); letter-spacing: .1em }
+  & .u4s-flyer span { display: block; font-size: var(--fs-s); line-height: 1.35 }
+  & .u4s-flyer small { display: block; margin-top: .4cqh; font-size: var(--fs-s); color: var(--coral) }
+  & .u4s-flyer:hover { transform: rotate(-1deg) translateY(-.3cqh) }
+  & .u4s-meter { position: absolute; left: 46.6%; top: 18%; width: 9.6%; text-align: center }
+  & .u4s-meter .frame { display: block; padding: .8cqh .6cqh; border: .35cqh solid var(--post); border-radius: .8cqh; color: var(--post); background: rgba(255, 252, 245, .92); transform: rotate(-3deg) }
+  & .u4s-meter .lbl, & .u4s-meter .dt { display: block; font-size: var(--fs-s); letter-spacing: .08em }
+  & .u4s-meter b { display: block; font: 600 max(19px, 2.8cqh)/1.15 var(--latin); letter-spacing: .03em; font-variant-numeric: tabular-nums }
+  & .u4s-meter .q-tag { display: inline-block; margin-top: .5cqh; font-size: var(--fs-s); color: var(--teal-2) }
+
+  /* ---------- ferry tickets: the daily reservation ---------- */
+  & .u4s-tickets { position: absolute; left: 20.4%; top: 33%; width: 35.6% }
+  & .u4s-tickets h2 { display: flex; align-items: baseline; gap: 1cqh; margin: 0 0 1cqh; font-size: max(18px, 2.5cqh); color: var(--teal); text-shadow: 0 1px 0 rgba(255, 255, 255, .5) }
+  & .u4s-tickets h2 small { font: var(--fs-s) var(--u4-sans); color: #3f2c17 }
+  & .u4s-tickets ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 1cqh }
+  & .ticket { position: relative; display: flex; flex-direction: column; width: 100%; padding: 1cqh 1cqh 1.1cqh; color: var(--teal); text-align: left; transition: transform .2s cubic-bezier(.3, 1.4, .5, 1), box-shadow .2s;
+    background: linear-gradient(90deg, transparent 0 calc(100% - 2.2cqh), rgba(31, 111, 154, .1) calc(100% - 2.2cqh)), var(--paper);
+    -webkit-mask: radial-gradient(circle at calc(100% - 2.2cqh) 0, transparent .7cqh, #000 .75cqh) top / 100% 51% no-repeat, radial-gradient(circle at calc(100% - 2.2cqh) 100%, transparent .7cqh, #000 .75cqh) bottom / 100% 51% no-repeat;
+    mask: radial-gradient(circle at calc(100% - 2.2cqh) 0, transparent .7cqh, #000 .75cqh) top / 100% 51% no-repeat, radial-gradient(circle at calc(100% - 2.2cqh) 100%, transparent .7cqh, #000 .75cqh) bottom / 100% 51% no-repeat;
+    box-shadow: .2cqh .6cqh 1cqh rgba(80, 50, 20, .25) }
+  & .ticket::before { content: ""; position: absolute; left: 0; right: 2.2cqh; top: 0; height: .7cqh; background: var(--sea) }
+  & .ticket .route { font-size: var(--fs-s); color: var(--teal-2) }
+  & .ticket .q-nm { font-size: max(22px, 3.2cqh); line-height: 1.2; margin-top: .4cqh }
+  & .ticket .q-pr { font: var(--fs-s) var(--latin); color: var(--coral) }
+  & .ticket .q-pr b { font: 600 max(15px, 2cqh) var(--latin) }
+  & .ticket .stub { position: absolute; right: .3cqh; top: 50%; transform: translateY(-50%) rotate(90deg); font-size: max(10px, 1.1cqh); letter-spacing: .1em; color: var(--teal-2); white-space: nowrap }
+  & .ticket .punch { position: absolute; right: 3.6cqh; top: 1.4cqh; width: 2cqh; height: 2cqh; opacity: 0; transform: scale(.4); transition: opacity .15s, transform .2s cubic-bezier(.3, 1.6, .5, 1) }
+  & .ticket .mark { position: absolute; left: 1cqh; bottom: -2.6cqh; font-size: var(--fs-s); color: #3f2c17; opacity: 0 }
+  & .ticket:hover { transform: translateY(-.4cqh) rotate(-1deg) }
+  & .ticket.on { transform: translateY(-1cqh) rotate(-2deg); box-shadow: .4cqh 1.4cqh 1.6cqh rgba(80, 50, 20, .32); background: linear-gradient(90deg, transparent 0 calc(100% - 2.2cqh), rgba(31, 111, 154, .1) calc(100% - 2.2cqh)), linear-gradient(180deg, #fff6d6, var(--paper) 60%) }
+  & .ticket.on::before { background: var(--citrus) }
+  & .ticket.on .punch { opacity: 1; transform: none }
+  & .u4s-go { position: absolute; left: 0; right: 0; top: calc(100% + 1.4cqh); display: flex; align-items: center; gap: 1cqh; padding: .9cqh 1.4cqh; color: var(--paper); text-align: left;
+    background: var(--sea); box-shadow: 0 .6cqh 1.2cqh rgba(21, 78, 110, .35); border-radius: 2px; font: var(--fs-m) var(--u4-sans) }
+  & .u4s-go svg { width: 3.4cqh; min-width: 24px }
+  & .u4s-go .tot { margin-left: auto; padding: .2cqh 1cqh; background: var(--coral-b); color: #fff; border-radius: 2px; font: var(--fs-m) var(--latin) }
+  & .u4s-go .tot b { font-weight: 600 }
+  & .u4s-go:hover { background: var(--sea-d) }
+  & .u4s-check { position: absolute; right: -2cqh; top: -3cqh; width: 12cqh; height: 12cqh; opacity: 0; pointer-events: none; transform: rotate(14deg) scale(1.3) }
+  & .u4s-stubfly { position: absolute; right: 8%; top: 20%; width: 4cqh; height: 9cqh; opacity: 0; pointer-events: none; background: var(--paper); box-shadow: .2cqh .5cqh .8cqh rgba(0, 0, 0, .3) }
+
+  /* ---------- the cooler on the ledge: today's specials ---------- */
+  & .u4s-cooler { position: absolute; left: 24.4%; top: 60.6%; width: 18.8% }
+  & .u4s-cooler h2 { position: absolute; left: 0; bottom: 100%; margin: 0 0 .6cqh; display: flex; align-items: baseline; gap: .8cqh; font-size: max(16px, 2.1cqh); color: var(--paper); text-shadow: 0 1px 3px rgba(21, 78, 110, .8); white-space: nowrap }
+  & .u4s-cooler h2 small { font: var(--fs-s) var(--u4-sans) }
+  & .u4s-cooler .ice { position: relative; display: grid; grid-template-columns: repeat(4, 1fr); align-items: end; gap: .4cqh; padding: 0 1cqh 1.4cqh; border-radius: .8cqh .8cqh .4cqh .4cqh;
+    background: linear-gradient(180deg, rgba(255, 255, 255, .0) 0 52%, #e9f6fb 52% 60%, #7fc3df 60% 64%, #4ea3c9 64%); box-shadow: 0 1cqh 1.6cqh rgba(21, 78, 110, .3) }
+  & .u4s-cooler .ice::before { content: ""; position: absolute; left: 4%; right: 4%; top: 45%; height: 12%; border-radius: 50%; background: radial-gradient(ellipse at 50% 40%, rgba(255, 255, 255, .95), rgba(214, 238, 247, .7) 60%, transparent 72%) }
+  & .u4s-bottle { position: relative; display: flex; flex-direction: column; align-items: center; transition: transform .25s cubic-bezier(.3, 1.4, .5, 1) }
+  & .u4s-bottle .u4-2f { width: 100% }
+  & .u4s-bottle .glass img { filter: hue-rotate(var(--hue, 0deg)) drop-shadow(0 .4cqh .5cqh rgba(21, 78, 110, .35)) }
+  & .u4s-bottle .tagp { position: absolute; left: 50%; top: 20%; display: flex; flex-direction: column; align-items: center; padding: .4cqh .6cqh; transform: translateX(-10%) rotate(6deg); background: var(--paper); color: var(--teal); white-space: nowrap; box-shadow: .1cqh .3cqh .5cqh rgba(0, 0, 0, .25); z-index: 1 }
+  & .u4s-bottle .tagp b { font-size: var(--fs-s) }
+  & .u4s-bottle .tagp small { font-size: var(--fs-s); color: var(--teal-2); display: none }
+  & .u4s-bottle .tagp em { font: normal 600 max(12px, 1.4cqh) var(--latin); color: var(--coral) }
+  & .u4s-bottle:is(:hover, :focus-visible) { transform: translateY(-1.2cqh) }
+  & .u4s-bottle:is(:hover, :focus-visible) .tagp small { display: block }
+
+  /* ---------- objects along the wall and on the shore ---------- */
+  & .u4s-objs { display: contents }
+  & .u4s-obj { position: absolute; display: flex; flex-direction: column; align-items: center; transition: transform .25s cubic-bezier(.3, 1.4, .5, 1) }
+  & .u4s-obj .u4-2f { width: 100% }
+  & .u4s-obj .u4-2f img { filter: drop-shadow(.4cqh .8cqh .6cqh rgba(21, 78, 110, .32)) }
+  & .u4s-obj .q-tag { display: flex; flex-direction: column; align-items: center; margin-top: -.2cqh; padding: .3cqh .9cqh .35cqh; background: var(--paper); color: var(--teal); box-shadow: 0 .3cqh .6cqh rgba(21, 78, 110, .25); transform: rotate(-1.5deg); white-space: nowrap }
+  & .u4s-obj .q-tag b { font-size: var(--fs-s); letter-spacing: .08em }
+  & .u4s-obj .q-tag small { display: block; max-height: 0; overflow: hidden; opacity: 0; font-size: var(--fs-s); color: var(--teal-2); transition: opacity .2s, max-height .2s }
+  & .u4s-obj:is(:hover, :focus-visible) { transform: translateY(-.6cqh) rotate(-1deg) }
+  & .u4s-obj:is(:hover, :focus-visible) .q-tag small { max-height: 3em; opacity: 1 }
+  & .o-lockers { left: 5%; top: 15%; width: 11.6% }
+  & .o-gacha { left: 11.6%; top: 56%; width: 6% }
+  & .o-books { left: 17.6%; top: 56%; width: 6.2% }
+  & .o-stamps { left: 44.4%; top: 68.4%; width: 6.4% }
+  & .o-shell { left: 51.6%; top: 70.6%; width: 5.4% }
+  & .o-photo { left: 59.2%; top: 4.6%; width: 15.4% }
+  & .o-parasol { left: 85.4%; top: 38%; width: 10.4% }
+  & .o-pool { left: 62%; top: 77%; width: 11% }
+  & .o-picnic { left: 80.6%; top: 77%; width: 14.6% }
+
+  /* ---------- the radio: jukebox ---------- */
+  & .u4s-radio { position: absolute; left: 4.8%; top: 41%; width: 8.4% }
+  & .u4s-radio .set { position: relative; display: block; width: 100% }
+  & .u4s-radio .set .u4-2f img { filter: drop-shadow(.3cqh .7cqh .6cqh rgba(21, 78, 110, .32)) }
+  & .u4s-radio .reels { position: absolute; left: 30%; right: 30%; top: 46%; display: flex; justify-content: space-between; pointer-events: none }
+  & .u4s-radio .reels i { width: 1.6cqh; height: 1.6cqh; border-radius: 50%; border: .3cqh dashed rgba(255, 255, 255, .7); opacity: 0 }
+  &.u4-playing .u4s-radio .reels i { opacity: 1; animation: u4sxReel 1.6s linear infinite }
+  & .u4s-radio .q-card { margin-top: .4cqh; padding: .5cqh .8cqh .6cqh; background: var(--paper); color: var(--teal); box-shadow: 0 .3cqh .6cqh rgba(21, 78, 110, .25); transform: rotate(1.4deg) }
+  & .u4s-radio .q-tt { margin: 0; font-size: var(--fs-s); white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+  & .u4s-radio .q-row { display: flex; justify-content: space-between; gap: .4cqh; font: var(--fs-s) var(--u4-sans); color: var(--teal-2) }
+  & .u4s-radio .q-row button { color: var(--sea); text-decoration: underline; text-underline-offset: 2px; font: inherit }
+  & .u4s-radio .bar { display: block; height: 2px; margin-top: .4cqh; background: rgba(31, 111, 154, .15) }
+  & .u4s-radio #dlb-jbar { display: block; height: 100%; width: 0; background: var(--coral); transition: width .4s linear }
+  & .u4s-tracks { position: absolute; left: 0; bottom: 100%; width: 300%; max-height: 52cqh; overflow: auto; margin-bottom: 1cqh; padding: 1.2cqh; background: var(--paper); color: var(--teal); z-index: 3;
+    box-shadow: 0 1.2cqh 2cqh rgba(21, 78, 110, .35); border-top: .6cqh solid; border-image: repeating-linear-gradient(90deg, var(--post) 0 14px, var(--paper) 14px 20px, var(--sea) 20px 34px, var(--paper) 34px 40px) 6 }
+  & .u4s-tracks .tp-head { font: var(--fs-s) var(--disp); color: var(--teal-2); padding-bottom: .6cqh; border-bottom: 1px dashed rgba(31, 111, 154, .3) }
+  & .u4s-tracks .tp-item { display: flex; gap: .8cqh; padding: .6cqh .2cqh; font-size: var(--fs-s); cursor: pointer; border-bottom: 1px dotted rgba(31, 111, 154, .25) }
+  & .u4s-tracks .tp-item:hover, & .u4s-tracks .tp-item.on { color: var(--coral) }
+  & .u4s-tracks .tp-item .nm2 { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+
+  /* ---------- acknowledgements ---------- */
+  &.u4-fx-daily .u4s-check { animation: u4sxStamp .34s cubic-bezier(.3, 1.6, .5, 1) forwards }
+  &.u4-fx-daily .u4s-stubfly { animation: u4sxStub 1s ease-in forwards }
+  &.u4-fx-daily .ticket.on .mark { opacity: 1 }
+  &.u4-fx-special .u4s-cooler .ice { animation: u4sxClink .5s ease-out }
+}
+
+@keyframes u4sxFlutter { 30% { transform: rotate(3deg) } 65% { transform: rotate(-4deg) } 100% { transform: rotate(-2.2deg) } }
+@keyframes u4sxStamp { 0% { opacity: 0; transform: rotate(14deg) scale(1.35) } 55% { opacity: .95 } 75% { transform: rotate(14deg) scale(.96) } 100% { opacity: .92; transform: rotate(14deg) scale(1) } }
+@keyframes u4sxStub { 0% { opacity: 1; transform: none } 100% { opacity: 0; transform: translate(14cqh, 26cqh) rotate(220deg) } }
+@keyframes u4sxClink { 25% { transform: translateY(-.6cqh) } 50% { transform: none } 70% { transform: translateY(-.25cqh) } }
+@keyframes u4sxReel { to { transform: rotate(360deg) } }
+
+/* ---------- phones: sea-view hero + wire postcard rack ---------- */
+@container u4 (aspect-ratio < 5/6) or (height < 560px) {
+  #u4r.u4s {
+    & .u4-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 10px; background: rgba(251, 248, 240, .95); box-shadow: 0 4px 10px rgba(21, 78, 110, .2) }
+    & .u4s-clock { position: static; padding: 0; background: none; box-shadow: none }
+    & .u4s-clock svg { width: 36px; height: 36px }
+    & .u4s-clock b { font-size: 17px }
+    & .u4s-tide { display: none }
+    & .u4s-flap { position: static; width: 66px }
+    & .u4s-back { position: static }
+    & :is(.u4s-plate, .u4s-front).q-wide, & .u4s-cork { display: none }
+    & :is(.u4s-plate, .u4s-front).q-tall { display: block; background-position: center var(--tall-y, 46%) }
+    & .u4s-front.q-tall { clip-path: inset(var(--front-t, 74%) 0 0 0) }
+    & .u4s-her { left: var(--her-px, 14%); top: var(--her-py, -4%); height: var(--her-ph, 210%) }
+    & .u4-main { display: flex; flex-direction: column; gap: 14px; padding: 14px 12px 28px;
+      background: linear-gradient(90deg, transparent 0 9px, #aab7bd 9px 11px, transparent 11px calc(100% - 11px), #aab7bd calc(100% - 11px) calc(100% - 9px), transparent calc(100% - 9px)), #e6eef1 }
+    & .u4-main > * { position: relative; left: auto; top: auto; width: auto; transform: none }
+    & .u4-main > :is(.u4s-note, .u4s-meter, .u4s-tickets, .u4s-cooler, .u4s-flyer, .u4s-radio, .u4s-objs) { box-shadow: 0 2px 0 #aab7bd }
+    & .u4s-note { order: 0; margin-top: -40px; align-self: flex-end; width: min(70%, 260px); transform: rotate(-1.5deg); z-index: 2 }
+    & .u4s-meter { order: 1; align-self: flex-start; width: auto; margin-top: -8px }
+    & .u4s-meter .frame { display: inline-block; padding: 4px 12px }
+    & .u4s-tickets { order: 2; padding: 12px 10px 64px; background: var(--paper) }
+    & .u4s-tickets ul { grid-template-columns: 1fr 1fr; gap: 10px }
+    & .u4s-tickets h2 { flex-wrap: wrap }
+    & .ticket { min-height: 92px }
+    & .u4s-go { left: 10px; right: 10px; top: auto; bottom: 10px; padding: 10px 12px; min-height: 44px }
+    & .u4s-check { right: 6px; top: 6px; width: 84px; height: 84px }
+    & .u4s-cooler { order: 3; padding: 34px 10px 0; background: linear-gradient(180deg, #fbf8f0 0 30px, transparent 30px) }
+    & .u4s-cooler h2 { position: absolute; left: 10px; top: 6px; bottom: auto; color: var(--teal); text-shadow: none }
+    & .u4s-cooler .ice { gap: 6px }
+    & .u4s-bottle .tagp { position: static; transform: none; margin-top: -6px }
+    & .u4s-bottle .tagp small { display: block }
+    & .u4s-flyer { order: 4; align-self: flex-start; width: auto; padding: 14px 16px 10px; text-align: left; display: flex; gap: 10px; align-items: baseline; transform: rotate(-.6deg) }
+    & .u4s-flyer b { display: inline }
+    & .u4s-objs { order: 5; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px 8px; align-items: end; padding: 12px 8px; background: rgba(255, 255, 255, .5) }
+    & .u4s-obj { position: relative; left: auto; top: auto; width: auto; min-height: 44px }
+    & .u4s-obj .u4-2f { width: 80%; aspect-ratio: 1; display: grid; place-items: end center }
+    & .u4s-obj .u4-2f img { max-height: 100%; width: auto; max-width: 100% }
+    & .u4s-obj .u4-2f .f2 { left: 50%; transform: translateX(-50%); top: auto; bottom: 0 }
+    & .u4s-obj .q-tag small { max-height: none; opacity: 1; white-space: normal; text-align: center }
+    & .u4s-radio { order: 6; display: grid; grid-template-columns: 30% 1fr; gap: 10px; align-items: center; padding: 8px; background: var(--paper) }
+    & .u4s-radio .q-card { margin: 0; box-shadow: none; transform: none }
+    & .u4s-tracks { width: 100%; max-height: 50vh }
+  }
+}
+@container u4 (aspect-ratio < 5/6) {
+  #u4r.u4s .u4-scene { aspect-ratio: 4 / 3; height: auto }
+}
+@container u4 (aspect-ratio >= 5/6) and (height < 560px) {
+  #u4r.u4s { --her-px: -2%; --her-py: -2%; --her-ph: 150%; --tall-y: 40%; --front-t: 80% }
+  #u4r.u4s .u4s-note { margin-top: 0 }
+}

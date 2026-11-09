@@ -11,7 +11,7 @@ const hash = text => createHash('sha256').update(text).digest('hex');
 
 export async function build({ write = false, version } = {}) {
   version ||= JSON.parse(await read('release-manifest.json')).version;
-  const [runtimeSource, prelude, adapter, legacySource, css, body, letterSource, letterBody, cache, profile, transactions, booksea, templates, bookseaAlbum, gacha] = await Promise.all([
+  const [runtimeSource, prelude, adapter, legacySource, css, body, letterSource, letterBody, cache, profile, transactions, booksea, templates, bookseaAlbum, gacha, ui, uiSwitch, letterStyle] = await Promise.all([
     read('source/core-runtime.mjs'), read('source/controller-prelude.js'), read('source/controller-adapter.js'),
     read('source/legacy-reader.js'), read('source/legacy-reader.css'), read('source/legacy-body.html'),
     read('source/letter.js'), read('source/letter-body.html'), read('source/black-author-cache.js'), read('source/black-author.prompt.json'),
@@ -19,6 +19,10 @@ export async function build({ write = false, version } = {}) {
     read('source/booksea-album.js'),
     // 大厅「命运抽卡」（window.ReaderGacha）：在 gacha/ 里 npm run build 生成，大厅入口离不开它。
     read('source/reader-gacha.js'),
+    // 新表现层（window.ReaderUI）：在 ui/ 里 npm run build 生成；切换点 reader-ui-switch.js 必须在适配层之后。
+    read('source/reader-ui.js'), read('source/reader-ui-switch.js'),
+    // 轻信样式（ui/src/letter 生成）；没有时退回旧信件样式。
+    optional('source/reader-letter.css'),
   ]);
   // Replace only the old top-level bootstrap. All feature implementations remain normal editable source.
   const bootstrap = /\ninitDreamSys\(\);\s*setTimeout\(function\(\)\{try\{dreamWbAutoCheck\(\);\}catch\(e\)\{\}\},5000\);/;
@@ -26,12 +30,13 @@ export async function build({ write = false, version } = {}) {
   const legacy = legacySource.replace(bootstrap, '\n');
   const initialization = cache.replace('__DREAM_AUTHOR_PROFILE__', JSON.stringify(JSON.parse(profile)).replace(/</g, '\\u003c'));
   const releaseTools = await Promise.all(['fixed-release-client.js','fixed-runtime.js','regex-update-guard.js','release-updates.js','standalone-bootstrap.js','script-installer.js','fixed-migration.js','update-center.js'].map(name => read('source/' + name)));
-  const controller = [prelude, transactions, gacha, booksea, bookseaAlbum, initialization, legacy, templates, ...releaseTools, adapter].join('\n;\n');
+  const controller = [prelude, transactions, gacha, ui, booksea, bookseaAlbum, initialization, legacy, templates, ...releaseTools, adapter, uiSwitch].join('\n;\n');
   new Script(controller, { filename: 'reader-controller.js' });
   const assets = { version, css, body: body.replace('<!--DREAM_LETTER-->', ''), controller };
   // Function replacement: minified code may contain `$&` / `$'` (e.g. a variable named `$`), which a string replacement would expand.
   const runtime = runtimeSource.replace("import { ASSETS } from 'reader:assets';", () => 'const ASSETS = ' + JSON.stringify(assets) + ';');
-  const letterCss = css + '\n.menu-board{display:none!important}.reader-letter-compact .cafe-v20-responsive{display:none!important}.reader-letter-compact .outer-collapse:not([open]){display:block}.reader-letter-compact .flower-btn{display:block}';
+  const letterCss = letterStyle ? letterStyle.trim() : css + '\n.menu-board{display:none!important}.reader-letter-compact .cafe-v20-responsive{display:none!important}.reader-letter-compact .outer-collapse:not([open]){display:block}.reader-letter-compact .flower-btn{display:block}';
+  if (/\$(?:\d|<)|\{\{|<\/style/i.test(letterCss)) throw new Error('Letter style contains a replacement token, a macro or a style terminator');
   const replaceString = '```html\n<!doctype html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>' + letterCss + '</style></head><body>' + letterBody.replace('<!--DREAM_LETTER-->', '$1') + '<script>' + letterSource + '</script></body></html>\n```';
   if (/<\/script/i.test(letterSource)) throw new Error('Letter source contains a script terminator');
   const rules = [{ id: 'b1c5a3f2-1007-4e0a-9d7e-5a1e0c0d1007', scriptName: '读者对话渲染-脚本版', readerRuntime: {schema: 1, version, kind: 'light-letter'},

@@ -31,6 +31,8 @@ def install_profile_cache(src):
                   '', html, flags=re.S)
     html = re.sub(r'\s*/\* DREAM_READER_GACHA_BEGIN \*/.*?/\* DREAM_READER_GACHA_END \*/\s*',
                   '', html, flags=re.S)
+    html = re.sub(r'\s*/\* DREAM_READER_UI_BEGIN \*/.*?/\* DREAM_READER_UI_END \*/\s*',
+                  '', html, flags=re.S)
     transactions_path = os.path.join(ROOT, 'source', 'reader-transactions.js')
     transactions = ''
     if os.path.isfile(transactions_path):
@@ -44,9 +46,18 @@ def install_profile_cache(src):
         if '</script' in gacha.lower() or re.search(r'\$(?:\d|<)|\{\{match\}\}', gacha, re.I):
             raise SystemExit('reader-gacha.js 含有脚本结束标签或正则替换记号，请在 gacha/ 里重新打包')
         gacha = '\n' + gacha + '\n'
+    # 新表现层（window.ReaderUI，ui/ 打包生成，自带 BEGIN/END 标记）：和抽卡一样放在主脚本前面；
+    # 切换点 reader-ui-switch.js 由 main() 接在 legacy-reader.js 与 template-system.js 之后。
+    ui_path = os.path.join(ROOT, 'source', 'reader-ui.js')
+    ui = ''
+    if os.path.isfile(ui_path):
+        ui = open(ui_path, encoding='utf-8').read().strip()
+        if '</script' in ui.lower() or re.search(r'\$(?:\d|<)|\{\{match\}\}', ui, re.I):
+            raise SystemExit('reader-ui.js 含有脚本结束标签或正则替换记号，请在 ui/ 里重新打包')
+        ui = '\n' + ui + '\n'
     if html.count('<script>') != 1:
         raise SystemExit('需要唯一的主脚本来加入聊天资料初始化')
-    src['replaceString'] = html.replace('<script>', '<script>\n' + cache + transactions + gacha + '\n', 1)
+    src['replaceString'] = html.replace('<script>', '<script>\n' + cache + transactions + gacha + ui + '\n', 1)
     return src
 
 
@@ -116,6 +127,7 @@ def main():
                                 + source('legacy-reader.css') + '</style></head><body>' + source('legacy-body.html').replace(PLACEHOLDER, '$1')
                                 + '<script>' + source('booksea-album.js') + '\n;' + source('legacy-reader.js')
                                 + ('\n;' + source('template-system.js') if os.path.isfile(os.path.join(ROOT, 'source', 'template-system.js')) else '')
+                                + ('\n;' + source('reader-ui-switch.js') if os.path.isfile(os.path.join(ROOT, 'source', 'reader-ui-switch.js')) else '')
                                 + '</script></body></html>\n```')
     src = install_release_tools(install_profile_cache(src))
     with open(sys.argv[1], 'w', encoding='utf-8', newline='\n') as f:

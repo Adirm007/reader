@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>读者预览台</title>
+<!-- Not shipped. Frames host.html at a chosen viewport. Every setting is in the URL, e.g.
+     ?theme=ink&vp=phone&open=lobby&letters=long&mode=inline — the same query works on host.html directly
+     (that is what headless screenshots load). -->
+<style>
+  :root { color-scheme: dark; --bg: #16181b; --panel: #202328; --line: #33373d; --text: #e6e6e6; --dim: #9aa1a8; --acc: #e3b45f }
+  * { box-sizing: border-box }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font: 13px/1.5 "Noto Sans CJK SC", system-ui, sans-serif }
+  body { display: grid; grid-template-columns: 236px 1fr; height: 100vh }
+  aside { padding: 14px 14px 20px; background: var(--panel); border-right: 1px solid var(--line); overflow: auto }
+  h1 { margin: 0 0 12px; font-size: 15px; font-weight: 600 }
+  fieldset { margin: 0 0 12px; padding: 0; border: 0 }
+  legend { margin-bottom: 5px; color: var(--dim); font-size: 12px }
+  .opts { display: flex; flex-wrap: wrap; gap: 5px }
+  .opts button { padding: 5px 9px; border: 1px solid var(--line); border-radius: 4px; background: #262a30; color: var(--text); font: inherit; cursor: pointer }
+  .opts button[aria-pressed="true"] { border-color: var(--acc); color: var(--acc) }
+  .link { margin-top: 14px; word-break: break-all; color: var(--dim); font-size: 12px }
+  .link a { color: var(--acc) }
+  main { position: relative; overflow: hidden; display: grid; place-items: center }
+  .frame { position: relative; transform-origin: 50% 50%; box-shadow: 0 10px 40px rgba(0, 0, 0, .6); background: #000 }
+  .frame iframe { display: block; width: 100%; height: 100%; border: 0 }
+  .size { position: absolute; left: 12px; bottom: 8px; color: var(--dim); font-size: 12px }
+  @media (max-width: 700px) { body { grid-template-columns: 1fr; grid-template-rows: auto 1fr } aside { max-height: 42vh } }
+</style>
+</head>
+<body>
+<aside>
+  <h1>读者预览台</h1>
+  <fieldset><legend>主题</legend><div class="opts" data-k="theme"><button data-v="cafe">咖啡馆</button><button data-v="summer">盛夏</button><button data-v="ink">水墨</button></div></fieldset>
+  <fieldset><legend>视口</legend><div class="opts" data-k="vp"><button data-v="desk">1440×900</button><button data-v="hd">1280×720</button><button data-v="phone">390×844</button><button data-v="land">844×390</button></div></fieldset>
+  <fieldset><legend>打开</legend><div class="opts" data-k="open"><button data-v="">只看聊天</button><button data-v="lobby">大厅</button><button data-v="persona">眼中的她</button><button data-v="eggs">彩蛋台</button></div></fieldset>
+  <fieldset><legend>聊天里的信</legend><div class="opts" data-k="letters"><button data-v="">无</button><button data-v="short">短信</button><button data-v="long">长信</button><button data-v="short,long">两封</button></div></fieldset>
+  <fieldset><legend>显示模式</legend><div class="opts" data-k="mode"><button data-v="inline">默认</button><button data-v="float">悬浮</button></div></fieldset>
+  <fieldset><legend>自动拆信</legend><div class="opts" data-k="unseal"><button data-v="">关</button><button data-v="1">开</button></div></fieldset>
+  <fieldset><legend>界面</legend><div class="opts" data-k="ui"><button data-v="">新界面</button><button data-v="off">旧界面</button></div></fieldset>
+  <p class="link">当前视图：<a id="direct" target="_blank" rel="noopener">在新标签打开宿主页</a></p>
+</aside>
+<main><div class="frame" id="frame"><iframe id="host" title="预览宿主"></iframe></div><span class="size" id="size"></span></main>
+<script>
+(function () {
+  var VP = { desk: [1440, 900], hd: [1280, 720], phone: [390, 844], land: [844, 390] };
+  var q = new URLSearchParams(location.search);
+  var state = { theme: q.get('theme') || 'cafe', vp: q.get('vp') || 'desk', open: q.has('open') ? q.get('open') : 'lobby', letters: q.get('letters') || '', mode: q.get('mode') || 'inline', unseal: q.get('unseal') || '', ui: q.get('ui') || '' };
+  var frame = document.getElementById('frame'), host = document.getElementById('host');
+  function hostQuery() {
+    var p = new URLSearchParams();
+    ['theme', 'open', 'letters', 'mode', 'unseal', 'ui'].forEach(function (k) { if (state[k]) p.set(k, state[k]); });
+    return p.toString();
+  }
+  function fit() {
+    var size = VP[state.vp] || VP.desk, box = frame.parentElement.getBoundingClientRect();
+    var scale = Math.min(1, (box.width - 32) / size[0], (box.height - 40) / size[1]);
+    frame.style.width = size[0] + 'px'; frame.style.height = size[1] + 'px'; frame.style.transform = 'scale(' + scale + ')';
+    document.getElementById('size').textContent = size[0] + '×' + size[1] + (scale < 1 ? '（缩放 ' + Math.round(scale * 100) + '%）' : '');
+  }
+  function render() {
+    document.querySelectorAll('.opts').forEach(function (group) {
+      group.querySelectorAll('button').forEach(function (b) { b.setAttribute('aria-pressed', String(state[group.dataset.k] === b.dataset.v)); });
+    });
+    var hq = hostQuery(), src = 'host.html?' + hq;
+    if (host.getAttribute('src') !== src) host.setAttribute('src', src);
+    document.getElementById('direct').href = src;
+    var p = new URLSearchParams(hq); p.set('vp', state.vp); if (!state.open) p.set('open', '');
+    history.replaceState(null, '', '?' + p.toString());
+    fit();
+  }
+  document.querySelectorAll('.opts').forEach(function (group) {
+    group.addEventListener('click', function (e) { var b = e.target.closest('button'); if (!b) return; state[group.dataset.k] = b.dataset.v; render(); });
+  });
+  window.addEventListener('resize', fit);
+  render();
+})();
+</script>
+</body>
+</html>

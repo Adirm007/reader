@@ -1,0 +1,250 @@
+/* Café Nocturne. Desk: a stage of the plate's 1.75 aspect; every object is placed in stage percent and
+ * sized in cqh of the stage. Phones: the scene becomes a hero and the objects line up on a walnut tray. */
+#u4r.u4c {
+  --wood-0: #2a1a12; --wood-1: #3b2418; --wood-2: #5a3622;
+  --amber: #f2b45a; --brass: #b8894a; --brass-hi: #e0be7a; --brass-lo: #6e4e26;
+  --slate: #23302b; --chalk: #eee7d6; --chalk-2: #c9c2b1; --chalk-red: #e8806e;
+  --wax: #9e2a20; --paper: #f3e8d2; --ink: #2b211a; --ink-2: #6d5a48;
+  --hand: "u4 Cafe Hand", "LXGW WenKai", "Noto Serif CJK SC", serif;
+  --latin: "u4 Cafe Latin", "Playfair Display", "Noto Serif Display", Georgia, serif;
+  --grain: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .33  0 0 0 0 .25  0 0 0 0 .16  0 0 0 .16 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  --u4-ink: var(--chalk); --u4-focus: var(--amber);
+  /* plate geometry (stage %) */
+  --front: 61.5%; --her-x: -2.7%; --her-y: 11%; --her-h: 141%;
+  background: #120b08; color: var(--chalk);
+
+  & .u4c-chalkfont, & .u4c-handfont { font-family: var(--hand) }
+  & .u4c-latin { font-family: var(--latin) }
+
+  /* ---------- scene ---------- */
+  & .u4c-plate, & .u4c-front { position: absolute; inset: 0; background: var(--u4-img, none) center / cover no-repeat; opacity: 0; transition: opacity .6s }
+  & .u4c-plate.is-in, & .u4c-front.is-in { opacity: 1 }
+  & .u4c-front { clip-path: inset(var(--front) 0 0 0) }
+  & :is(.u4c-plate, .u4c-front).q-tall { display: none }
+  & .u4c-plate.q-wide::after { content: ""; position: absolute; inset: 0; background: radial-gradient(ellipse 75% 72% at 45% 50%, transparent 55%, rgba(10, 5, 3, .5) 100%) }
+  & .u4c-rain { position: absolute; left: var(--rain-x, 72.5%); top: 0; width: var(--rain-w, 13%); height: 64%; overflow: hidden; opacity: .45; mix-blend-mode: screen;
+    -webkit-mask: linear-gradient(180deg, #000 55%, transparent); mask: linear-gradient(180deg, #000 55%, transparent) }
+  & .u4c-rain::before { content: ""; position: absolute; left: 0; right: 0; top: -240px; bottom: 0; will-change: transform;
+    background: repeating-linear-gradient(103deg, transparent 0 9px, rgba(205, 228, 243, .2) 9px 10px, transparent 10px 23px) 0 0 / 120px 240px,
+      repeating-linear-gradient(98deg, transparent 0 14px, rgba(205, 228, 243, .13) 14px 15px, transparent 15px 31px) 0 0 / 160px 240px;
+    animation: u4cfRain 1.15s linear infinite }
+  & .u4c-pool { position: absolute; left: 34%; top: 18%; width: 38%; height: 66%; mix-blend-mode: screen; background: radial-gradient(closest-side, rgba(242, 180, 90, .16), transparent) }
+  & .u4c-her { position: absolute; left: var(--her-x); top: var(--her-y); height: var(--her-h); aspect-ratio: 832 / 1216; margin: 0 }
+  & .u4c-her img { width: 100%; height: 100%; object-fit: contain;
+    filter: drop-shadow(-3px 0 6px rgba(242, 180, 90, .28)) drop-shadow(6px -2px 10px rgba(143, 179, 201, .38)) brightness(.93) contrast(1.04) saturate(.95) }
+
+  /* ---------- fixed chrome: clock top-left, the closed sign top-right ---------- */
+  & .u4c-clock { position: absolute; left: 20px; top: 14px; display: flex; align-items: center; gap: 12px }
+  & .u4c-clock svg { width: 58px; height: 58px; filter: drop-shadow(0 3px 4px rgba(0, 0, 0, .55)) }
+  & .u4c-clock b { display: block; font: 700 22px/1 var(--latin); letter-spacing: .04em; color: var(--chalk); text-shadow: 0 1px 2px #000 }
+  & .u4c-clock small { display: block; font-size: 13px; color: var(--chalk-2); margin-top: 4px; text-shadow: 0 1px 2px #000 }
+  & .u4c-closed { position: absolute; right: 22px; top: 0; width: 112px; transform-origin: 50% 5px }
+  & .u4c-closed svg { display: block; width: 100%; height: auto; filter: drop-shadow(0 6px 8px rgba(0, 0, 0, .5)) }
+  & .u4c-closed:hover { animation: u4cfSwing .9s ease-out }
+  & .u4c-backarrow { position: absolute; left: 20px; top: 84px; display: flex; align-items: center; gap: 6px; padding: 4px 8px; color: var(--chalk); font: 700 15px var(--hand) }
+  & .u4c-backarrow svg { width: 56px }
+  & .u4c-fpmini { display: none }
+
+  /* ---------- chalkboard: today's specials ---------- */
+  & .u4c-board { position: absolute; left: 44%; top: 5.5%; width: 30.5%; height: 35%; padding: 1.1cqh; border-radius: 3px;
+    background: linear-gradient(135deg, #6b4428, #3a2416 40%, #5b3a22 70%, #2e1c11); box-shadow: 0 1.2cqh 2.4cqh rgba(0, 0, 0, .55), inset 0 0 0 1px rgba(255, 220, 170, .12) }
+  & .u4c-board .slate { position: relative; height: 100%; padding: 1.5cqh 2.2cqh 1.2cqh; border-radius: 2px; overflow: hidden;
+    background: radial-gradient(ellipse 60% 50% at 30% 30%, rgba(255, 255, 255, .07), transparent 70%), radial-gradient(ellipse 50% 40% at 75% 80%, rgba(255, 255, 255, .05), transparent), var(--slate);
+    box-shadow: inset 0 0 2.4cqh rgba(0, 0, 0, .6) }
+  & .u4c-board h2 { display: flex; align-items: baseline; gap: 1.2cqh; font-size: max(20px, 3.3cqh); font-weight: 700; letter-spacing: .3em; line-height: 1; color: var(--chalk); filter: url(#u4cfChalk) }
+  & .u4c-board h2 small { font: 400 var(--fs-s) var(--u4-body); letter-spacing: .08em; color: var(--chalk-2); filter: none }
+  & .u4c-board ul { list-style: none; margin: 1.3cqh 0 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: .5cqh 2cqh }
+  & .u4c-cup { position: relative; display: grid; grid-template-columns: 5cqh 1fr auto; grid-template-rows: auto auto; align-items: center; column-gap: 1cqh; width: 100%; padding: .7cqh .4cqh; text-align: left; color: var(--chalk) }
+  & .u4c-cup .art { grid-row: span 2; width: 5cqh; height: 4.3cqh; color: var(--chalk) }
+  & .u4c-cup .q-nm { font-size: max(15px, 2.15cqh); font-weight: 700; letter-spacing: .06em; grid-column: 2 / 4 }
+  & .u4c-cup .q-ds { font-size: var(--fs-s); color: var(--chalk-2) }
+  & .u4c-cup .q-pr { font: 700 max(14px, 1.75cqh) var(--latin); color: var(--chalk-red); white-space: nowrap; letter-spacing: .02em }
+  & .u4c-cup .q-ring { position: absolute; inset: -.2cqh -.4cqh; width: calc(100% + .8cqh); height: calc(100% + .4cqh); pointer-events: none }
+  & .u4c-cup .q-ring path { stroke-dasharray: 420; stroke-dashoffset: 420; transition: stroke-dashoffset .5s ease-out }
+  & .u4c-cup:is(:hover, :focus-visible) .q-ring path { stroke-dashoffset: 0 }
+  & .u4c-board .foot { position: absolute; left: 2.2cqh; right: 2.2cqh; bottom: 1cqh; font-size: var(--fs-s); color: var(--chalk-2); letter-spacing: .05em }
+
+  /* ---------- reservation book on its brass stand ---------- */
+  & .u4c-ledger { position: absolute; left: 38.4%; top: 50%; width: 25.6% }
+  & .u4c-ledger .q-book { position: relative; display: grid; grid-template-columns: 1.05fr 1fr; padding: .8cqh .9cqh 1.1cqh; border-radius: .6cqh .6cqh .4cqh .4cqh;
+    background: linear-gradient(180deg, #5a2418, #3a140d); box-shadow: 0 1.6cqh 2.6cqh rgba(0, 0, 0, .6), inset 0 1px 0 rgba(255, 200, 170, .18); transform: perspective(900px) rotateX(8deg); transform-origin: 50% 100% }
+  & .u4c-ledger .page { position: relative; min-height: 27cqh; padding: 1.6cqh 1.5cqh 1.2cqh; color: var(--ink); background: var(--grain), var(--paper) }
+  & .u4c-ledger .page.q-l { background: var(--grain), linear-gradient(90deg, var(--paper) 78%, #d9c7a3); border-radius: 2px 0 0 2px }
+  & .u4c-ledger .page.q-r { display: flex; flex-direction: column; background: var(--grain), linear-gradient(270deg, var(--paper) 78%, #d9c7a3); border-radius: 0 2px 2px 0 }
+  & .u4c-ledger h3 { font-size: max(17px, 2.3cqh); letter-spacing: .24em; font-weight: 700; line-height: 1.1; margin: 0 }
+  & .u4c-ledger .q-sub { font: var(--fs-s)/1.5 var(--u4-sans); color: var(--ink-2); margin: .5cqh 0 .8cqh }
+  & .u4c-ledger .slots { list-style: none; margin: 0; padding: 0 }
+  & .u4c-ledger .slot { position: relative; display: flex; align-items: baseline; width: 100%; padding: .85cqh .2cqh .7cqh; color: var(--ink); border-bottom: 1px solid rgba(43, 33, 26, .18) }
+  & .u4c-ledger .slot .q-nm { font: 700 max(15px, 1.95cqh) var(--hand); letter-spacing: .12em }
+  & .u4c-ledger .slot .lead { flex: 1; border-bottom: 1.5px dotted rgba(43, 33, 26, .4); margin: 0 .6cqh .5cqh }
+  & .u4c-ledger .slot .q-pr { font: 700 max(14px, 1.8cqh) var(--latin); color: var(--wax) }
+  & .u4c-ledger .slot .q-pr small { font-size: .7em; margin-left: .2em; color: var(--ink-2) }
+  & .u4c-ledger .slot .tick { width: 2cqh; height: 2cqh; min-width: 14px; min-height: 14px; margin-left: .4cqh; opacity: 0; flex: none }
+  & .u4c-ledger .slot.on .tick { opacity: 1 }
+  & .u4c-ledger .slot.on .q-nm, & .u4c-ledger .slot:hover .q-nm { color: #6b2416 }
+  & .u4c-ledger .slot.on::before { content: ""; position: absolute; left: -2.9cqh; top: -1.1cqh; width: 3.4cqh; height: 5cqh; pointer-events: none; filter: drop-shadow(1px 2px 2px rgba(0, 0, 0, .45)); animation: u4cfClip .32s cubic-bezier(.2, .8, .2, 1);
+    background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 56'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%23f1d89a'/><stop offset='.45' stop-color='%23b8894a'/><stop offset='1' stop-color='%236e4e26'/></linearGradient></defs><path d='M14 6v34a8 8 0 0 0 16 0V12a5 5 0 0 0-10 0v26' fill='none' stroke='url(%23g)' stroke-width='3.4' stroke-linecap='round'/></svg>") center / contain no-repeat }
+  & .u4c-ledger .for { font-size: var(--fs-s); color: var(--ink-2); letter-spacing: .2em }
+  & .u4c-ledger .choice { font-size: max(26px, 4.4cqh); font-weight: 700; letter-spacing: .2em; line-height: 1.15; margin-top: .4cqh }
+  & .u4c-ledger .gift { font: var(--fs-s) var(--u4-sans); color: var(--ink-2); margin-top: .4cqh }
+  & .u4c-ledger .q-stamp { margin-top: auto; display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 1cqh; padding: .6cqh .2cqh; color: var(--ink) }
+  & .u4c-ledger .q-stamp svg { width: 6cqh; height: 6cqh; min-width: 40px; min-height: 40px; transition: transform .18s }
+  & .u4c-ledger .q-stamp:hover svg { transform: translateY(-.4cqh) }
+  & .u4c-ledger .q-stamp:active svg { transform: translateY(.5cqh) scale(.97) }
+  & .u4c-ledger .q-stamp .act { display: block; font: 700 max(15px, 1.9cqh) var(--hand); letter-spacing: .14em }
+  & .u4c-ledger .q-stamp .tot { display: block; font: 700 max(16px, 2.2cqh) var(--latin); color: var(--wax) }
+  & .u4c-ledger .impress { position: absolute; right: 1.4cqh; top: 6.4cqh; width: 12cqh; height: 12cqh; opacity: 0; transform: rotate(-10deg) scale(1.25); pointer-events: none; mix-blend-mode: multiply }
+  & .u4c-ledger .impress text { font-family: var(--hand) }
+  & .u4c-ledger .stand { display: block; width: 84%; height: auto; margin: -.4cqh auto 0 }
+
+  /* ---------- receipt printer and the till ---------- */
+  & .u4c-printer { position: absolute; left: 65%; top: 56.5%; width: 8.4% }
+  & .u4c-printer .receipt { position: relative; margin: 0 auto; width: 94%; padding: 1.3cqh .8cqh .8cqh; font-family: var(--u4-mono); color: #2b2722; background: linear-gradient(180deg, #fbf8f1, #efeadf); transform-origin: 50% 100%;
+    clip-path: polygon(0 1.2cqh, 6% 0, 12% 1.2cqh, 18% 0, 24% 1.2cqh, 30% 0, 36% 1.2cqh, 42% 0, 48% 1.2cqh, 54% 0, 60% 1.2cqh, 66% 0, 72% 1.2cqh, 78% 0, 84% 1.2cqh, 90% 0, 96% 1.2cqh, 100% 0, 100% 100%, 0 100%) }
+  & .u4c-printer p { margin: 0; font-size: max(11px, 1.2cqh); line-height: 1.45; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+  & .u4c-printer .shop { font-size: max(11px, 1.22cqh); letter-spacing: .08em; text-align: center }
+  & .u4c-printer hr { border: 0; border-top: 1px dashed #8d857a; margin: .5cqh 0 }
+  & .u4c-printer .q-sum { display: flex; justify-content: space-between; font-weight: 700 }
+  & .u4c-printer .more { display: none }
+  & .u4c-printer .q-body { height: 8cqh; margin-top: -.2cqh; border-radius: .6cqh; background: linear-gradient(180deg, #3b3530, #1c1916); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12), 0 1cqh 1.2cqh rgba(0, 0, 0, .55) }
+  & .u4c-printer .q-body::before { content: ""; display: block; margin: 0 auto; width: 80%; height: .6cqh; background: #0b0908; border-radius: 0 0 3px 3px }
+  & .u4c-printer .q-body i { display: block; width: 1cqh; height: 1cqh; border-radius: 50%; margin: 2cqh 0 0 1.2cqh; background: radial-gradient(circle at 40% 35%, #ffd28a, #c06a18); box-shadow: 0 0 1cqh #f2b45a }
+  & .u4c-register { position: absolute; left: 74.6%; top: 61%; width: 10% }
+  & .u4c-register .reg-top { display: flex; align-items: stretch; gap: .6cqh; padding: .8cqh .8cqh .9cqh; border-radius: .8cqh .8cqh 0 0; background: linear-gradient(180deg, var(--brass-hi), var(--brass) 40%, var(--brass-lo)); box-shadow: inset 0 1px 0 rgba(255, 250, 220, .6) }
+  & .u4c-register .q-flag { display: grid; place-items: center; padding: 0 .7cqh; font-size: max(12px, 1.4cqh); color: #2a1a0c; background: #e9d3a1; border-radius: 2px }
+  & .u4c-register .drums { display: flex; gap: 2px; flex: 1 }
+  & .u4c-register .drums i { flex: 1; display: grid; place-items: center; font: normal max(17px, 2.5cqh)/1 var(--latin); color: #f4ead2; padding: .5cqh 0; font-variant-numeric: tabular-nums;
+    background: linear-gradient(180deg, #000 0, #2b2620 22%, #3d362d 50%, #2b2620 78%, #000); border-radius: 2px }
+  & .u4c-register .reg-body { position: relative; height: 9cqh; background: linear-gradient(180deg, #8a6738, #5e4122); border-radius: 0 0 .5cqh .5cqh; padding: 1cqh 1cqh 0; box-shadow: 0 1.2cqh 1.4cqh rgba(0, 0, 0, .55) }
+  & .u4c-register .reg-body svg { width: 100%; height: 5.4cqh }
+
+  /* brass name plates under the objects */
+  & .plate, & .u4c-obj .q-tag b { display: inline-block; font: 700 var(--fs-s)/1.25 var(--u4-sans); letter-spacing: .12em; color: #2a1c10; padding: .25cqh .8cqh;
+    background: linear-gradient(180deg, var(--brass-hi), var(--brass) 55%, #9b7038); border-radius: 1px; box-shadow: 0 1px 0 rgba(255, 240, 200, .5) inset, 0 2px 3px rgba(0, 0, 0, .5); white-space: nowrap }
+  & .u4c-register .plate { position: absolute; left: 50%; bottom: -1.2cqh; transform: translateX(-50%) }
+
+  /* ---------- the table tent with her greeting ---------- */
+  & .u4c-tent { position: absolute; left: 22.5%; top: 63%; width: 12.5%; color: var(--ink) }
+  & .u4c-tent .face { position: relative; display: block; padding: 1.2cqh 1.3cqh 1.3cqh; background: var(--grain), linear-gradient(180deg, #f4e9d3, #e4d2ae);
+    clip-path: polygon(4% 0, 96% 0, 100% 100%, 0 100%); box-shadow: 0 1cqh 1.2cqh rgba(0, 0, 0, .45) }
+  & .u4c-tent .line { display: block; font-size: var(--fs-m); line-height: 1.6 }
+  & .u4c-tent .sig { display: block; text-align: right; font-size: max(13px, 1.7cqh); font-style: italic; color: var(--wax); margin-top: .2cqh }
+  & .u4c-tent.is-turn .face { animation: u4cfTurn .5s ease-out }
+
+  /* ---------- the record player ---------- */
+  & .u4c-juke { position: absolute; left: 4.8%; top: 66%; width: 11.6% }
+  & .u4c-juke .deck { display: block; width: 100%; height: auto; filter: drop-shadow(0 1cqh 1cqh rgba(0, 0, 0, .55)) }
+  & .u4c-juke .q-disc { transform-box: fill-box; transform-origin: 50% 50% }
+  &.u4-playing .u4c-juke .q-disc { animation: u4cfSpin 3.2s linear infinite }
+  & .u4c-juke .arm { transform-box: view-box; transform-origin: 174px 66px; transition: transform .6s ease; transform: rotate(-14deg) }
+  &.u4-playing .u4c-juke .arm { transform: rotate(0) }
+  & .u4c-juke .slip { position: relative; margin: -1cqh 4% 0; padding: .7cqh .9cqh .6cqh; color: var(--ink); background: var(--grain), #efe2c6; box-shadow: 0 .6cqh 1cqh rgba(0, 0, 0, .5); transform: rotate(-1deg) }
+  & .u4c-juke .q-tt { margin: 0; font: italic max(13px, 1.55cqh) var(--latin); white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+  & .u4c-juke .q-row { display: flex; align-items: center; justify-content: space-between; gap: .4cqh; margin-top: .3cqh; font: var(--fs-s) var(--u4-sans); color: var(--ink-2) }
+  & .u4c-juke .ctl { display: flex; gap: .4cqh }
+  & .u4c-juke .ctl button { font: var(--fs-s) var(--u4-sans); color: var(--ink); padding: .2cqh .3cqh; border-bottom: 1px solid var(--ink-2); white-space: nowrap }
+  & .u4c-juke .bar { display: block; height: 2px; margin-top: .5cqh; background: rgba(43, 33, 26, .15) }
+  & .u4c-juke #dlb-jbar { display: block; height: 100%; width: 0; background: var(--wax); transition: width .4s linear }
+  & .u4c-tracks { position: absolute; left: 0; bottom: 100%; width: 210%; max-height: 52cqh; overflow: auto; margin-bottom: 1cqh; padding: 1.2cqh 1.2cqh 1cqh; color: var(--ink);
+    background: var(--grain), var(--paper); box-shadow: 0 1.4cqh 2.4cqh rgba(0, 0, 0, .6); border-radius: 2px; z-index: 3 }
+  & .u4c-tracks .tp-head { font: 700 var(--fs-s) var(--hand); color: var(--ink-2); letter-spacing: .1em; padding-bottom: .6cqh; border-bottom: 1px solid rgba(43, 33, 26, .2) }
+  & .u4c-tracks .tp-item { display: flex; gap: .8cqh; align-items: baseline; padding: .6cqh .2cqh; cursor: pointer; font-size: var(--fs-s); border-bottom: 1px dotted rgba(43, 33, 26, .25) }
+  & .u4c-tracks .tp-item:hover, & .u4c-tracks .tp-item.on { color: var(--wax) }
+  & .u4c-tracks .tp-item .idx { font-family: var(--latin); color: var(--ink-2) }
+  & .u4c-tracks .tp-item .nm2 { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+
+  /* ---------- the rest of the shop: objects with their brass plates ---------- */
+  & .u4c-objs { display: contents }
+  & .u4c-obj { position: absolute; display: flex; flex-direction: column; align-items: center; gap: .2cqh; transition: transform .25s ease, filter .25s ease }
+  & .u4c-obj .u4-2f { width: 100% }
+  & .u4c-obj .u4-2f img { filter: drop-shadow(0 .9cqh .8cqh rgba(0, 0, 0, .5)) }
+  & .u4c-obj .q-tag { display: flex; flex-direction: column; align-items: center; margin-top: -.3cqh }
+  & .u4c-obj .q-tag small { display: block; max-height: 0; overflow: hidden; opacity: 0; margin-top: .3cqh; padding: 0 .6cqh; font: var(--fs-s)/1.35 var(--u4-sans); color: var(--chalk); text-shadow: 0 1px 2px #000; white-space: nowrap; transition: opacity .2s, max-height .2s }
+  & .u4c-obj:is(:hover, :focus-visible) { transform: translateY(-.5cqh); filter: brightness(1.07) }
+  & .u4c-obj:is(:hover, :focus-visible) .q-tag small { max-height: 3em; opacity: 1 }
+  & .o-photo { left: 5.6%; top: 12%; width: 11% }
+  & .o-books { left: 76%; top: 7%; width: 8.5% }
+  & .o-mirror { left: 86.4%; top: 5.5%; width: 6.2% }
+  & .o-drawers { left: 76%; top: 30%; width: 8% }
+  & .o-type { left: 85.4%; top: 31.5%; width: 8.6% }
+  & .o-news { left: 15.6%; top: 46%; width: 7.6% }
+  & .o-chair { left: 85.6%; top: 51%; width: 9.4% }
+  & .o-chess { left: 85.4%; top: 73%; width: 9.8% }
+  & .o-jar { left: 15.2%; top: 66%; width: 6% }
+  & .o-fortune { left: 66.4%; top: 78%; width: 6.4% }
+
+  /* ---------- acknowledgements (only after the order went through) ---------- */
+  &.u4-fx-daily .u4c-ledger .impress { animation: u4cfPress .34s cubic-bezier(.3, 1.6, .5, 1) forwards }
+  &.u4-fx-daily .u4c-printer .receipt { animation: u4cfPrint .9s steps(9) both }
+  &.u4-fx-daily .u4c-printer .more { display: block }
+  &.u4-fx-special .u4c-board .slate { animation: u4cfChalkPulse 1.2s ease-out }
+}
+
+@keyframes u4cfRain { to { transform: translate3d(0, 240px, 0) } }
+@keyframes u4cfSwing { 30% { transform: rotate(-5deg) } 65% { transform: rotate(3deg) } 100% { transform: rotate(0) } }
+@keyframes u4cfSpin { to { transform: rotate(360deg) } }
+@keyframes u4cfClip { from { opacity: 0; transform: translate(-.8cqh, -.6cqh) rotate(-8deg) } }
+@keyframes u4cfPress { 0% { opacity: 0; transform: rotate(-10deg) scale(1.3) } 60% { opacity: .95 } 100% { opacity: .9; transform: rotate(-10deg) scale(1) } }
+@keyframes u4cfPrint { from { clip-path: polygon(0 85%, 100% 85%, 100% 100%, 0 100%) } }
+@keyframes u4cfTurn { 0% { transform: perspective(400px) rotateX(0) } 45% { transform: perspective(400px) rotateX(86deg) } 100% { transform: perspective(400px) rotateX(0) } }
+@keyframes u4cfChalkPulse { 0% { box-shadow: inset 0 0 2.4cqh rgba(0, 0, 0, .6), 0 0 0 0 rgba(238, 231, 214, .5) } 100% { box-shadow: inset 0 0 2.4cqh rgba(0, 0, 0, .6), 0 0 0 2cqh rgba(238, 231, 214, 0) } }
+
+/* ---------- phones: hero + walnut tray ---------- */
+@container u4 (aspect-ratio < 5/6) or (height < 560px) {
+  #u4r.u4c {
+    & .u4-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 10px; background: linear-gradient(180deg, rgba(18, 11, 8, .97), rgba(18, 11, 8, .86)); box-shadow: 0 6px 12px rgba(0, 0, 0, .4) }
+    & .u4c-clock { position: static; gap: 8px }
+    & .u4c-clock svg { width: 38px; height: 38px }
+    & .u4c-clock b { font-size: 17px }
+    & .u4c-clock small { font-size: 12px; margin-top: 2px }
+    & .u4c-fpmini { display: flex; align-items: center; gap: 4px; padding: 5px 7px; border-radius: 5px; background: linear-gradient(180deg, var(--brass-hi), var(--brass) 45%, var(--brass-lo)); margin-left: auto }
+    & .u4c-fpmini b { font: 700 12px var(--latin); color: #2a1a0c; padding: 0 4px; background: #e9d3a1; border-radius: 2px }
+    & .u4c-fpmini span { font: 17px var(--latin); color: #f4ead2; background: #1d1915; padding: 1px 6px; border-radius: 2px; letter-spacing: .05em; font-variant-numeric: tabular-nums }
+    & .u4c-closed { position: static; width: 76px; margin: -6px 0 -12px }
+    & .u4c-backarrow { position: static }
+    & :is(.u4c-plate, .u4c-front).q-wide, & .u4c-rain, & .u4c-pool { display: none }
+    & :is(.u4c-plate, .u4c-front).q-tall { display: block; background-position: center var(--tall-y, 40%) }
+    & .u4c-front.q-tall { clip-path: inset(var(--front-t, 88%) 0 0 0) }
+    & .u4c-her { left: var(--her-px, -14%); top: var(--her-py, -7%); height: var(--her-ph, 205%) }
+    & .u4-main { position: relative; display: flex; flex-direction: column; gap: 16px; padding: 0 10px 28px;
+      background: var(--grain), repeating-linear-gradient(91deg, transparent 0 5px, rgba(0, 0, 0, .1) 5px 6px, rgba(255, 214, 170, .035) 6px 13px, transparent 13px 21px), linear-gradient(180deg, #4b2d1b, #3b2418 45%, #2c1a10) }
+    & .u4-main > * { position: relative; left: auto; top: auto; width: auto }
+    & .u4c-tent { order: 0; align-self: flex-end; width: min(62%, 240px); margin: -46px 4px 0 0; z-index: 2 }
+    & .u4c-ledger { order: 1 }
+    & .u4c-ledger .q-book { transform: none; grid-template-columns: 1.15fr 1fr; padding: 6px 6px 8px }
+    & .u4c-ledger .page { min-height: 0; padding: 12px 10px 10px }
+    & .u4c-ledger .slot.on::before { left: -16px; width: 18px; height: 28px; top: -4px }
+    & .u4c-ledger .choice { font-size: 30px }
+    & .u4c-ledger .impress { top: 36px; right: 4px; width: 86px; height: 86px }
+    & .u4c-ledger .q-stamp svg { width: 42px; height: 42px }
+    & .u4c-printer, & .u4c-register { display: none }
+    & .u4c-board { order: 2; height: auto; padding: 8px }
+    & .u4c-board .slate { padding: 14px 14px 40px }
+    & .u4c-board h2 { font-size: 22px }
+    & .u4c-board ul { grid-template-columns: 1fr; gap: 2px }
+    & .u4c-cup { grid-template-columns: 40px 1fr auto; padding: 8px 4px; min-height: 48px }
+    & .u4c-cup .art { width: 40px; height: 34px }
+    & .u4c-cup .q-nm { font-size: 16px }
+    & .u4c-board .foot { left: 14px; right: 14px; bottom: 10px }
+    & .u4c-objs { order: 3; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px 8px; align-items: end; padding: 14px 6px 8px;
+      border-top: 1px solid rgba(255, 210, 160, .12); border-bottom: 1px solid rgba(0, 0, 0, .35) }
+    & .u4c-obj { position: relative; left: auto; top: auto; width: auto; min-height: 44px }
+    & .u4c-obj .u4-2f { width: 76%; aspect-ratio: 1; display: grid; place-items: end center }
+    & .u4c-obj .u4-2f img { max-height: 100%; width: auto; max-width: 100% }
+    & .u4c-obj .u4-2f .f2 { left: 50%; transform: translateX(-50%); top: auto; bottom: 0 }
+    & .u4c-obj .q-tag small { max-height: none; opacity: .85; white-space: normal; text-align: center }
+    & .u4c-juke { order: 4; display: grid; grid-template-columns: 38% 1fr; align-items: center; gap: 8px }
+    & .u4c-juke .slip { margin: 0 }
+    & .u4c-tracks { width: 100%; bottom: 100%; max-height: 50vh }
+  }
+}
+@container u4 (aspect-ratio < 5/6) {
+  #u4r.u4c .u4-scene { aspect-ratio: 4 / 3; height: auto }
+}
+@container u4 (aspect-ratio >= 5/6) and (height < 560px) {
+  #u4r.u4c {
+    --her-px: -40%; --her-py: -4%; --her-ph: 150%; --tall-y: 30%; --front-t: 82%;
+    & .u4-top { background: linear-gradient(180deg, rgba(18, 11, 8, .95), rgba(18, 11, 8, .7)) }
+    & .u4c-tent { margin-top: 10px; align-self: stretch; width: auto }
+  }
+}

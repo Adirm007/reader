@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>读者预览宿主</title>
+<!-- Not shipped. A fake SillyTavern page (same shape as tests/runtime.browser.test.mjs) that runs the real
+     built runtime. Served from the 前端重置 folder: runtime and letter template come from /preview/build/,
+     art from this worktree. Query: theme, open (lobby|persona|tuning|eggs|decouple|template|letters),
+     letters (short,long,…), mode (inline|float), hide (1), unseal (1), ui (off), fp, appearance, persona. -->
+<style>
+  html, body { margin: 0; height: 100%; background: #3a3f44; font: 14px/1.5 "Noto Sans CJK SC", sans-serif; color: #ddd }
+  #chat { max-width: 760px; margin: 0 auto; padding: 16px 12px 120px }
+  .mes { margin: 0 0 18px; padding: 10px; background: #2b2f33; border-radius: 6px }
+  .mes .who { font-size: 12px; color: #9aa; margin-bottom: 6px }
+  .mes iframe { display: block; width: 100%; border: 0; height: 420px }
+  #send_form { position: fixed; left: 0; right: 0; bottom: 0; display: flex; gap: 6px; padding: 8px; background: #22262a }
+  #send_textarea { flex: 1; height: 36px; background: #15181b; color: #ddd; border: 1px solid #444 }
+</style>
+</head>
+<body>
+<div id="chat"></div>
+<div id="send_form"><textarea id="send_textarea"></textarea><button id="send_but">发送</button></div>
+<script>
+(function () {
+  var q = new URLSearchParams(location.search), get = function (k, d) { return q.get(k) || d; };
+  try {
+    localStorage.setItem('dream_visual_theme', get('theme', 'cafe'));
+    localStorage.setItem('dream_render_mode', get('mode', 'inline'));
+    localStorage.setItem('dream_hide_persistent_float', q.get('hide') === '1' ? 'on' : 'off');
+    localStorage.setItem('dream_auto_unseal', q.get('unseal') === '1' ? 'on' : 'off');
+    if (q.get('ui') === 'off') localStorage.setItem('dream_ui_v4', 'off'); else localStorage.removeItem('dream_ui_v4');
+  } catch (e) {}
+  var vars = { dream_visual_theme: get('theme', 'cafe') };
+  if (q.get('appearance')) vars.dream_appearance = q.get('appearance');
+  if (q.get('persona')) vars.dream_persona = q.get('persona');
+  window.__ctx = { chatId: 'preview', characterId: 1, name1: '作家', name2: '夜梦', chatMetadata: { variables: vars },
+    chat: [{ mes: 'opening', swipe_id: 0 }], saveMetadata: function () { return Promise.resolve(); } };
+  window.SillyTavern = { getContext: function () { return window.__ctx; } };
+  window.__data = { stat_data: { 命运点数: Number(get('fp', '12480')), 主角: { 状态效果: {} } } };
+  window.TavernHelper = {
+    getVariables: function (o) { return o && o.type === 'chat' ? __ctx.chatMetadata.variables : __data; },
+    updateVariablesWith: async function (f) { __data = f(__data); }, insertOrAssignVariables: async function () {},
+    getLastMessageId: function () { return __ctx.chat.length - 1; },
+    getCharWorldbookNames: function () { return { primary: null, additional: [] }; }, getWorldbook: function () { return []; }
+  };
+  window.tavern_events = Object.fromEntries(['CHAT_CHANGED', 'MESSAGE_RECEIVED', 'MESSAGE_SENT', 'MESSAGE_UPDATED', 'MESSAGE_SWIPED', 'MESSAGE_DELETED', 'GENERATION_ENDED', 'GENERATION_AFTER_COMMANDS'].map(function (k) { return [k, k]; }));
+  window.__events = new Map();
+  window.eventOn = function (name, fn) { var s = __events.get(name) || new Set(); s.add(fn); __events.set(name, s); return { stop: function () { s.delete(fn); } }; };
+  window.emit = function (name) { (__events.get(name) || []).forEach(function (f) { f(); }); };
+  __ctx.eventTypes = tavern_events;
+  __ctx.eventSource = { makeFirst: function (n, fn) { __events.set(n, new Set([fn].concat(Array.from(__events.get(n) || [])))); }, removeListener: function (n, fn) { var s = __events.get(n); if (s) s.delete(fn); }, emit: async function (n) { for (var f of (__events.get(n) || [])) await f(); } };
+  window.ReaderCoreConfig = { bookseaBase: location.origin + '/', uiAssetBase: location.origin + '/work/reader/' };
+
+  var SAMPLES = {
+    short: '今晚的雨下得很慢。我把你常坐的位置擦干净了，桌上那杯热可可还冒着气。想说的话不多：早点休息，别熬太晚。',
+    long: '今天店里来了一位撑黑伞的客人，坐了很久，只点了一杯清咖啡。<br><br>我在吧台后面擦杯子，听雨把窗玻璃一层一层地洗干净。唱机放到第七首的时候，他忽然问我，你是不是在等谁。<br><br>我说是。<br><br>他笑了一下，把钱压在杯碟下面就走了。门口的风铃响了很久。<br><br>我想了想，其实也不算在等。只是你每次来的时候，我都会先把那一张桌子擦干净，把灯调暗一点，把那张你喜欢的唱片放进唱机里。等你推门进来，它刚好放到第二首。<br><br>今晚你来晚了。唱片已经转了两遍，可可也凉了，我又热了一次。没关系，下次早一点就好。<br><br>写到这里，窗外的雨好像小了一点。我把信放在你的杯子下面，你来的时候，记得先看信，再喝可可。',
+    plain: '没有读者标签的普通新消息'
+  };
+  function template() { return fetch('/preview/build/letter.html', { cache: 'no-store' }).then(function (r) { return r.text(); }); }
+  window.mountLetters = function (kinds) {
+    return template().then(function (tpl) {
+      var id = __ctx.chat.length, texts = kinds.map(function (k) { return SAMPLES[k] || k; });
+      __ctx.chat.push({ mes: texts.map(function (t) { return '<dream>' + t + '</dream>'; }).join(''), swipe_id: 0 });
+      var mes = document.createElement('div'); mes.className = 'mes'; mes.setAttribute('mesid', id);
+      mes.innerHTML = '<div class="who">夜梦</div>';
+      texts.forEach(function (text) {
+        var frame = document.createElement('iframe');
+        frame.srcdoc = tpl.split('$1').join(text);
+        frame.addEventListener('load', function () {
+          var doc = frame.contentDocument, fit = function () { frame.style.height = Math.max(120, doc.documentElement.scrollHeight) + 'px'; };
+          fit(); try { new ResizeObserver(fit).observe(doc.body); } catch (e) {}
+        });
+        mes.appendChild(frame);
+      });
+      document.getElementById('chat').appendChild(mes);
+      emit('MESSAGE_RECEIVED');
+      return id;
+    });
+  };
+  window.addEventListener('load', async function () {
+    window.runtimeModule = await import('/preview/build/reader-runtime.js');
+    runtimeModule.start();
+    await ReaderCore.ready;
+    var letters = (q.get('letters') || '').split(',').filter(Boolean);
+    if (letters.length) await mountLetters(letters);
+    var open = q.get('open');
+    if (open) setTimeout(function () { ReaderCore.open(open); }, letters.length ? 400 : 60);
+    document.documentElement.setAttribute('data-preview-ready', '1');
+  });
+})();
+</script>
+</body>
+</html>

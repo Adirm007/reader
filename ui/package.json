@@ -1,0 +1,15 @@
+{
+  "name": "dream-reader-ui",
+  "private": true,
+  "type": "module",
+  "description": "读者大厅、信件与悬浮信封的新表现层（v4）；打包结果是 ../source/reader-ui.js 与 ../source/reader-letter.css",
+  "scripts": {
+    "build": "node build.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "22.15.30",
+    "esbuild": "0.28.2",
+    "typescript": "5.9.3"
+  }
+}

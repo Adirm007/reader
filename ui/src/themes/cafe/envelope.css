@@ -1,0 +1,26 @@
+/* The floating envelope (#dfb, created by the legacy eFB): a small kraft envelope tucked under a saucer.
+ * A new letter makes the saucer jolt once; the count is a wax tab. Old children are hidden, not removed. */
+#dfb.dream-fb {
+  width: 78px; height: 66px; border: 0; border-radius: 0; background: none; box-shadow: none; overflow: visible; cursor: pointer;
+  filter: drop-shadow(0 6px 7px rgba(20, 10, 4, .45)); transition: filter .2s, transform .2s;
+}
+#dfb.dream-fb > :is(.dream-fb-flap, .dream-fb-pocket, .dream-fb-seal) { display: none !important }
+#dfb.dream-fb::before {
+  content: ""; position: absolute; left: 0; top: 14px; width: 66px; height: 46px; transform: rotate(-9deg); transform-origin: 20% 80%;
+  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 66 46'><rect x='1' y='1' width='64' height='44' rx='2' fill='%23c9a274' stroke='%237a5530' stroke-width='1.2'/><path d='M1 3l32 22L65 3' fill='none' stroke='%237a5530' stroke-width='1.2'/><path d='M5 41h22' stroke='%237a5530' stroke-width='.8' opacity='.5'/><circle cx='33' cy='25' r='6.5' fill='%239e2a20'/><circle cx='33' cy='25' r='4.2' fill='none' stroke='%23d9604c' stroke-width='.8'/></svg>") center / contain no-repeat;
+}
+#dfb.dream-fb::after {
+  content: ""; position: absolute; right: -6px; top: -4px; width: 58px; height: 46px; transform-origin: 50% 70%;
+  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 58 46'><ellipse cx='29' cy='30' rx='27' ry='12' fill='%23d9d2c6'/><ellipse cx='29' cy='28' rx='27' ry='12' fill='%23f6f1e8'/><ellipse cx='29' cy='28' rx='17' ry='7' fill='none' stroke='%23d8cfc0' stroke-width='1.2'/><path d='M16 14h26c0 9-5 15-13 15S16 23 16 14z' fill='%23f6f1e8' stroke='%23cfc5b4' stroke-width='1'/><path d='M42 17c5-1 7 2 5 5s-4 3-6 3' fill='none' stroke='%23e6ded0' stroke-width='2.4'/><ellipse cx='29' cy='14' rx='13' ry='4' fill='%233b2416'/><ellipse cx='26' cy='13.4' rx='5' ry='1.2' fill='%23f2b45a' opacity='.45'/></svg>") center / contain no-repeat;
+}
+#dfb.dream-fb:hover, #dfb.dream-fb:focus-visible { filter: drop-shadow(0 9px 10px rgba(20, 10, 4, .5)) drop-shadow(0 0 6px rgba(242, 180, 90, .45)); outline: none }
+#dfb.dream-fb:hover::after { transform: translate(3px, -2px) rotate(4deg); transition: transform .25s }
+#dfb.dream-fb.dream-shaking { animation: none !important }
+#dfb.dream-fb.dream-shaking::after { animation: u4cfFbJolt .7s cubic-bezier(.3, 1.5, .5, 1) 1 }
+#dfb.dream-fb .dream-fb-badge {
+  position: absolute; top: 34px; right: auto; left: -4px; min-width: 20px; height: 20px; padding: 0 5px; display: grid; place-items: center;
+  font: 700 11px/1 Georgia, serif; color: #f6e9d0; background: radial-gradient(circle at 40% 35%, #c4483a, #8a2218); border: 0; border-radius: 50% 46% 52% 48%;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, .45), inset 0 0 0 2px rgba(255, 160, 140, .25);
+}
+@keyframes u4cfFbJolt { 0% { transform: none } 30% { transform: translate(-3px, -5px) rotate(-6deg) } 60% { transform: translate(2px, 1px) rotate(3deg) } 100% { transform: none } }
+@media (prefers-reduced-motion: reduce) { #dfb.dream-fb.dream-shaking::after { animation: none } }
