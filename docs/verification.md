@@ -1,4 +1,6 @@
-# 2026.11.10.1 主卡4.3临时脚本更新兼容（本地，未发布）
+# 2026.11.10.1 主卡4.3临时脚本更新兼容
+
+已正式发布 [v2026.11.10.1](https://github.com/Adirm007/reader/releases/tag/v2026.11.10.1)，GitHub 确认 `immutable=true`、`draft=false`。源提交 C 为 `33ad0d28ef9622c7a657de90ee11eaea959d51c1`，发行提交 D 为 `482f19f605b7d2ac96a3fbbaa4d31606a90c8e85`。固定正则附件 28,451 字节，GitHub digest 与本地 SHA-256 均为 `75489328f4333babbf0fb53ff4753c34893d0f54e8be96968116397810ddab40`。发布证明已通过验证，`fixed-updates` 清单和信任材料已更新，提交为 `fdd9bd4572e4f51349f7f819326c7c802a39e058`；没有覆盖旧发行。
 
 仅修改 reader。对照用户提供的自动正则 JSON（默认程序资源 `1.2.2`）和主卡历史实现，旧宿主有 `replaceRuntime()`，但没有 `hostMode: "auto-regex"` 的本地托管接口。为此恢复手动确认后的签名资源下载、旧键 `dream_reader_core_selected_v1` 持久选择和立即热替。启动仅联网恢复已确认的同一运行脚本，不查询最新版、不顺带更新正则或世界书、不安装独立脚本；新版托管和独立脚本沿用各自现有路径。
 
