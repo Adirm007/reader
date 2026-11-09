@@ -37,8 +37,16 @@ export async function build({ write = false, version } = {}) {
   const runtime = runtimeSource.replace("import { ASSETS } from 'reader:assets';", () => 'const ASSETS = ' + JSON.stringify(assets) + ';');
   const letterCss = letterStyle ? letterStyle.trim() : css + '\n.menu-board{display:none!important}.reader-letter-compact .cafe-v20-responsive{display:none!important}.reader-letter-compact .outer-collapse:not([open]){display:block}.reader-letter-compact .flower-btn{display:block}';
   if (/\$(?:\d|<)|\{\{|<\/style/i.test(letterCss)) throw new Error('Letter style contains a replacement token, a macro or a style terminator');
-  const replaceString = '```html\n<!doctype html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>' + letterCss + '</style></head><body>' + letterBody.replace('<!--DREAM_LETTER-->', '$1') + '<script>' + letterSource + '</script></body></html>\n```';
-  if (/<\/script/i.test(letterSource)) throw new Error('Letter source contains a script terminator');
+  // The old updater accepts new light rules even when its script branch is blocked. Carry
+  // the replacement updater as data, escaping '<' so the old light validator still accepts it.
+  const updaterData = JSON.stringify(await read('source/update-center.js')).replace(/</g, '\\u003c');
+  const letterBridge = (await read('source/letter-updater-bridge.js'))
+    .replace('__READER_LETTER_VERSION__', () => JSON.stringify(version))
+    .replace('__READER_LEGACY_UPDATER_SOURCE__', () => updaterData);
+  const completeLetterSource = letterBridge + '\n;' + letterSource;
+  const replaceString = '```html\n<!doctype html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>' + letterCss + '</style></head><body>' + letterBody.replace('<!--DREAM_LETTER-->', '$1') + '<script>' + completeLetterSource + '</script></body></html>\n```';
+  if (/<\/script/i.test(completeLetterSource)) throw new Error('Letter source contains a script terminator');
+  if (replaceString.length > 200000 || /<audio\b|function\s+openDreamLobby\(/i.test(replaceString)) throw new Error('Letter is incompatible with the old updater');
   const rules = [{ id: 'b1c5a3f2-1007-4e0a-9d7e-5a1e0c0d1007', scriptName: '读者对话渲染-脚本版', readerRuntime: {schema: 1, version, kind: 'light-letter'},
     disabled: false, runOnEdit: true, findRegex: '/<dream>「?((?:[^<]|<(?!dream\\b|\\/dream>))*?)」?<\\/dream>/g',
     replaceString, trimStrings: [], placement: [2], substituteRegex: 0, minDepth: null, maxDepth: 10, markdownOnly: true, promptOnly: false }];

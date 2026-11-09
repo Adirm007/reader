@@ -17,6 +17,27 @@
     var install=(api.getUpdateOptions()||{}).installRuntime;legacyReplacing=true;
     try{if(typeof install==='function')await install(request);else await api.replaceRuntime(request);}finally{legacyReplacing=false;}
   }
+  async function installLegacy(api,artifact,assertCurrent){
+    assertCurrent();
+    if(legacyReplacing)throw Error('读者运行脚本正在恢复或更新，请稍后重新检查');
+    var storage=(root.parent||root).localStorage,previous=storage.getItem(LEGACY_SELECTION),saved=JSON.stringify(artifact.metadata);
+    storage.setItem(LEGACY_SELECTION,saved);
+    try{await replaceLegacy(api,artifact,assertCurrent);}
+    catch(error){if(storage.getItem(LEGACY_SELECTION)===saved){if(previous===null)storage.removeItem(LEGACY_SELECTION);else storage.setItem(LEGACY_SELECTION,previous);}throw error;}
+    return {detail:'读者运行脚本已更新至 v'+artifact.metadata.version+'；下次启动联网恢复此版本（主卡4.3临时兼容）'};
+  }
+  // TEMP_MAIN_CARD_43: accepting a new light rule also accepts that exact reader release.
+  // This is how an already-blocked updater receives the fix, without a newer card or a library row.
+  async function completeAcceptedLetter(version,external){
+    var api=liveApi(),client=root.DreamFixedReleaseClient;
+    if(!legacyCard(api))return;
+    if(typeof version!=='string'||!/^\d{1,8}(?:\.\d{1,8}){1,5}$/.test(version))throw Error('轻量信件版本无效');
+    if(client.compare(api.runtimeVersion,version)>=0)return;
+    var captured=guard(),assertCurrent=function(){captured();if(external)external();};assertCurrent();
+    var artifact=await client.resource({repository:'Adirm007/reader',version:version},'reader-runtime.js');assertCurrent();
+    if(!artifact.metadata||artifact.metadata.repository!=='Adirm007/reader'||artifact.metadata.version!==version)throw Error('轻量信件与读者脚本的发行版本不符');
+    return installLegacy(api,artifact,assertCurrent);
+  }
   function contextId(){var h=root.parent||root,c=h.SillyTavern&&h.SillyTavern.getContext();return JSON.stringify(c&&[c.characterId,typeof c.getCurrentChatId==='function'?c.getCurrentChatId():c.chatId]);}
   function guard(allowRetired){
     var host=root.parent||root, ctx=host.SillyTavern&&host.SillyTavern.getContext(), id=ctx&&(typeof ctx.getCurrentChatId==='function'?ctx.getCurrentChatId():ctx.chatId), character=ctx&&ctx.characterId;
@@ -126,12 +147,7 @@
         }
         if(plan.legacyCard){
           var artifact=await readArtifact(plan,'reader-runtime.js');assertCurrent();
-          if(legacyReplacing)throw Error('读者运行脚本正在恢复或更新，请稍后重新检查');
-          var storage=(root.parent||root).localStorage,previous=storage.getItem(LEGACY_SELECTION),saved=JSON.stringify(artifact.metadata);
-          storage.setItem(LEGACY_SELECTION,saved);
-          try{await replaceLegacy(api,artifact,assertCurrent);}
-          catch(error){if(storage.getItem(LEGACY_SELECTION)===saved){if(previous===null)storage.removeItem(LEGACY_SELECTION);else storage.setItem(LEGACY_SELECTION,previous);}throw error;}
-          return {detail:'读者运行脚本已更新至 v'+artifact.metadata.version+'；下次启动联网恢复此版本（主卡4.3临时兼容）'};
+          return installLegacy(api,artifact,assertCurrent);
         }
         if(!root.ReaderScriptInstaller)throw Error('脚本安装模块不可用');
         var artifact=await readArtifact(plan,'reader-runtime.js');assertCurrent();
@@ -194,7 +210,7 @@
     })().finally(function(){restoring=null;});
     return restoring;
   }
-  root.ReaderUpdates=Object.freeze({createCoordinator:createCoordinator,components:coreComponents,restore:restore,check:function(){return instance().check().then(function(results){try{receipt(results);}catch(e){}return results;});},apply:function(progress){return instance().apply(progress);}});
+  root.ReaderUpdates=Object.freeze({createCoordinator:createCoordinator,components:coreComponents,restore:restore,completeAcceptedLetter:completeAcceptedLetter,check:function(){return instance().check().then(function(results){try{receipt(results);}catch(e){}return results;});},apply:function(progress){return instance().apply(progress);}});
   // A previously installed updater can only download the new complete fixed loader.
   // That accepted, pinned loader finishes its own first script migration on load.
   if(root.ReaderFixedMigration&&!root.__readerHostApi)setTimeout(function(){root.ReaderFixedMigration.autoStart().catch(function(){});},0);

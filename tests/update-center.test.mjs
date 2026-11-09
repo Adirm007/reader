@@ -125,6 +125,20 @@ test('a late legacy restore cannot replace a newer user selection',async()=>{
  f.values.set(legacyKey,newSelection);release();await restoring;
  assert.deepEqual(f.calls,['verify:reader-runtime.js']);assert.equal(f.values.get(legacyKey),newSelection);assert.equal(f.version,'1.0');
 });
+test('an accepted light rule completes its exact script release without asking for latest',async()=>{
+ const f=runtimeFixture({legacy:true});f.root.DreamFixedReleaseClient.latest=async()=>{throw Error('must not check latest');};
+ const resource=f.root.DreamFixedReleaseClient.resource;f.root.DreamFixedReleaseClient.resource=async(selected,name)=>{assert.equal(selected.version,'2.0');return resource(selected,name);};
+ await f.root.ReaderUpdates.completeAcceptedLetter('2.0',()=>{});
+ assert.deepEqual(f.calls,['verify:reader-runtime.js','replace:2.0']);assert.equal(f.version,'2.0');assert.deepEqual(JSON.parse(f.values.get(legacyKey)),f.metadata);
+ await f.root.ReaderUpdates.completeAcceptedLetter('1.0',()=>{});assert.equal(f.calls.length,2,'an older letter cannot downgrade the runtime');
+});
+test('accepted light completion retains the old runtime on a context change or different release identity',async()=>{
+ for(const kind of ['context','version','replacement']){
+  const f=runtimeFixture({legacy:true,replaceFails:kind==='replacement'}),resource=f.root.DreamFixedReleaseClient.resource;
+  f.root.DreamFixedReleaseClient.resource=async(...args)=>{const artifact=await resource(...args);if(kind==='version')artifact.metadata={...artifact.metadata,version:'3.0'};if(kind==='context')f.root.SillyTavern.getContext=()=>({characterId:2,chatId:'b'});return artifact;};
+  await assert.rejects(f.root.ReaderUpdates.completeAcceptedLetter('2.0',()=>{}));assert.equal(f.version,'1.0');assert.equal(f.values.has(legacyKey),false);
+ }
+});
 test('compatibility restoration never downloads code, checks releases or writes the script library',async()=>{
  const f=runtimeFixture();f.values.set('dream_reader_core_selected_v1',JSON.stringify(f.metadata));await f.root.ReaderUpdates.restore();
  assert.deepEqual(f.calls,[]);assert.equal(f.values.has('dream_reader_core_selected_v1'),true);

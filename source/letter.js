@@ -1,4 +1,4 @@
-// No application, network loader, audio or MVU writer lives in a letter frame.
+// Letters display content. The temporary 4.3 bridge can finish the same accepted reader release.
 (function () {
   var host = window.parent, frame = window.frameElement;
   var unregister = null, connectedCore = null, current = {}, extra = document.createElement('style');
@@ -79,6 +79,10 @@
         return !!message && message.mes === sourceText && (message.swipe_id ?? 0) === sourceSwipe;
       },
       read: function () { return { html: document.querySelector('.text-body-royal')?.innerHTML || '', signature: document.querySelector('.sig-mini')?.textContent || '' }; } });
+    window.ReaderLetterUpdaterBridge?.(app,function(){
+      if(!frame?.isConnected||core()!==app||renderedChat!==null&&renderedChat!==chatKey())throw Error('来信或聊天已变化');
+      if(sourceMessage!==null){var message=host.SillyTavern?.getContext?.()?.chat?.[messageId];if(!message||message.mes!==sourceText||(message.swipe_id??0)!==sourceSwipe)throw Error('来信候选已变化');}
+    });
   }
   window.ReaderLetter = { connect: connect };
   document.addEventListener('click', function (event) {
