@@ -161,7 +161,7 @@ export const cafe: ThemeKit = {
       eggs: { prop: 'cafe/prop-drawers', title: '彩蛋服务台', lede: '后场的药柜。一个抽屉放一样东西，拉开就能换。' },
     },
     words: { who: '她是谁', look: '今天穿哪一身', address: '称呼', custom: '自己写一个', shelf: '书架', services: '可以点的', pair: '主人格与镜中人',
-      sea: '书海迷宫', toggles: '小开关', desk: '管理台', tools: '唱片与信纸',
+      sea: '书海迷宫', toggles: '小开关', desk: '管理台', tools: '唱片与信纸', discs: '唱片管理',
       receiptShop: 'CAFÉ NOCTURNE', receiptVerb: '盖章下单', receiptCancel: '再想想' },
     ornament: () => '<i class="q-clip" aria-hidden="true"></i>',
   },

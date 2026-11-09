@@ -17,8 +17,9 @@
   function fresh(ov) { return !!(ov && ov.querySelector('#u4r')); }
   function safe(fn, fallback) { try { var v = fn(); return v === undefined || v === null ? fallback : v; } catch (e) { return fallback; } }
   function state() {
-    var app = safe(function () { return getCurrentAppearance(); }, 'default'), appName = '';
-    safe(function () { APPEARANCE_ITEMS.forEach(function (x) { if (x.id === app) appName = x.name; }); });
+    var app = safe(function () { return getCurrentAppearance(); }, 'default');
+    // Outfit names follow the theme (summer swimsuits, ink qipao …): getAppearanceLabel knows all three sets.
+    var appName = safe(function () { return getAppearanceLabel(app); }, '');
     var count = safe(function () { return playlist.length; }, 0);
     return {
       theme: theme(),
@@ -40,7 +41,7 @@
       standing: safe(function () { return getStandingArtUrl(); }, ''),
       avatar: safe(function () { return getAvatarUrl(); }, ''),
       personas: safe(function () { return PERSONA_ITEMS.map(function (x) { return { id: x.id, name: x.name, hint: x.hint || '' }; }); }, []),
-      appearances: safe(function () { return APPEARANCE_ITEMS.map(function (x) { return { id: x.id, name: x.name }; }); }, []),
+      appearances: safe(function () { return APPEARANCE_ITEMS.map(function (x) { return { id: x.id, name: getAppearanceLabel(x.id) }; }); }, []),
       eggs: {
         display: safe(function () { return gLS(DK, 'inline') === 'float' ? '悬浮' : '默认'; }, '默认'),
         unseal: safe(function () { return gLS(AK, 'off') === 'on'; }, false),

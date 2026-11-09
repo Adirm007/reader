@@ -95,7 +95,7 @@ function eggs(t: Theme, s: LobbyState, f: Fragments, w: Record<string, string>):
     + row(act('eggapi'), '独立 API', '几套方案一键切换；不设就走酒馆的连接', `<span class="sv2" id="dlb-egg-api">${esc(e.api)}</span>`)
     + row(act('eggwb'), '检查更新', '分别检查正则、脚本和世界书')
     + row(act('egggallery'), '相册', '作者发布的图，可以下载原图');
-  const tools = fold('eggdisc', '', '唱片管理', '换专辑、播放顺序、增删歌曲', !!o.disc, o.disc ? '已展开' : '展开', '', !o.disc)
+  const tools = fold('eggdisc', '', w.discs || '唱片管理', '换专辑、播放顺序、增删歌曲', !!o.disc, o.disc ? '已展开' : '展开', '', !o.disc)
     + `<div class="q-paper" id="dlb-disc-wrap"${hide(o.disc)}><div class="dlb-paper" id="dlb-disc-ct">${o.disc ? f.disc || '' : ''}</div></div>`
     + fold('eggfont', '', '笔迹变更', '换信纸上的字', !!o.font, o.font ? '已展开' : '展开', '', !o.font)
     + `<div class="q-paper" id="dlb-font-wrap"${hide(o.font)}><div class="dlb-paper" id="dlb-font-ct">${o.font ? f.font || '' : ''}</div></div>`

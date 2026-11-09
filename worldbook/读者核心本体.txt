@@ -1,4 +1,4 @@
-<%_ /* DREAM_WORLDBOOK reader-core v2026.10.31.1 */ _%>
+<%_ /* DREAM_WORLDBOOK reader-core v2026.11.09.1 */ _%>
 <%_ { _%>
 <%_
 let _dream_theme_value = getLocalVar('dream_visual_theme');

@@ -80,7 +80,7 @@ function syncAll(root: Root, kind: string, s: LobbyState): void {
     setText(root, '[data-u4-jno]', s.juke.no);
     each(root, '[data-u4-jplay]', el => {
       el.setAttribute('aria-pressed', String(s.juke.playing));
-      el.setAttribute('aria-label', s.juke.playing ? '暂停唱片' : '播放唱片');
+      el.setAttribute('aria-label', s.juke.playing ? '暂停音乐' : '播放音乐');
       const label = el.querySelector('[data-u4-jstate]');
       if (label) label.textContent = s.juke.playing ? '暂停' : '播放';
     });

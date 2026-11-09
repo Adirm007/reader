@@ -139,21 +139,20 @@
   & .o-sticks { left: 64.4%; top: 2.6%; width: 6.4% }
   & .o-coins { left: 12.4%; top: 74%; width: 9.4% }
 
-  /* ---------- the turntable, seen from above ---------- */
-  & .u4i-phono { position: absolute; left: 43.6%; top: 86.4%; width: 9.6% }
-  & .u4i-phono .set { display: block; width: 100% }
-  & .u4i-phono .set svg { display: block; width: 100%; height: auto; filter: drop-shadow(0 .6cqh .8cqh rgba(0, 0, 0, .5)) }
-  & .u4i-phono .q-disc { transform-box: view-box; transform-origin: 50px 50px }
-  &.u4-playing .u4i-phono .q-disc { animation: u4jnSpin 2.4s linear infinite }
-  & .u4i-phono .arm { transform-box: view-box; transform-origin: 102px 20px; transform: rotate(-16deg); transition: transform .6s ease }
-  &.u4-playing .u4i-phono .arm { transform: none }
-  & .u4i-phono .slip { position: absolute; right: 108%; top: 34%; min-width: 24cqh; max-width: 30cqh; padding: .6cqh 1cqh; white-space: normal; transform: rotate(-1.5deg) }
+  /* ---------- the guqin along the lower edge of the desk: playing makes its strings tremble ---------- */
+  & .u4i-phono { position: absolute; left: 44%; top: 88.4%; width: 24% }
+  & .u4i-phono .set { display: block; width: 100%; transform: rotate(-1.2deg) }
+  & .u4i-phono .set svg { display: block; width: 100%; height: auto; filter: drop-shadow(0 .7cqh .7cqh rgba(0, 0, 0, .5)) }
+  & .u4i-phono .set:is(:hover, :focus-visible) svg { filter: drop-shadow(0 .7cqh .7cqh rgba(0, 0, 0, .5)) brightness(1.12) }
+  & .u4i-phono .q-strings { transform-box: fill-box; transform-origin: 50% 50% }
+  &.u4-playing .u4i-phono .q-strings { animation: u4jnStrings .16s linear infinite alternate }
+  & .u4i-phono .slip { position: absolute; right: 103%; top: 16%; min-width: 24cqh; max-width: 30cqh; padding: .6cqh 1cqh; white-space: normal; transform: rotate(-1.5deg) }
   & .u4i-phono .q-tt { margin: 0; font-size: var(--fs-s); white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
   & .u4i-phono .q-row { margin: .2cqh 0 0; font-size: var(--fs-s); color: var(--ink-3); white-space: nowrap }
   & .u4i-phono .q-row button { color: var(--indigo); text-decoration: underline; text-underline-offset: 2px; font: inherit }
   & .u4i-phono .bar { display: block; height: 2px; margin-top: .4cqh; background: rgba(58, 54, 49, .15) }
   & .u4i-phono #dlb-jbar { display: block; height: 100%; width: 0; background: var(--cinnabar); transition: width .4s linear }
-  & .u4i-tracks, & #dlb-trackpop.jn-track-layer { position: absolute; right: 0; bottom: 100%; width: 300%; max-height: 52cqh; overflow: auto; margin-bottom: 1cqh; padding: 1.4cqh 1.6cqh; z-index: 8; color: var(--ink);
+  & .u4i-tracks, & #dlb-trackpop.jn-track-layer { position: absolute; right: 0; bottom: 100%; width: 140%; max-height: 52cqh; overflow: auto; margin-bottom: 1cqh; padding: 1.4cqh 1.6cqh; z-index: 8; color: var(--ink);
     background: var(--fiber), var(--xuan-l); box-shadow: 0 1.2cqh 2.4cqh rgba(20, 10, 6, .5); border-top: 3px solid var(--cinnabar) }
   & .u4i-tracks .tp-head { font: var(--fs-s) var(--brush); color: var(--ink-3); padding-bottom: .6cqh; border-bottom: 1px solid rgba(184, 50, 42, .35) }
   & .u4i-tracks .tp-item { display: flex; gap: .8cqh; padding: .6cqh .2cqh; font-size: var(--fs-s); cursor: pointer; border-bottom: 1px dotted rgba(58, 54, 49, .25) }
@@ -168,6 +167,7 @@
 
 @keyframes u4jnRain { to { transform: translate3d(-30px, 300px, 0) } }
 @keyframes u4jnSpin { to { transform: rotate(360deg) } }
+@keyframes u4jnStrings { to { transform: translateY(.45px) scaleY(1.04) } }
 @keyframes u4jnSeal { 0% { opacity: 0; transform: rotate(-8deg) scale(1.25) } 60% { opacity: .95 } 100% { opacity: .9; transform: rotate(-8deg) scale(1) } }
 @keyframes u4jnLift { 30% { transform: translateY(-1.2cqh) } 100% { transform: none } }
 @keyframes u4jnBleed { from { opacity: 0; filter: blur(3px) } to { opacity: 1; filter: none } }
@@ -214,8 +214,9 @@
     & .u4i-obj { order: 4; flex-direction: row; gap: 12px; min-height: 64px }
     & .u4i-obj .u4-2f { width: 72px; flex: none }
     & .u4i-obj .slip { margin: 0; transform: none }
-    & .u4i-phono { order: 6; position: relative; left: auto; top: auto; width: auto; display: grid; grid-template-columns: 96px 1fr; gap: 12px; align-items: center }
-    & .u4i-phono .slip { position: static; min-width: 0; max-width: none; transform: none }
+    & .u4i-phono { order: 6; position: relative; left: auto; top: auto; width: auto; display: grid; grid-template-columns: 1fr; gap: 10px; justify-items: center }
+    & .u4i-phono .set { width: min(100%, 340px); transform: none }
+    & .u4i-phono .slip { position: static; min-width: 0; max-width: none; width: min(100%, 340px); transform: none }
     & .u4i-tracks, & #dlb-trackpop.jn-track-layer { width: 100% }
   }
 }

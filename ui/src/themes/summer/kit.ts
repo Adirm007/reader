@@ -136,7 +136,7 @@ export const summer: ThemeKit = {
       eggs: { prop: 'summer/prop-lockers', title: '彩蛋服务台', lede: '邮局墙边的储物柜。一格放一样东西，开着的门挂着黄钥匙牌。' },
     },
     words: { who: '她是谁', look: '今天的打扮', address: '称呼', custom: '自己写一个', shelf: '书架', services: '柜台业务', pair: '主人格与倒影',
-      sea: '书海迷宫', toggles: '小开关', desk: '管理台', tools: '卡带与信纸',
+      sea: '书海迷宫', toggles: '小开关', desk: '管理台', tools: '卡带与信纸', discs: '卡带管理',
       receiptShop: '海边邮局 · 船票', receiptVerb: '检票', receiptCancel: '先不了' },
     ornament: () => '<i class="q-tape q-a" aria-hidden="true"></i><i class="q-tape q-b" aria-hidden="true"></i>',
   },

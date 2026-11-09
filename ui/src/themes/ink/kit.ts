@@ -86,13 +86,12 @@ function props(s: LobbyState): string {
     + `<button type="button" class="u4i-obj o-coins"${act('gacha')}>${twoFrame('ink/prop-coins')}<span class="slip">命运抽卡${s.gachaPrice ? ' · <span class="mini">' + esc(s.gachaPrice) + '</span> FP' : ''}</span></button>`;
 }
 
-/* A turntable seen from straight above, like everything else on the desk. */
+/* A guqin lying along the lower edge of the desk, seen from straight above like everything else on it: seven
+ * silk strings, thirteen mother-of-pearl hui, a cinnabar tassel at the head. Its scores are the track list. */
 function player(s: LobbyState): string {
-  return `<div class="u4i-phono"><button type="button" class="set"${act('jukeplay')} data-u4-jplay aria-pressed="${s.juke.playing}" aria-label="${s.juke.playing ? '暂停唱片' : '播放唱片'}">`
-    + '<svg viewBox="0 0 120 100" aria-hidden="true"><rect x="2" y="4" width="116" height="92" rx="5" fill="#4a2c1e"/><rect x="2" y="4" width="116" height="92" rx="5" fill="none" stroke="#2a170e" stroke-width="2"/>'
-    + '<g class="q-disc"><circle cx="50" cy="50" r="38" fill="#141210"/><circle cx="50" cy="50" r="30" fill="none" stroke="#2c2926" stroke-width=".8"/><circle cx="50" cy="50" r="22" fill="none" stroke="#2c2926" stroke-width=".8"/><circle cx="50" cy="50" r="11" fill="#b8322a"/><circle cx="50" cy="50" r="1.6" fill="#e9d6a0"/><path d="M28 32a30 30 0 0 1 12-9" stroke="#f0e6d0" stroke-width="1.4" opacity=".35" fill="none"/></g>'
-    + '<g class="arm"><circle cx="102" cy="20" r="6" fill="#c9a24c"/><path d="M102 20L96 62l-14 10" stroke="#c9a24c" stroke-width="3" fill="none" stroke-linecap="round"/></g></svg></button>'
-    + `<div class="slip"><p class="q-tt" data-u4-jtitle>${esc(s.juke.title)}</p><p class="q-row"><span data-u4-jno>${esc(s.juke.no)}</span> · <span data-u4-jstate>${s.juke.playing ? '暂停' : '播放'}</span> · <button type="button"${act('jukelist')}>唱片目录</button></p><i class="bar"><i id="dlb-jbar"></i></i></div>`
+  return `<div class="u4i-phono"><button type="button" class="set"${act('jukeplay')} data-u4-jplay aria-pressed="${s.juke.playing}" aria-label="${s.juke.playing ? '暂停音乐' : '播放音乐'}">`
+    + '<svg viewBox="0 0 304 72" aria-hidden="true"><defs><linearGradient id="u4jnQin" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3d2a1f"/><stop offset=".5" stop-color="#2a1b14"/><stop offset="1" stop-color="#1c120d"/></linearGradient></defs><path d="M14 15C8 15 5 19 5 24V40C5 45 8 49 14 49L150 51C192 51 216 52 238 58C246 60 254 60 260 56L266 53H292C298 53 301 49 301 44V20C301 15 298 11 292 11H266L260 8C254 4 246 4 238 6C216 12 192 13 150 13Z" fill="url(#u4jnQin)" stroke="rgba(255,236,200,.22)" stroke-width="1"/><path d="M30 20C80 18 140 17 200 19M40 44C100 46 170 46 230 45" stroke="rgba(255,236,200,.06)" stroke-width="5" fill="none"/><rect x="14" y="19" width="5" height="26" rx="1.5" fill="#bfa77c"/><rect x="256" y="12" width="5" height="40" rx="1.5" fill="#cdb68b"/><g class="q-strings" stroke="#efe6cf" stroke-width=".75" opacity=".85"><path d="M20 21.5L258 15.5"/><path d="M20 25.1L258 20.9"/><path d="M20 28.7L258 26.3"/><path d="M20 32.3L258 31.7"/><path d="M20 35.9L258 37.1"/><path d="M20 39.5L258 42.5"/><path d="M20 43.1L258 47.9"/></g><g fill="#f4f0e6"><circle cx="228.0" cy="50.6" r="1.3"/><circle cx="218.0" cy="50.6" r="1.3"/><circle cx="210.0" cy="50.6" r="1.3"/><circle cx="198.0" cy="50.6" r="1.3"/><circle cx="178.0" cy="50.6" r="1.3"/><circle cx="162.0" cy="50.6" r="1.3"/><circle cx="138.0" cy="50.6" r="1.9"/><circle cx="114.0" cy="50.6" r="1.3"/><circle cx="98.0" cy="50.6" r="1.3"/><circle cx="78.0" cy="50.6" r="1.3"/><circle cx="66.0" cy="50.6" r="1.3"/><circle cx="58.0" cy="50.6" r="1.3"/><circle cx="48.0" cy="50.6" r="1.3"/></g><path d="M294 54C296 60 297 64 296 70M298 54C301 60 303 64 303 70" stroke="#b8322a" stroke-width="1.6" fill="none" stroke-linecap="round"/><circle cx="296" cy="54" r="2.6" fill="#b8322a"/></svg></button>'
+    + `<div class="slip"><p class="q-tt" data-u4-jtitle>${esc(s.juke.title)}</p><p class="q-row"><span data-u4-jno>${esc(s.juke.no)}</span> · <span data-u4-jstate>${s.juke.playing ? '暂停' : '播放'}</span> · <button type="button"${act('jukelist')}>琴谱</button></p><i class="bar"><i id="dlb-jbar"></i></i></div>`
     + '<div class="u4i-tracks" id="dlb-trackpop" style="display:none"></div></div>';
 }
 
@@ -127,7 +126,7 @@ export const ink: ThemeKit = {
       eggs: { prop: 'ink/prop-stationerybox', title: '彩蛋服务台', lede: '文具匣的抽屉。启用的格子钤一方朱印。' },
     },
     words: { who: '名签', look: '画册', address: '称呼', custom: '自拟', shelf: '书匣', services: '可取之物', pair: '主印与副印',
-      sea: '书海迷宫', toggles: '小机关', desk: '案头事务', tools: '唱片与笔墨',
+      sea: '书海迷宫', toggles: '小机关', desk: '案头事务', tools: '琴谱与笔墨', discs: '琴谱管理',
       receiptShop: '墨笺 · 回执', receiptVerb: '钤印', receiptCancel: '作罢' },
     ornament: () => '<i class="q-rod q-l" aria-hidden="true"></i><i class="q-rod q-r" aria-hidden="true"></i>',
   },
