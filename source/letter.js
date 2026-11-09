@@ -10,12 +10,29 @@
   }
   var renderedChat = chatKey();
   document.head.appendChild(extra);
+  // Draw the right medium before the controller connects: the theme is a chat variable, then the device setting.
+  (function () {
+    var theme = null;
+    try { theme = host.SillyTavern?.getContext?.()?.chatMetadata?.variables?.dream_visual_theme; } catch (_) {}
+    if (['cafe', 'summer', 'ink'].indexOf(theme) < 0) { try { theme = localStorage.getItem('dream_visual_theme'); } catch (_) {} }
+    document.documentElement.setAttribute('data-dream-theme', ['summer', 'ink'].indexOf(theme) >= 0 ? theme : 'cafe');
+  })();
+  var FOLD = { cafe: ['再展开一折', '折回去'], summer: ['翻到背面', '翻回正面'], ink: ['展开花笺', '卷起花笺'] };
   function core() { return host.ReaderCore; }
   function refresh(settings) {
     current = settings || {};
     document.documentElement.setAttribute('data-dream-theme', current.theme || 'cafe');
     var avatar = document.getElementById('char-face-img');
+    if (avatar && !avatar.__lvLoad) { avatar.__lvLoad = true; avatar.addEventListener('load', function () { avatar.classList.add('is-in'); }); }
     if (avatar && current.avatar && avatar.getAttribute('src') !== current.avatar) avatar.src = current.avatar;
+    // v4 letters take their art and display faces from the controller; the legacy theme sheets (extraCss) target the old DOM.
+    var art = (current.ui && current.ui.art) || {};
+    ['scene', 'paper'].forEach(function (key) {
+      var value = art[key] ? 'url("' + String(art[key]).replace(/"/g, '%22') + '")' : '';
+      if (document.documentElement.style.getPropertyValue('--lv-' + key) !== value) {
+        if (value) document.documentElement.style.setProperty('--lv-' + key, value); else document.documentElement.style.removeProperty('--lv-' + key);
+      }
+    });
     var wrapper = document.querySelector('.wrapper-v9-fix');
     if (wrapper) wrapper.style.zoom = (current.fontSize || 16) / (current.defaultFontSize || 16);
     var font = current.font || {};
@@ -25,7 +42,8 @@
       if (!link) { link = document.createElement('link'); link.rel = 'stylesheet'; link.dataset.readerFont = '1'; document.head.appendChild(link); }
       if (link.getAttribute('href') !== font.css) link.href = font.css;
     }
-    if (extra.textContent !== (current.extraCss || '')) extra.textContent = current.extraCss || '';
+    var css = current.ui ? current.ui.css || '' : '';
+    if (extra.textContent !== css) extra.textContent = css;
     document.querySelectorAll('[data-dream-dear],#dream-dear-name').forEach(function (node) { if (current.address) node.textContent = current.address; });
     var letter = document.querySelector('.letter-interaction');
     if (letter && current.autoUnseal) { letter.open = true; var casing = letter.querySelector('.envelope-casing'); if (casing) casing.style.display = 'none'; }
@@ -90,7 +108,8 @@
       if (opened) card.classList.remove('letter-unfolded');
       var overflow = getComputedStyle(body).maxHeight !== 'none' && body.scrollHeight > body.clientHeight + 2;
       if (opened) card.classList.add('letter-unfolded');
-      fold.hidden = !overflow; fold.textContent = opened ? '收起信纸' : '展开全文'; fold.setAttribute('aria-expanded', String(opened));
+      var words = FOLD[document.documentElement.getAttribute('data-dream-theme')] || FOLD.cafe;
+      fold.hidden = !overflow; fold.textContent = opened ? words[1] : words[0]; fold.setAttribute('aria-expanded', String(opened));
       body.classList.toggle('letter-more-above', body.scrollTop > 2);
       body.classList.toggle('letter-more-below', body.scrollTop + body.clientHeight < body.scrollHeight - 2);
     }

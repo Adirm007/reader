@@ -6,7 +6,7 @@
   --disp: "u4 Summer Display", "Smiley Sans", "Noto Sans CJK SC", sans-serif;
   --latin: "u4 Summer Latin", "Jost", "URW Gothic", "Century Gothic", sans-serif;
   --u4-ink: var(--teal); --u4-focus: var(--sea); --u4-body: var(--u4-sans);
-  --front: 74.6%; --her-x: 60%; --her-y: 9%; --her-h: 104%;
+  --front: 100%; --her-x: 63%; --her-y: 14%; --her-h: 100%;
   background: #cfe7f1; color: var(--teal);
 
   & .u4s-disp { font-family: var(--disp); font-weight: 400 }
@@ -19,7 +19,7 @@
   & :is(.u4s-plate, .u4s-front).q-tall { display: none }
   & .u4s-her { position: absolute; left: var(--her-x); top: var(--her-y); height: var(--her-h); aspect-ratio: 832 / 1216; margin: 0 }
   & .u4s-her img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(-4px 3px 6px rgba(21, 78, 110, .25)) saturate(1.02) }
-  & .u4s-cork { position: absolute; left: 18.8%; top: 15.6%; width: 38.8%; height: 44%; border: .9cqh solid #e9dcc0; border-radius: 3px;
+  & .u4s-cork { position: absolute; left: 13.4%; top: 25%; width: 39.4%; height: 38%; border: .9cqh solid #e9dcc0; border-radius: 3px;
     background: radial-gradient(circle at 20% 30%, rgba(255, 255, 255, .12) 0 1px, transparent 2px) 0 0 / 7px 9px, radial-gradient(circle at 70% 60%, rgba(90, 55, 20, .25) 0 1px, transparent 2px) 0 0 / 11px 8px, linear-gradient(160deg, #d4ae80, #c39765 60%, #b98b58);
     box-shadow: inset 0 0 0 1px rgba(120, 80, 40, .3), inset 0 .6cqh 1.4cqh rgba(80, 50, 20, .25), .3cqh .8cqh 1.2cqh rgba(21, 78, 110, .25) }
 
@@ -36,30 +36,33 @@
   & .u4s-back { position: absolute; left: 20px; top: 100px; display: flex; align-items: center; gap: 6px; padding: 4px 10px; background: var(--paper); color: var(--teal); font: 15px var(--disp); box-shadow: 0 3px 8px rgba(21, 78, 110, .2) }
   & .u4s-back svg { width: 34px }
 
+  /* the eave's shadow falls across the board and whatever is pinned to it (same wedge as the plate) */
+  & .u4s-shade { position: absolute; left: 13.4%; top: 25%; width: 39.4%; height: 38%; pointer-events: none; mix-blend-mode: multiply;
+    background: linear-gradient(151deg, rgba(36, 70, 104, .3) 0 57%, rgba(36, 70, 104, 0) 57.6%) }
   /* pins */
   & .pin { position: absolute; left: 50%; top: -.6cqh; width: 1.8cqh; height: 1.8cqh; min-width: 11px; min-height: 11px; margin-left: -.9cqh; border-radius: 50%; z-index: 2;
     background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, .8), transparent 40%), var(--pin, #c8372d); box-shadow: .2cqh .4cqh .4cqh rgba(0, 0, 0, .35) }
 
   /* ---------- notes on the board ---------- */
-  & .u4s-note { position: absolute; left: 20.6%; top: 18.6%; width: 12.4%; padding: 2cqh 1.4cqh 1.2cqh; text-align: left; color: var(--teal); transform: rotate(-2.2deg); transform-origin: 50% 0;
+  & .u4s-note { position: absolute; left: 15%; top: 28.4%; width: 11.8%; padding: 2cqh 1.4cqh 1.2cqh; text-align: left; color: var(--teal); transform: rotate(-2.2deg); transform-origin: 50% 0;
     background: repeating-linear-gradient(180deg, transparent 0 2.6cqh, rgba(31, 111, 154, .16) 2.6cqh calc(2.6cqh + 1px)), #fffdf6; box-shadow: .3cqh .8cqh 1.2cqh rgba(80, 50, 20, .3) }
   & .u4s-note .line { display: block; font-size: var(--fs-m); line-height: 1.6 }
   & .u4s-note .sig { display: block; text-align: right; margin-top: .4cqh; font-size: var(--fs-s); color: var(--coral) }
   & .u4s-note.is-turn { animation: u4sxFlutter .6s ease-out }
-  & .u4s-flyer { position: absolute; left: 33.8%; top: 18.2%; width: 7.4%; padding: 1.8cqh .9cqh 1cqh; color: var(--teal); text-align: center; transform: rotate(1.6deg);
+  & .u4s-flyer { position: absolute; left: 28.4%; top: 28%; width: 7%; padding: 1.8cqh .9cqh 1cqh; color: var(--teal); text-align: center; transform: rotate(1.6deg);
     background: linear-gradient(180deg, #fff9e6, #f6ecd2); box-shadow: .2cqh .6cqh 1cqh rgba(80, 50, 20, .3) }
   & .u4s-flyer b { display: block; font-size: max(20px, 2.8cqh); color: var(--post); letter-spacing: .1em }
   & .u4s-flyer span { display: block; font-size: var(--fs-s); line-height: 1.35 }
   & .u4s-flyer small { display: block; margin-top: .4cqh; font-size: var(--fs-s); color: var(--coral) }
   & .u4s-flyer:hover { transform: rotate(-1deg) translateY(-.3cqh) }
-  & .u4s-meter { position: absolute; left: 46.6%; top: 18%; width: 9.6%; text-align: center }
+  & .u4s-meter { position: absolute; left: 41.6%; top: 28%; width: 9.6%; text-align: center }
   & .u4s-meter .frame { display: block; padding: .8cqh .6cqh; border: .35cqh solid var(--post); border-radius: .8cqh; color: var(--post); background: rgba(255, 252, 245, .92); transform: rotate(-3deg) }
   & .u4s-meter .lbl, & .u4s-meter .dt { display: block; font-size: var(--fs-s); letter-spacing: .08em }
   & .u4s-meter b { display: block; font: 600 max(19px, 2.8cqh)/1.15 var(--latin); letter-spacing: .03em; font-variant-numeric: tabular-nums }
   & .u4s-meter .q-tag { display: inline-block; margin-top: .5cqh; font-size: var(--fs-s); color: var(--teal-2) }
 
   /* ---------- ferry tickets: the daily reservation ---------- */
-  & .u4s-tickets { position: absolute; left: 20.4%; top: 33%; width: 35.6% }
+  & .u4s-tickets { position: absolute; left: 15%; top: 42.4%; width: 36.4% }
   & .u4s-tickets h2 { display: flex; align-items: baseline; gap: 1cqh; margin: 0 0 1cqh; font-size: max(18px, 2.5cqh); color: var(--teal); text-shadow: 0 1px 0 rgba(255, 255, 255, .5) }
   & .u4s-tickets h2 small { font: var(--fs-s) var(--u4-sans); color: #3f2c17 }
   & .u4s-tickets ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 1cqh }
@@ -90,7 +93,7 @@
   & .u4s-stubfly { position: absolute; right: 8%; top: 20%; width: 4cqh; height: 9cqh; opacity: 0; pointer-events: none; background: var(--paper); box-shadow: .2cqh .5cqh .8cqh rgba(0, 0, 0, .3) }
 
   /* ---------- the cooler on the ledge: today's specials ---------- */
-  & .u4s-cooler { position: absolute; left: 24.4%; top: 60.6%; width: 18.8% }
+  & .u4s-cooler { position: absolute; left: 49.6%; top: 75%; width: 13% }
   & .u4s-cooler h2 { position: absolute; left: 0; bottom: 100%; margin: 0 0 .6cqh; display: flex; align-items: baseline; gap: .8cqh; font-size: max(16px, 2.1cqh); color: var(--paper); text-shadow: 0 1px 3px rgba(21, 78, 110, .8); white-space: nowrap }
   & .u4s-cooler h2 small { font: var(--fs-s) var(--u4-sans) }
   & .u4s-cooler .ice { position: relative; display: grid; grid-template-columns: repeat(4, 1fr); align-items: end; gap: .4cqh; padding: 0 1cqh 1.4cqh; border-radius: .8cqh .8cqh .4cqh .4cqh;
@@ -116,18 +119,18 @@
   & .u4s-obj .q-tag small { display: block; max-height: 0; overflow: hidden; opacity: 0; font-size: var(--fs-s); color: var(--teal-2); transition: opacity .2s, max-height .2s }
   & .u4s-obj:is(:hover, :focus-visible) { transform: translateY(-.6cqh) rotate(-1deg) }
   & .u4s-obj:is(:hover, :focus-visible) .q-tag small { max-height: 3em; opacity: 1 }
-  & .o-lockers { left: 5%; top: 15%; width: 11.6% }
-  & .o-gacha { left: 11.6%; top: 56%; width: 6% }
-  & .o-books { left: 17.6%; top: 56%; width: 6.2% }
-  & .o-stamps { left: 44.4%; top: 68.4%; width: 6.4% }
-  & .o-shell { left: 51.6%; top: 70.6%; width: 5.4% }
-  & .o-photo { left: 59.2%; top: 4.6%; width: 15.4% }
-  & .o-parasol { left: 85.4%; top: 38%; width: 10.4% }
-  & .o-pool { left: 62%; top: 77%; width: 11% }
-  & .o-picnic { left: 80.6%; top: 77%; width: 14.6% }
+  & .o-lockers { left: 4.6%; top: 17%; width: 7.6% }
+  & .o-gacha { left: 17.6%; top: 64%; width: 6.2% }
+  & .o-books { left: 43%; top: 66%; width: 5.6% }
+  & .o-stamps { left: 27.6%; top: 63%; width: 6.8% }
+  & .o-shell { left: 74.4%; top: 89%; width: 4.4% }
+  & .o-photo { left: 69%; top: 5%; width: 14.6% }
+  & .o-parasol { left: 87.6%; top: 50%; width: 8.6% }
+  & .o-pool { left: 65.4%; top: 84%; width: 8.4% }
+  & .o-picnic { left: 4.6%; top: 82%; width: 12% }
 
   /* ---------- the radio: jukebox ---------- */
-  & .u4s-radio { position: absolute; left: 4.8%; top: 41%; width: 8.4% }
+  & .u4s-radio { position: absolute; left: 35.4%; top: 75%; width: 7.4% }
   & .u4s-radio .set { position: relative; display: block; width: 100% }
   & .u4s-radio .set .u4-2f img { filter: drop-shadow(.3cqh .7cqh .6cqh rgba(21, 78, 110, .32)) }
   & .u4s-radio .reels { position: absolute; left: 30%; right: 30%; top: 46%; display: flex; justify-content: space-between; pointer-events: none }
@@ -169,7 +172,7 @@
     & .u4s-tide { display: none }
     & .u4s-flap { position: static; width: 66px }
     & .u4s-back { position: static }
-    & :is(.u4s-plate, .u4s-front).q-wide, & .u4s-cork { display: none }
+    & :is(.u4s-plate, .u4s-front).q-wide, & .u4s-cork, & .u4s-shade { display: none }
     & :is(.u4s-plate, .u4s-front).q-tall { display: block; background-position: center var(--tall-y, 46%) }
     & .u4s-front.q-tall { clip-path: inset(var(--front-t, 74%) 0 0 0) }
     & .u4s-her { left: var(--her-px, 14%); top: var(--her-py, -4%); height: var(--her-ph, 210%) }

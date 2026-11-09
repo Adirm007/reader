@@ -3,6 +3,97 @@
  "repository": "Adirm007/reader",
  "commit": null,
  "files": {
+  "cafe/avatar/black_knit": {
+   "path": "assets/ui/cafe/avatar-black_knit.5bd2f66f.webp",
+   "bytes": 10918,
+   "sha256": "5bd2f66f59c3642a4ced6c8f30a1b5ea54e8eb74c8d698f2eeabb9c305e963da",
+   "w": 256,
+   "h": 256
+  },
+  "cafe/avatar/classic": {
+   "path": "assets/ui/cafe/avatar-classic.1c46c705.webp",
+   "bytes": 13294,
+   "sha256": "1c46c70516db471af0eedfc86cd09a582d91f2f7530de375c71e026ff6290035",
+   "w": 256,
+   "h": 256
+  },
+  "cafe/avatar/cold_look": {
+   "path": "assets/ui/cafe/avatar-cold_look.0fba40d3.webp",
+   "bytes": 13896,
+   "sha256": "0fba40d3985bf0b218b448602c118982493fff5e83d8da7aaca1cb7945aca274",
+   "w": 256,
+   "h": 256
+  },
+  "cafe/avatar/default": {
+   "path": "assets/ui/cafe/avatar-default.35aaa22e.webp",
+   "bytes": 15700,
+   "sha256": "35aaa22ecaaee47b85b735a19714111aec19dafe1048ba38c1ed8c034ff442ba",
+   "w": 256,
+   "h": 256
+  },
+  "cafe/avatar/dino_pajama": {
+   "path": "assets/ui/cafe/avatar-dino_pajama.1a1937e2.webp",
+   "bytes": 15156,
+   "sha256": "1a1937e2d13809e385bdc444ac756b4bbd7dfbe9f09702e67586225fbf5b9285",
+   "w": 256,
+   "h": 256
+  },
+  "cafe/avatar/jacket_work": {
+   "path": "assets/ui/cafe/avatar-jacket_work.b01e07fa.webp",
+   "bytes": 13610,
+   "sha256": "b01e07fa46e204b5668ef9a052605e5ca3daaaaa6c50ea2d418cc75b2b3ede4b",
+   "w": 256,
+   "h": 256
+  },
+  "cafe/avatar/knit_linen": {
+   "path": "assets/ui/cafe/avatar-knit_linen.612dc65b.webp",
+   "bytes": 14216,
+   "sha256": "612dc65bcb4adb992da92193a6674835cb77861f648a968e9663c79f00d4c68e",
+   "w": 256,
+   "h": 256
+  },
+  "cafe/avatar/nailong_pajama": {
+   "path": "assets/ui/cafe/avatar-nailong_pajama.ebcf80f7.webp",
+   "bytes": 14102,
+   "sha256": "ebcf80f7fcef295192792663c5bf8cd8d1286cb102741141cb0f98afa15a3e56",
+   "w": 256,
+   "h": 256
+  },
+  "cafe/avatar/victoria1": {
+   "path": "assets/ui/cafe/avatar-victoria1.56b7d5bd.webp",
+   "bytes": 13288,
+   "sha256": "56b7d5bd607a87074a91678593380efcfe86c4acb38f14507ba9452a17b80755",
+   "w": 256,
+   "h": 256
+  },
+  "cafe/avatar/western_short": {
+   "path": "assets/ui/cafe/avatar-western_short.72b24436.webp",
+   "bytes": 13582,
+   "sha256": "72b244361a6fa3822188948a7e217326277a5983875cdf64ac8ae4c24cebe57b",
+   "w": 256,
+   "h": 256
+  },
+  "cafe/avatar/white_hoodie": {
+   "path": "assets/ui/cafe/avatar-white_hoodie.bc4520f2.webp",
+   "bytes": 13826,
+   "sha256": "bc4520f2e0e803216ebba657a125b153ea09432a7c98ea463c9ac901bcd97c5e",
+   "w": 256,
+   "h": 256
+  },
+  "cafe/avatar/white_mohair": {
+   "path": "assets/ui/cafe/avatar-white_mohair.bc6417c1.webp",
+   "bytes": 16562,
+   "sha256": "bc6417c1c30ea1b71d55de8179e6f50a9d988a424869edb20b0440c135c9142e",
+   "w": 256,
+   "h": 256
+  },
+  "cafe/letter-scene": {
+   "path": "assets/ui/cafe/letter-scene.0f6535ee.webp",
+   "bytes": 33498,
+   "sha256": "0f6535ee55217b2b2f0553318924c9430d66966f2f89c661872412360aa55038",
+   "w": 1100,
+   "h": 629
+  },
   "cafe/plate-tall": {
    "path": "assets/ui/cafe/plate-tall.25eb1514.webp",
    "bytes": 114928,
@@ -240,6 +331,127 @@
    "sha256": "cb0508024307a68752a6199b24c7b985f9181c5aff55aa6010070245e26332da",
    "w": 832,
    "h": 1216
+  },
+  "font/cafe-hand": {
+   "path": "assets/ui/fonts/cafe-hand.da736697.woff2",
+   "bytes": 15908,
+   "sha256": "da7366976cd027a1ed5eabe06de524c479641a35daecad7b86dc504b86f38079"
+  },
+  "font/cafe-latin": {
+   "path": "assets/ui/fonts/cafe-latin.69d425e7.woff2",
+   "bytes": 35888,
+   "sha256": "69d425e7c825e02a96986998e1ae84247062291d9763b1869a7499380506d9d8"
+  },
+  "font/cafe-latin-italic": {
+   "path": "assets/ui/fonts/cafe-latin-italic.e50939aa.woff2",
+   "bytes": 37480,
+   "sha256": "e50939aac577a56a55a1d0815ddc89af9113f7d722cb70e2c481a036cfcbccee"
+  },
+  "font/ink-brush": {
+   "path": "assets/ui/fonts/ink-brush.06e24ea0.woff2",
+   "bytes": 18996,
+   "sha256": "06e24ea09fac2de6ffc7ef653f237061ec845de7b9cdc20ade2e8c8e02576a2b"
+  },
+  "font/summer-display": {
+   "path": "assets/ui/fonts/summer-display.f8c9c742.woff2",
+   "bytes": 14336,
+   "sha256": "f8c9c742c99a9eaa683a6bad4779ea2c84c084cc6d11ff50ff78784cd9c76418"
+  },
+  "font/summer-latin": {
+   "path": "assets/ui/fonts/summer-latin.ceb76534.woff2",
+   "bytes": 15160,
+   "sha256": "ceb76534f27953681c86ec797f013917d0751931f0590fe20e3203dd99191a71"
+  },
+  "ink/avatar/black_knit": {
+   "path": "assets/ui/ink/avatar-black_knit.4d053e9d.webp",
+   "bytes": 13610,
+   "sha256": "4d053e9d8b5b35854e881148d4f6188b435b523fd31462838d16f335f17e5df3",
+   "w": 256,
+   "h": 256
+  },
+  "ink/avatar/classic": {
+   "path": "assets/ui/ink/avatar-classic.902f5516.webp",
+   "bytes": 15898,
+   "sha256": "902f551602a5a05a9b7651e3e257cb8e5a88e56a33c2d03c5608c252b5846a25",
+   "w": 256,
+   "h": 256
+  },
+  "ink/avatar/cold_look": {
+   "path": "assets/ui/ink/avatar-cold_look.665262e2.webp",
+   "bytes": 15590,
+   "sha256": "665262e2eb630a4de0ef86ca44f8b1c3ff3f16538f59437d8519dfe2c8d3342a",
+   "w": 256,
+   "h": 256
+  },
+  "ink/avatar/default": {
+   "path": "assets/ui/ink/avatar-default.34af4a16.webp",
+   "bytes": 11522,
+   "sha256": "34af4a16731d0e4feec3a2f055ca671acd76e6890914d11105eaacd90f764452",
+   "w": 256,
+   "h": 256
+  },
+  "ink/avatar/dino_pajama": {
+   "path": "assets/ui/ink/avatar-dino_pajama.92eeac8f.webp",
+   "bytes": 15138,
+   "sha256": "92eeac8f8c79815f50ac098517165ec4b11124f0865d95d1f4e01b10158a6966",
+   "w": 256,
+   "h": 256
+  },
+  "ink/avatar/jacket_work": {
+   "path": "assets/ui/ink/avatar-jacket_work.157927cf.webp",
+   "bytes": 15090,
+   "sha256": "157927cf2749001c73e04ac0b08e0892f60a0e392fb80739e8e0ae54d1017a5f",
+   "w": 256,
+   "h": 256
+  },
+  "ink/avatar/knit_linen": {
+   "path": "assets/ui/ink/avatar-knit_linen.38da4a21.webp",
+   "bytes": 14848,
+   "sha256": "38da4a210799134a4f463cfa8db5ec42e964d72414f79e255f1bfe6c6b67e0bb",
+   "w": 256,
+   "h": 256
+  },
+  "ink/avatar/nailong_pajama": {
+   "path": "assets/ui/ink/avatar-nailong_pajama.8b631de2.webp",
+   "bytes": 14550,
+   "sha256": "8b631de28a4c5374f88a6207dbb4c6c1f4b5467634f337769958f73359acca76",
+   "w": 256,
+   "h": 256
+  },
+  "ink/avatar/victoria1": {
+   "path": "assets/ui/ink/avatar-victoria1.cbe4df5d.webp",
+   "bytes": 15936,
+   "sha256": "cbe4df5dc06a2bbad59fbf83246c742c9fc01a2d7f3b6e946828fd25cb7c061e",
+   "w": 256,
+   "h": 256
+  },
+  "ink/avatar/western_short": {
+   "path": "assets/ui/ink/avatar-western_short.8394c5e4.webp",
+   "bytes": 14372,
+   "sha256": "8394c5e4c614bd2d3d109f6490be2e51fb3b9b3e28943c5ac6cb0222ab32b207",
+   "w": 256,
+   "h": 256
+  },
+  "ink/avatar/white_hoodie": {
+   "path": "assets/ui/ink/avatar-white_hoodie.4d208f52.webp",
+   "bytes": 13002,
+   "sha256": "4d208f529fc3b307522bee66a51d302823b72cf529be16d157d4ce57e3972499",
+   "w": 256,
+   "h": 256
+  },
+  "ink/avatar/white_mohair": {
+   "path": "assets/ui/ink/avatar-white_mohair.0fdba952.webp",
+   "bytes": 15540,
+   "sha256": "0fdba952ca7fde25dd2843ad0be684cbfc59dfb54eae55c3bd7703c9c6dab45e",
+   "w": 256,
+   "h": 256
+  },
+  "ink/letter-scene": {
+   "path": "assets/ui/ink/letter-scene.a1c15143.webp",
+   "bytes": 62586,
+   "sha256": "a1c15143d5b26ec2d03af496eab4a6c5dff9ff5602368dd7bcef4d862e03684b",
+   "w": 1100,
+   "h": 629
   },
   "ink/plate-tall": {
    "path": "assets/ui/ink/plate-tall.baf9d203.webp",
@@ -500,6 +712,97 @@
    "w": 832,
    "h": 1216
   },
+  "summer/avatar/black_knit": {
+   "path": "assets/ui/summer/avatar-black_knit.c4f5ae98.webp",
+   "bytes": 11634,
+   "sha256": "c4f5ae9820cff34c8910d275c778e6041d5c85d2639e15843e86aecb26d9e8cf",
+   "w": 256,
+   "h": 256
+  },
+  "summer/avatar/classic": {
+   "path": "assets/ui/summer/avatar-classic.141b8aa3.webp",
+   "bytes": 11034,
+   "sha256": "141b8aa389e000dc8e5dbaefdcb6f64b99134630c3e6fb74536a40b056c02584",
+   "w": 256,
+   "h": 256
+  },
+  "summer/avatar/cold_look": {
+   "path": "assets/ui/summer/avatar-cold_look.2f6d164a.webp",
+   "bytes": 15684,
+   "sha256": "2f6d164ad21202913707511e510c8a7e4926ac7673fd12eef9f6cde5c0968d0b",
+   "w": 256,
+   "h": 256
+  },
+  "summer/avatar/default": {
+   "path": "assets/ui/summer/avatar-default.ff14d4af.webp",
+   "bytes": 10200,
+   "sha256": "ff14d4aff86b176aed7f4cc2186a0a0c1566bf81bd4cc341fc2511973cde99b1",
+   "w": 256,
+   "h": 256
+  },
+  "summer/avatar/dino_pajama": {
+   "path": "assets/ui/summer/avatar-dino_pajama.2fe08a15.webp",
+   "bytes": 13174,
+   "sha256": "2fe08a156fe801fa15c09c16d732792a5a801006a730accf26c90d5c96fb21e5",
+   "w": 256,
+   "h": 256
+  },
+  "summer/avatar/jacket_work": {
+   "path": "assets/ui/summer/avatar-jacket_work.562d4e87.webp",
+   "bytes": 9938,
+   "sha256": "562d4e87cd0a917af8b13140716d1f40b30573d59de2b0c8fa0836687f5c6b11",
+   "w": 256,
+   "h": 256
+  },
+  "summer/avatar/knit_linen": {
+   "path": "assets/ui/summer/avatar-knit_linen.55934907.webp",
+   "bytes": 11658,
+   "sha256": "5593490700e81db1565531d55e14d24408ebc3b82fc96878d30b5f18148bd0ec",
+   "w": 256,
+   "h": 256
+  },
+  "summer/avatar/nailong_pajama": {
+   "path": "assets/ui/summer/avatar-nailong_pajama.a16faaf2.webp",
+   "bytes": 15368,
+   "sha256": "a16faaf2929774ee4ed2e3706085d27dd35d18c1ae1833f870523e5f58dc6674",
+   "w": 256,
+   "h": 256
+  },
+  "summer/avatar/victoria1": {
+   "path": "assets/ui/summer/avatar-victoria1.a33230d5.webp",
+   "bytes": 13496,
+   "sha256": "a33230d5060bcfbcb6a2131097fc0b927908cb5599acdd7e5dfe9db6e27ed284",
+   "w": 256,
+   "h": 256
+  },
+  "summer/avatar/western_short": {
+   "path": "assets/ui/summer/avatar-western_short.e5defc6d.webp",
+   "bytes": 11760,
+   "sha256": "e5defc6da9b5602b1d46702a3a8e1e1ac34bddbaf605e406bc751052780d6e43",
+   "w": 256,
+   "h": 256
+  },
+  "summer/avatar/white_hoodie": {
+   "path": "assets/ui/summer/avatar-white_hoodie.c15c2df7.webp",
+   "bytes": 9624,
+   "sha256": "c15c2df70d3024661f933527a120ec86a28137c6b6cbf9525f58a8a71ca366fa",
+   "w": 256,
+   "h": 256
+  },
+  "summer/avatar/white_mohair": {
+   "path": "assets/ui/summer/avatar-white_mohair.79bac79b.webp",
+   "bytes": 13268,
+   "sha256": "79bac79bc2cd463ff18e3d247bca82064ad26a1cdf964ab65c7963c32a59cade",
+   "w": 256,
+   "h": 256
+  },
+  "summer/letter-scene": {
+   "path": "assets/ui/summer/letter-scene.439e0ea0.webp",
+   "bytes": 58202,
+   "sha256": "439e0ea0ddefde313ff4ccd9815566ca18d0865c31bf156eedf0e0d35f3c3826",
+   "w": 1100,
+   "h": 629
+  },
   "summer/plate-tall": {
    "path": "assets/ui/summer/plate-tall.d2dc5e2b.webp",
    "bytes": 104486,
@@ -508,9 +811,9 @@
    "h": 1216
   },
   "summer/plate-wide": {
-   "path": "assets/ui/summer/plate-wide.b8e29630.webp",
-   "bytes": 110098,
-   "sha256": "b8e29630970bd9b4a2424f6ca2331c097f96474ec15d4f93403237dc5f69cab7",
+   "path": "assets/ui/summer/plate-wide.21b035d3.webp",
+   "bytes": 124612,
+   "sha256": "21b035d382ae7c55a1e6cbed5520050907e8330d2c724dd29d71f9f34eb461ae",
    "w": 1344,
    "h": 768
   },

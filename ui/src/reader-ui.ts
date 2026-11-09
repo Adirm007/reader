@@ -192,6 +192,11 @@ export function createReaderUI() {
       }
     },
 
+    /** What a v4 light letter needs from the controller: loaded art and the theme's display faces. */
+    letterUi(theme: string, appearance: string, refresh?: () => void): { art: Record<string, string>; css: string } {
+      return { art: this.letterArt(theme, appearance, refresh), css: fontFaceCss(themeOf(theme)) };
+    },
+
     /** Art for the light letters; filled in asynchronously, returns what has already loaded. */
     letterArt(theme: string, appearance: string, refresh?: () => void): Record<string, string> {
       const t = themeOf(theme), out: Record<string, string> = {};

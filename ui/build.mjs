@@ -52,7 +52,7 @@ new Script(source, {filename: 'reader-ui.js'});
 await writeFile(resolve(here, '../source/reader-ui.js'), source);
 
 let letter = '';
-try { letter = await cssMin(await readFile(resolve(here, 'src/letter/letter.css'), 'utf8')); } catch (error) { if (error.code !== 'ENOENT') throw error; }
+try { letter = await cssMin((await readFile(resolve(here, 'src/letter/art.css'), 'utf8')) + '\n' + (await readFile(resolve(here, 'src/letter/letter.css'), 'utf8'))); } catch (error) { if (error.code !== 'ENOENT') throw error; }
 if (letter) {
   guard('reader-letter.css', letter);
   if (/\{\{|<\/style/i.test(letter)) throw Error('reader-letter.css 里有 {{ 或 </style');

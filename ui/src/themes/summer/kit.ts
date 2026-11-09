@@ -102,7 +102,7 @@ export const summer: ThemeKit = {
     + '<div class="u4s-front q-wide" data-u4-bg="summer/plate-wide"></div><div class="u4s-front q-tall" data-u4-bg="summer/plate-tall"></div><div class="u4s-cork"></div>',
   top: page => '<svg width="0" height="0" class="u4-vh" aria-hidden="true"><defs><linearGradient id="u4sxAir" x1="0" x2="1"><stop offset="0" stop-color="#c8372d"/><stop offset=".5" stop-color="#c8372d"/><stop offset=".5" stop-color="#1f6f9a"/></linearGradient><pattern id="u4sxAirP" width="16" height="6" patternUnits="userSpaceOnUse"><rect width="8" height="6" fill="#c8372d"/><rect x="8" width="8" height="6" fill="#1f6f9a"/></pattern></defs></svg>'
     + clock() + tide() + (page === 'main' ? '' : back()) + flap(),
-  main: s => note() + meter() + tickets(s) + flyer() + cooler()
+  main: s => note() + meter() + tickets(s) + flyer() + '<i class="u4s-shade" aria-hidden="true"></i>' + cooler()
     + '<nav class="u4s-objs" aria-label="邮局的墙边和海边">' + objects(s).map(o =>
       `<button type="button" class="u4s-obj ${o.cls}"${o.attrs}>${twoFrame('summer/prop-' + o.id)}<span class="q-tag"><b class="u4s-disp">${o.name}</b><small>${o.note}</small></span></button>`).join('') + '</nav>'
     + radio(s),

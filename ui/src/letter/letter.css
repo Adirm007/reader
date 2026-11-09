@@ -1,0 +1,187 @@
+/* Light letter v4: one DOM (source/letter-body.html), three media by html[data-dream-theme].
+ * Café: kraft envelope + wax seal -> cream letterhead paper. Summer: airmail envelope -> grid postcard.
+ * Ink: tall envelope with a cinnabar label -> red-ruled flower paper. Scene art and display faces arrive from
+ * the controller after it connects (--lv-scene, @font-face in the extra <style>); until then it is pure CSS.
+ * Hooks kept for letter.js and the tests: .wrapper-v9-fix .outer-collapse .flower-btn .letter-interaction
+ * .envelope-casing .text-body-royal .sig-mini #char-face-img #record-btn #menu-trigger [data-dream-dear]. */
+:root {
+  --lv-paper: #f3e8d2; --lv-ink: #2b211a; --lv-ink2: #6d5a48; --lv-acc: #9e2a20; --lv-env: #c9a274; --lv-envd: #7a5530;
+  --lv-hand: "u4 Cafe Hand", "LXGW WenKai", "Noto Serif CJK SC", serif;
+  --lv-latin: "u4 Cafe Latin", "Playfair Display", Georgia, serif;
+  --lv-bg: radial-gradient(ellipse 90% 80% at 30% 15%, #6b4429, #2a1a12 75%);
+  --lv-veil: linear-gradient(180deg, rgba(20, 10, 6, .15), rgba(20, 10, 6, .45));
+  --lv-sheet: linear-gradient(180deg, #f8efdc, #ecdcbc);
+  --lv-line: 1.95em;
+}
+:root[data-dream-theme=summer] {
+  --lv-paper: #fbf8f0; --lv-ink: #12404c; --lv-ink2: #4d6d74; --lv-acc: #c8372d; --lv-env: #fbf8f0; --lv-envd: #1f6f9a;
+  --lv-hand: "u4 Summer Display", "Smiley Sans", "Noto Sans CJK SC", sans-serif;
+  --lv-latin: "u4 Summer Latin", "Jost", "Century Gothic", sans-serif;
+  --lv-bg: linear-gradient(180deg, #8fd0ec, #e5f4f8 55%, #f3e9cf);
+  --lv-veil: linear-gradient(180deg, rgba(255, 255, 255, .05), rgba(255, 255, 255, .25));
+  --lv-sheet: linear-gradient(rgba(31, 111, 154, .1) 1px, transparent 1px) 0 0 / 22px 22px, linear-gradient(90deg, rgba(31, 111, 154, .1) 1px, transparent 1px) 0 0 / 22px 22px, #fbf8f0;
+}
+:root[data-dream-theme=ink] {
+  --lv-paper: #f6f0e2; --lv-ink: #1d1b18; --lv-ink2: #6f695f; --lv-acc: #b8322a; --lv-env: #efe6d2; --lv-envd: #8a7a5c;
+  --lv-hand: "u4 Ink Brush", "Ma Shan Zheng", "Noto Serif CJK SC", serif;
+  --lv-latin: var(--lv-hand);
+  --lv-bg: linear-gradient(180deg, #d9d6cc, #b9b6ab);
+  --lv-veil: linear-gradient(180deg, rgba(240, 236, 226, .1), rgba(240, 236, 226, .35));
+  --lv-sheet: linear-gradient(180deg, #f8f3e7, #efe6d2);
+}
+html, body { margin: 0; padding: 0; background: transparent }
+body { font: 15px/1.8 "Noto Serif CJK SC", "Source Han Serif SC", "Songti SC", "SimSun", serif; color: var(--lv-ink); -webkit-font-smoothing: antialiased }
+* { box-sizing: border-box }
+button { font: inherit; color: inherit; background: none; border: 0; padding: 0; margin: 0; cursor: pointer }
+:focus-visible { outline: 2px solid var(--lv-acc); outline-offset: 3px }
+summary { list-style: none; cursor: pointer }
+summary::-webkit-details-marker { display: none }
+.t-summer, .t-ink { display: none }
+[data-dream-theme=summer] .t-cafe, [data-dream-theme=ink] .t-cafe, [data-dream-theme=ink] .t-not-ink { display: none }
+[data-dream-theme=summer] .t-summer, [data-dream-theme=ink] .t-ink { display: inline }
+.lv { position: relative; max-width: 720px; margin: 0 auto; padding: 4px 2px 8px }
+
+/* ---------- the strip a folded letter shrinks to ---------- */
+.lv-strip { display: flex; align-items: center; gap: 8px; width: max-content; max-width: 100%; margin: 0 0 6px 10px; padding: 4px 14px 4px 8px; font-size: 13px; color: var(--lv-ink);
+  background: var(--lv-paper); box-shadow: 0 2px 6px rgba(0, 0, 0, .25); transform: rotate(-.8deg) }
+.lv-sprig { width: 14px; height: 28px; color: #6b3a3a }
+.lv-to b { font-weight: 700 }
+.lv-fold-hint { margin-left: 6px; font-size: 12px; color: var(--lv-ink2) }
+.outer-collapse:not([open]) .lv-strip { margin-bottom: 0; padding: 8px 16px 8px 10px; font-size: 14px }
+.outer-collapse:not([open]) .lv-fold-hint { font-size: 0 }
+.outer-collapse:not([open]) .lv-fold-hint::after { content: "展开"; font-size: 12px; color: var(--lv-acc) }
+[data-dream-theme=summer] .lv-strip { border-left: 6px solid; border-image: repeating-linear-gradient(180deg, #c8372d 0 6px, #fbf8f0 6px 9px, #1f6f9a 9px 15px, #fbf8f0 15px 18px) 6; transform: rotate(.6deg) }
+[data-dream-theme=summer] .lv-sprig { color: #1f6f9a }
+[data-dream-theme=ink] .lv-strip { border-top: 3px solid var(--lv-acc); transform: none }
+[data-dream-theme=ink] .lv-sprig { color: #b8322a }
+
+/* ---------- the card: the scene the letter lies in ---------- */
+.lv-card { position: relative; overflow: hidden; border-radius: 6px; padding: 20px 16px 18px; background: var(--lv-bg); box-shadow: 0 8px 22px rgba(0, 0, 0, .32) }
+.lv-scene { position: absolute; inset: 0; background: var(--lv-scene, none) center / cover no-repeat }
+.lv-scene::after { content: ""; position: absolute; inset: 0; background: var(--lv-veil) }
+.lv-desk { position: relative; display: grid; grid-template-columns: 70px minmax(0, 1fr); gap: 14px; align-items: start }
+.lv-side { display: flex; flex-direction: column; align-items: center; gap: 10px; padding-top: 6px }
+.lv-photo { position: relative; margin: 0; width: 70px; padding: 5px 5px 16px; background: #fbf7ee; box-shadow: 0 3px 8px rgba(0, 0, 0, .35); transform: rotate(-4deg) }
+#char-face-img { display: block; width: 100%; aspect-ratio: 1; object-fit: cover; object-position: 50% 20%; background: #d8cdb8; opacity: 0; transition: opacity .4s }
+#char-face-img.is-in { opacity: 1 }
+.lv-record, .lv-tab { display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 44px; min-height: 44px; color: #f3e8d2; font-size: 12px; text-shadow: 0 1px 2px rgba(0, 0, 0, .6) }
+.lv-disc { display: block; width: 40px; height: 40px; border-radius: 50%; box-shadow: 0 2px 5px rgba(0, 0, 0, .45);
+  background: radial-gradient(circle, #8e2a1f 0 7px, #111 7.5px 9px, #1b1b1b 9.5px, #0c0c0c 13px, #222 13.5px, #0f0f0f 17px, #1c1c1c 17.5px, #050505 20px) }
+#record-btn.is-playing .lv-disc { animation: lvSpin 3s linear infinite }
+.lv-tab .lv-cap { padding: 3px 8px; background: rgba(0, 0, 0, .28); border-radius: 2px }
+[data-dream-theme=summer] .lv-photo { padding: 5px; transform: rotate(3deg); background: #fbf8f0;
+  -webkit-mask: radial-gradient(circle 3px at 3px 3px, transparent 98%, #000) -3px -3px / 8px 8px; mask: radial-gradient(circle 3px at 3px 3px, transparent 98%, #000) -3px -3px / 8px 8px }
+[data-dream-theme=summer] :is(.lv-record, .lv-tab) { color: #12404c; text-shadow: none }
+[data-dream-theme=summer] .lv-disc { border-radius: 4px; width: 46px; height: 30px; background: radial-gradient(circle at 30% 50%, #fbf8f0 0 4px, #333 4.5px 8px, transparent 8.5px), radial-gradient(circle at 70% 50%, #fbf8f0 0 4px, #333 4.5px 8px, transparent 8.5px), linear-gradient(180deg, #1f6f9a, #154e6e) }
+[data-dream-theme=summer] .lv-tab .lv-cap { background: #fbf8f0; color: #1f6f9a; box-shadow: 0 1px 3px rgba(0, 0, 0, .2) }
+[data-dream-theme=ink] .lv-photo { padding: 4px; border-radius: 50%; background: #c8b892; transform: none }
+[data-dream-theme=ink] #char-face-img { border-radius: 50% }
+[data-dream-theme=ink] :is(.lv-record, .lv-tab) { color: #1d1b18; text-shadow: none }
+[data-dream-theme=ink] .lv-tab .lv-cap { background: #f6f0e2; border-left: 3px solid #b8322a }
+
+/* ---------- sealed: the envelope (ornaments are the approved v3 set, see art.css) ---------- */
+.letter-interaction:not([open]) > .envelope-casing { position: relative; display: flex; justify-content: center; padding: 14px 0 10px }
+.letter-interaction[open] > .envelope-casing { display: none }
+.lv-env { position: relative; display: block; width: min(100%, 420px); aspect-ratio: 1.62; transform: rotate(-3deg); transition: transform .35s cubic-bezier(.2, .8, .2, 1), box-shadow .35s;
+  background: var(--lv-fiber), linear-gradient(168deg, #d9b98d, #c49a68 55%, #b48756); border-radius: 2px;
+  box-shadow: 0 1px 2px rgba(40, 20, 8, .3), 16px 24px 28px -14px rgba(20, 10, 4, .65), inset 0 0 0 1px rgba(255, 240, 210, .25) }
+.envelope-casing:hover .lv-env, .envelope-casing:focus-visible .lv-env { transform: rotate(-1deg) translateY(-6px); box-shadow: 0 1px 2px rgba(40, 20, 8, .3), 20px 32px 34px -14px rgba(20, 10, 4, .6), inset 0 0 0 1px rgba(255, 240, 210, .25) }
+.lv-flap { position: absolute; left: 0; right: 0; top: 0; height: 58%; clip-path: polygon(0 0, 100% 0, 50% 100%);
+  background: var(--lv-fiber), linear-gradient(180deg, #e2c49a, #c9a171); filter: drop-shadow(0 3px 2px rgba(60, 30, 10, .35)) }
+.lv-flap::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 70%, rgba(80, 45, 15, .25)) }
+.lv-seal { position: absolute; left: 50%; top: 58%; width: 19%; aspect-ratio: 1; margin: -9.5% 0 0 -9.5%; font-size: 0; background: var(--lv-wax) center / contain no-repeat; transition: transform .35s }
+.envelope-casing:hover .lv-seal { transform: rotate(-8deg) scale(1.05) }
+.lv-stamp { position: absolute; right: 6%; top: 8%; width: 17%; aspect-ratio: .82; background: var(--lv-stamp-cafe) center / contain no-repeat; transform: rotate(4deg); filter: drop-shadow(0 1px 1px rgba(40, 20, 8, .35)) }
+.lv-stamp::before { content: ""; position: absolute; inset: 0; background: inherit; transform: translate(-34%, 6%) rotate(-10deg); filter: saturate(.6) brightness(.92); z-index: -1 }
+.lv-post { position: absolute; right: 19%; top: 9%; width: 30%; aspect-ratio: 1.6; background: var(--lv-post-cafe) center / contain no-repeat; opacity: .78; transform: rotate(-6deg); mix-blend-mode: multiply }
+.lv-addr { position: absolute; left: 9%; bottom: 14%; max-width: 58%; display: flex; align-items: baseline; gap: 6px; padding: 0 12px 3px 2px; font: 24px/1.3 var(--lv-hand); color: #3b2414;
+  border-bottom: 1px solid rgba(59, 36, 20, .4); white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.lv-addr i { font: italic 15px var(--lv-latin); color: rgba(59, 36, 20, .7) }
+.lv-hint { position: absolute; right: calc(50% - min(50%, 210px) + 7%); bottom: calc(10px + 9%); font-size: 13px; letter-spacing: .3em; color: rgba(59, 36, 20, .55); pointer-events: none; transform: rotate(-3deg) }
+.lv-hint::after { content: " ›" }
+.lv-hint i { font-style: normal }
+/* summer: airmail */
+[data-dream-theme=summer] .lv-env { transform: rotate(3deg); border: 10px solid; border-image: repeating-linear-gradient(135deg, #c8372d 0 12px, #fbf8f0 12px 17px, #1f6f9a 17px 29px, #fbf8f0 29px 34px) 10;
+  background: var(--lv-waves) 0 100% / 100% 34% no-repeat, linear-gradient(175deg, #fdfcf7, #eef3f2); box-shadow: 0 1px 2px rgba(18, 64, 76, .2), -16px 24px 30px -14px rgba(18, 64, 76, .45) }
+[data-dream-theme=summer] .envelope-casing:hover .lv-env { transform: rotate(1deg) translateY(-6px) }
+[data-dream-theme=summer] .lv-flap { left: 6%; top: 9%; right: auto; width: auto; height: auto; clip-path: none; filter: none; padding: 3px 10px; border: 1.5px solid #1f6f9a; border-radius: 2px; transform: rotate(-3deg);
+  background: rgba(255, 255, 255, .6); font: 700 12px/1.3 var(--lv-latin); letter-spacing: .14em; color: #1f6f9a }
+[data-dream-theme=summer] .lv-flap::before { content: "PAR AVION · 航空" }
+[data-dream-theme=summer] .lv-flap::after { content: none }
+[data-dream-theme=summer] .lv-seal { left: auto; right: 8%; top: auto; bottom: 14%; width: 15%; margin: 0; background-image: var(--lv-sunflower) }
+[data-dream-theme=summer] .lv-stamp { background-image: var(--lv-stamp-summer); transform: rotate(3deg) }
+[data-dream-theme=summer] .lv-stamp::before { content: none }
+[data-dream-theme=summer] .lv-post { background-image: var(--lv-post-summer); right: 20%; opacity: .75 }
+[data-dream-theme=summer] .lv-addr { color: #12404c; border-bottom-color: rgba(31, 111, 154, .45); bottom: 34% }
+[data-dream-theme=summer] .lv-addr i { color: rgba(18, 64, 76, .7) }
+[data-dream-theme=summer] .lv-hint { color: rgba(18, 64, 76, .6); transform: rotate(3deg); bottom: calc(10px + 6%) }
+/* ink: a tall envelope with a framed label, a plum sprig and the sender's seal */
+[data-dream-theme=ink] .lv-env { width: min(46%, 196px); aspect-ratio: .54; transform: rotate(-2deg);
+  background: var(--lv-ink-mountains) left bottom / 100% 22% no-repeat, var(--lv-fiber), linear-gradient(172deg, #fbf8ee, #efe9d8);
+  box-shadow: 0 1px 2px rgba(60, 70, 50, .2), 14px 22px 26px -14px rgba(40, 50, 40, .5), inset 0 0 0 6px rgba(251, 248, 238, .6), inset 0 0 0 7px rgba(96, 112, 94, .28) }
+[data-dream-theme=ink] .envelope-casing:hover .lv-env { transform: rotate(0deg) translateY(-8px) }
+[data-dream-theme=ink] .lv-env::before { content: ""; position: absolute; right: -26%; bottom: 22%; width: 80%; aspect-ratio: 160 / 120; background: var(--lv-ink-branch) center / 100% 100% no-repeat; opacity: .72; transform: scaleX(-1) rotate(-8deg); z-index: 3 }
+[data-dream-theme=ink] .lv-flap { display: none }
+[data-dream-theme=ink] .lv-stamp { right: 8%; top: 4.5%; width: 26%; aspect-ratio: 48 / 58; background-image: var(--lv-ink-stamp); transform: rotate(2deg) }
+[data-dream-theme=ink] .lv-stamp::before { content: none }
+[data-dream-theme=ink] .lv-post { left: 6%; right: auto; top: 3%; width: 44%; aspect-ratio: 78 / 44; background-image: var(--lv-ink-postmark); opacity: .5; transform: rotate(-10deg) }
+[data-dream-theme=ink] .lv-addr { left: 50%; top: 17%; bottom: auto; transform: translateX(-50%); max-width: none; flex-direction: column; align-items: center; gap: 0; padding: 16px 9px 14px; writing-mode: vertical-rl; overflow: visible;
+  font-size: 20px; letter-spacing: 6px; color: #2f3c33; background: rgba(252, 249, 240, .92); border: 1.5px solid rgba(184, 64, 44, .8); box-shadow: inset 0 0 0 3px rgba(252, 249, 240, .95), inset 0 0 0 4px rgba(184, 64, 44, .45) }
+[data-dream-theme=ink] .lv-addr b { max-height: 118px; overflow: hidden; font-weight: 400 }
+[data-dream-theme=ink] .lv-addr::after { content: "亲启"; margin-top: 12px; font-size: 15px; color: #a8402e }
+[data-dream-theme=ink] .lv-addr .t-ink { display: none }
+[data-dream-theme=ink] .lv-seal { left: 12%; top: auto; bottom: 9%; width: auto; aspect-ratio: auto; margin: 0; background: none; display: flex; flex-direction: column; align-items: center; gap: 6px }
+[data-dream-theme=ink] .lv-seal::before { content: "九十九夜梦缄"; writing-mode: vertical-rl; font: 14px/1 var(--lv-hand); letter-spacing: 3px; color: #4a5a4e }
+[data-dream-theme=ink] .lv-seal::after { content: "梦"; display: grid; place-items: center; width: 17px; height: 17px; font: 11px/1 var(--lv-hand); color: #f6ead8; background: #b8402c; border-radius: 2px }
+[data-dream-theme=ink] .lv-hint { right: auto; left: 50%; bottom: 0; transform: translateX(-50%); color: rgba(47, 60, 51, .55); letter-spacing: .4em }
+[data-dream-theme=ink] .lv-hint::after { content: none }
+
+/* ---------- opened: the paper ---------- */
+.lv-paper { position: relative; animation: lvRise .6s cubic-bezier(.2, .8, .2, 1) both }
+[data-dream-theme=summer] .lv-paper { animation-name: lvFlip; transform-origin: 50% 0 }
+[data-dream-theme=ink] .lv-paper { animation-name: lvUnroll; animation-duration: .8s }
+.lv-sheet { position: relative; padding: 20px 22px 16px; background: var(--lv-sheet); box-shadow: 0 2px 4px rgba(0, 0, 0, .2), 0 12px 22px rgba(0, 0, 0, .3) }
+:root:not([data-dream-theme=summer]):not([data-dream-theme=ink]) .lv-sheet::before { content: ""; position: absolute; inset: 7px; border: 1px solid rgba(43, 33, 26, .35); outline: 3px double rgba(43, 33, 26, .18); outline-offset: -6px; pointer-events: none }
+[data-dream-theme=summer] .lv-sheet { border: 7px solid; border-image: repeating-linear-gradient(135deg, #c8372d 0 9px, #fbf8f0 9px 13px, #1f6f9a 13px 22px, #fbf8f0 22px 26px) 7 }
+[data-dream-theme=ink] .lv-sheet { padding: 22px 26px 18px; border-left: 2px solid rgba(184, 50, 42, .55); border-right: 2px solid rgba(184, 50, 42, .55) }
+.lv-head { display: flex; justify-content: center; margin-bottom: 8px }
+.lv-shop { font: italic 700 22px/1.2 var(--lv-latin); color: var(--lv-acc); letter-spacing: .02em }
+.lv-post2 { font: 500 13px var(--lv-latin); letter-spacing: .5em; color: var(--lv-ink2); padding-bottom: 4px; border-bottom: 1px solid rgba(31, 111, 154, .3) }
+[data-dream-theme=summer] .lv-head { justify-content: flex-start }
+[data-dream-theme=ink] .lv-head { position: absolute; right: 8px; top: 18px; margin: 0 }
+.lv-title { writing-mode: vertical-rl; font: 22px/1 var(--lv-hand); letter-spacing: .3em; color: var(--lv-ink) }
+.lv-dear { margin: 0 0 8px; font: 16px/1.6 var(--lv-hand); color: var(--lv-ink) }
+[data-dream-theme=ink] .lv-dear { padding-right: 34px }
+.text-body-royal { position: relative; max-height: 24em; overflow: auto; font-size: 16px; line-height: var(--lv-line); color: var(--lv-ink); word-break: break-word; scrollbar-width: thin; overscroll-behavior: contain }
+[data-dream-theme=ink] .text-body-royal { padding-right: 34px; background: repeating-linear-gradient(180deg, transparent 0 calc(var(--lv-line) - 1px), rgba(184, 50, 42, .28) calc(var(--lv-line) - 1px) var(--lv-line)) local }
+.letter-unfolded .text-body-royal { max-height: none }
+.text-body-royal.letter-more-below { -webkit-mask: linear-gradient(180deg, #000 calc(100% - 3em), transparent); mask: linear-gradient(180deg, #000 calc(100% - 3em), transparent) }
+.letter-fold-toggle { display: block; margin: 10px auto 0; padding: 6px 14px; min-height: 36px; font: 14px var(--lv-hand); color: var(--lv-acc); border-top: 1px dashed currentColor }
+.letter-fold-toggle[hidden] { display: none }
+.lv-sign { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-top: 10px }
+.sig-mini { font: 18px/1.3 var(--lv-hand); color: var(--lv-ink) }
+.lv-chop { display: none; font-style: normal }
+[data-dream-theme=ink] .lv-chop { display: grid; place-items: center; width: 24px; height: 24px; font: 15px/1 var(--lv-hand); color: #f6ead8; background: #b8322a; border-radius: 2px }
+:root:not([data-dream-theme=summer]):not([data-dream-theme=ink]) .sig-mini::before { content: "— "; color: var(--lv-acc) }
+/* the menu tab on the paper's edge (#menu-trigger) */
+.lv-menu { position: absolute; right: -8px; top: 26px; z-index: 2; display: grid; place-items: center; min-width: 44px; min-height: 44px; padding: 6px 8px; font: 13px var(--lv-hand); letter-spacing: .2em; color: #f3e8d2; cursor: pointer;
+  writing-mode: vertical-rl; background: linear-gradient(180deg, #6e3a22, #4a2414); box-shadow: 2px 3px 6px rgba(0, 0, 0, .35) }
+[data-dream-theme=summer] .lv-menu { background: #1f6f9a; color: #fbf8f0 }
+[data-dream-theme=ink] .lv-menu { right: auto; left: -8px; top: auto; bottom: 30px; background: #2f4b6e; color: #f6ead8 }
+.lv-menu:hover { filter: brightness(1.12) }
+.order-toast { position: fixed; left: 50%; bottom: 12px; transform: translateX(-50%); padding: 6px 12px; font-size: 13px; color: #fff; background: rgba(0, 0, 0, .75); border-radius: 4px; opacity: 0; pointer-events: none; transition: opacity .2s }
+.order-toast.show { opacity: 1 }
+
+@media (max-width: 520px) {
+  .lv-card { padding: 14px 10px }
+  .lv-desk { grid-template-columns: 1fr; gap: 10px }
+  .lv-side { flex-direction: row; justify-content: flex-start; padding: 0 0 0 6px; gap: 14px }
+  .lv-photo { width: 58px }
+  .lv-sheet { padding: 16px 14px 14px }
+  .text-body-royal { font-size: 15px }
+}
+@keyframes lvSpin { to { transform: rotate(360deg) } }
+@keyframes lvRise { from { opacity: 0; transform: translateY(26px) } }
+@keyframes lvFlip { from { opacity: 0; transform: perspective(700px) rotateX(-60deg) } }
+@keyframes lvUnroll { from { clip-path: inset(0 0 100% 0) } to { clip-path: inset(0 0 0 0) } }
+@media (prefers-reduced-motion: reduce) { .lv-paper, #record-btn.is-playing .lv-disc { animation: none !important } }

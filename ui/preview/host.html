@@ -68,8 +68,8 @@
         var frame = document.createElement('iframe');
         frame.srcdoc = tpl.split('$1').join(text);
         frame.addEventListener('load', function () {
-          var doc = frame.contentDocument, fit = function () { frame.style.height = Math.max(120, doc.documentElement.scrollHeight) + 'px'; };
-          fit(); try { new ResizeObserver(fit).observe(doc.body); } catch (e) {}
+          var doc = frame.contentDocument, fit = function () { frame.style.height = Math.max(120, doc.body.scrollHeight + 8) + 'px'; };
+          fit(); try { new ResizeObserver(fit).observe(doc.documentElement); } catch (e) {} doc.addEventListener('toggle', function () { setTimeout(fit, 30); }, true); [300, 900, 2000].forEach(function (t) { setTimeout(fit, t); });
         });
         mes.appendChild(frame);
       });

@@ -102,11 +102,11 @@
       if (!on()) return s;
       var appearance = safe(function () { return getCurrentAppearance(); }, 'default');
       var custom = safe(function () { return getCurrentPersona() === 'custom'; }, false);
-      var art = UI.letterArt(s.theme || theme(), appearance, refreshLetters);
+      var ui = UI.letterUi(s.theme || theme(), appearance, refreshLetters);
       // The legacy theme sheets (#dream-ink-native-v1, #dream-theme-fix) style the old letter DOM; v4 letters carry their own.
       s.extraCss = '';
-      s.ui = { version: UI.version, art: art };
-      if (art.avatar && !custom) s.avatar = art.avatar;
+      s.ui = { version: UI.version, art: ui.art, css: ui.css };
+      if (ui.art.avatar && !custom) s.avatar = ui.art.avatar;
       return s;
     };
   }
