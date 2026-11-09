@@ -28,7 +28,7 @@
   & .u4i-scroll .band { display: block; height: 2.2cqh; margin: 0 -1.6cqh 1.6cqh; background: #8fa49c; border-top: 1px solid rgba(0, 0, 0, .1); border-bottom: 1px solid rgba(0, 0, 0, .1) }
   & .u4i-scroll .painting + .band { margin: 1.6cqh -1.6cqh 0 }
   & .u4i-scroll .painting { position: relative; flex: 1; overflow: hidden; background: var(--fiber), linear-gradient(rgba(241, 232, 212, .45), rgba(241, 232, 212, .45)), var(--u4-img, none) center / cover no-repeat, linear-gradient(180deg, #f1e8d4, #e7dcc3); box-shadow: inset 0 0 0 1px rgba(80, 60, 40, .25) }
-  & .u4i-scroll .her { position: absolute; left: 44%; bottom: -10%; height: 100%; width: auto; transform: translateX(-50%); mix-blend-mode: multiply; filter: sepia(.12) saturate(.88) contrast(1.02) }
+  & .u4i-scroll .her { position: absolute; left: 44%; bottom: -10%; height: 100%; width: auto; transform: translateX(-50%); mix-blend-mode: normal; filter: sepia(.12) saturate(.88) contrast(1.02) }
 
   /* ---------- chrome: time slip top-left, the seal top-right ---------- */
   & .u4i-slip { position: absolute; left: 16px; top: 10px; display: flex; align-items: baseline; gap: 10px; padding: 8px 14px 8px 12px; color: var(--ink-2);

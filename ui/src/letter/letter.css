@@ -79,6 +79,11 @@ summary::-webkit-details-marker { display: none }
 [data-dream-theme=ink] .lv-photo { padding: 4px; border-radius: 50%; background: #c8b892; transform: none }
 [data-dream-theme=ink] #char-face-img { border-radius: 50% }
 [data-dream-theme=ink] :is(.lv-record, .lv-tab) { color: #1d1b18; text-shadow: none }
+/* The lobby's seven-string guqin, scaled for the letter sidebar. Only its strings move while playing. */
+.lv-qin { display: none }
+[data-dream-theme=ink] .lv-qin { display: block; width: 70px; height: auto; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .45)) }
+[data-dream-theme=ink] .lv-qin .q-strings { transform-box: fill-box; transform-origin: 50% 50% }
+[data-dream-theme=ink] #record-btn.is-playing .lv-qin .q-strings { animation: lvStrings .16s linear infinite alternate }
 [data-dream-theme=ink] .lv-tab .lv-cap { background: #f6f0e2; border-left: 3px solid #b8322a }
 
 /* ---------- sealed: the envelope (ornaments are the approved v3 set, see art.css) ---------- */
@@ -182,8 +187,9 @@ summary::-webkit-details-marker { display: none }
   .lv-sheet { padding: 16px 14px 14px }
   .text-body-royal { font-size: 15px }
 }
+@keyframes lvStrings { to { transform: translateY(.45px) scaleY(1.04) } }
 @keyframes lvSpin { to { transform: rotate(360deg) } }
 @keyframes lvRise { from { opacity: 0; transform: translateY(26px) } }
 @keyframes lvFlip { from { opacity: 0; transform: perspective(700px) rotateX(-60deg) } }
 @keyframes lvUnroll { from { clip-path: inset(0 0 100% 0) } to { clip-path: inset(0 0 0 0) } }
-@media (prefers-reduced-motion: reduce) { .lv-paper, #record-btn.is-playing .lv-disc { animation: none !important } }
+@media (prefers-reduced-motion: reduce) { .lv-paper, #record-btn.is-playing .lv-disc, #record-btn.is-playing .lv-qin .q-strings { animation: none !important } }
