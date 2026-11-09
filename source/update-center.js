@@ -2,9 +2,21 @@
 (function(root){
   'use strict';
   var ORDER=['worldbook','regex','script'], RESULT='dream_reader_update_result_v1';
+  // TEMP_MAIN_CARD_43: remove this compatibility path before the main card 4.4 release.
+  // Keep the old key: the uploaded 1.2.2 loader's bundled reader restores this selection.
+  var LEGACY_CARD_UPDATES=true, LEGACY_SELECTION='dream_reader_core_selected_v1',restoring=null,legacyReplacing=false;
   function message(error){return String(error&&error.message||error);}
   function backupDetail(stored){return stored===false?'；浏览器存储空间不足，旧正则备份未保存（可从发布页重新下载旧版）':'';}
   function liveApi(){var host=root.parent||root,api=host.ReaderCore;return api&&api.isAlive!==false?api:root.__readerHostApi&&root.__readerHostApi.isAlive!==false?root.__readerHostApi:null;}
+  function legacyCard(api){return LEGACY_CARD_UPDATES&&api&&!api.scriptOwner&&api.getUpdateOptions&&(api.getUpdateOptions()||{}).hostMode!=='auto-regex'&&typeof api.replaceRuntime==='function';}
+  async function replaceLegacy(api,artifact,assertCurrent){
+    assertCurrent();
+    if(liveApi()!==api)throw Error('运行脚本已变化，请重新检查');
+    if(legacyReplacing)throw Error('读者运行脚本正在恢复或更新，请稍后重新检查');
+    var request={version:artifact.metadata.version,source:new TextDecoder('utf-8',{fatal:true}).decode(artifact.bytes),metadata:artifact.metadata,release:artifact.release};
+    var install=(api.getUpdateOptions()||{}).installRuntime;legacyReplacing=true;
+    try{if(typeof install==='function')await install(request);else await api.replaceRuntime(request);}finally{legacyReplacing=false;}
+  }
   function contextId(){var h=root.parent||root,c=h.SillyTavern&&h.SillyTavern.getContext();return JSON.stringify(c&&[c.characterId,typeof c.getCurrentChatId==='function'?c.getCurrentChatId():c.chatId]);}
   function guard(allowRetired){
     var host=root.parent||root, ctx=host.SillyTavern&&host.SillyTavern.getContext(), id=ctx&&(typeof ctx.getCurrentChatId==='function'?ctx.getCurrentChatId():ctx.chatId), character=ctx&&ctx.characterId;
@@ -72,6 +84,8 @@
         return {status:latest&&client.compare(latest.version,version)>0?'outdated':'current',selected:latest,version:version,hosted:true,runningVersion:api.runtimeVersion,pendingVersion:pending,
           detail:'读者运行脚本（自动正则托管）：当前 v'+api.runtimeVersion+(pending&&pending!==api.runtimeVersion?'；已保存 v'+pending+'，下次启动生效':'')+(latest?'；最新 v'+latest.version:'；尚无正式发布')};
       }
+      if(legacyCard(api))return {status:latest&&client.compare(latest.version,api.runtimeVersion)>0?'outdated':'current',selected:latest,version:api.runtimeVersion,legacyCard:true,
+        detail:'读者运行脚本（主卡4.3临时兼容）：当前 v'+api.runtimeVersion+(latest?'；最新 v'+latest.version:'；尚无正式发布')+'；确认后立即重载读者，播放会中断；下次启动联网恢复已确认版本'};
       return {status:'unavailable',statusLabel:'等待主卡4.4',selected:latest,version:api.runtimeVersion,
         detail:'当前为主卡4.3最新版本，因加载方式调整，后续版本无法继续在此更新。需待主卡4.4版本发布后恢复检查更新'};
     }
@@ -99,8 +113,8 @@
         }
         return {detail:'轻量正则已更新到 v'+artifact.metadata.version+backupDetail(stored)};
       }});
-      components.push({id:'script',label:hooks().hostMode==='auto-regex'?'读者运行脚本':'读者常驻脚本',check:async function(){var latest=await selected(),version=api.runtimeVersion,owner=api.scriptOwner,snapshot=null;
-        if(!owner)return hostedPlan(latest);
+      components.push({id:'script',label:hooks().hostMode==='auto-regex'||legacyCard(api)?'读者运行脚本':'读者常驻脚本',check:async function(){var latest=await selected(),version=api.runtimeVersion,owner=api.scriptOwner,snapshot=null;
+        if(!owner){if(legacyCard(api)&&api.ready!==undefined&&!await api.ready)throw Error('读者控制器未能启动');return hostedPlan(latest);}
         if(owner){if(!root.ReaderScriptInstaller||typeof root.ReaderScriptInstaller.verify!=='function')throw Error('脚本保存核对模块不可用');var verified=await root.ReaderScriptInstaller.verify({scope:owner.scope||'character'},guard());if(verified.api!==api)throw Error('运行脚本已变化，请重新检查');version=verified.version;snapshot=verified.snapshot;}
         else if(api.ready!==undefined&&!await api.ready)throw Error('读者控制器未能启动');
         return {status:latest&&client.compare(latest.version,version)>0?'outdated':'current',selected:latest,version:version,snapshot:snapshot,detail:'酒馆助手脚本库「读者常驻脚本」（'+(owner.scope==='global'?'全局':'角色')+'脚本）；当前 v'+version+(latest?'；最新 v'+latest.version:'；尚无正式发布')};},apply:async function(plan,assertCurrent){
@@ -109,6 +123,15 @@
           var installHosted=hooks().installRuntime;if(typeof installHosted!=='function')throw Error('当前读者宿主不支持保存运行版本');
           await installHosted(artifact,guard(true));
           return {detail:'已保存读者运行脚本 v'+artifact.metadata.version+'；下次启动读者时生效，当前播放保持不变'};
+        }
+        if(plan.legacyCard){
+          var artifact=await readArtifact(plan,'reader-runtime.js');assertCurrent();
+          if(legacyReplacing)throw Error('读者运行脚本正在恢复或更新，请稍后重新检查');
+          var storage=(root.parent||root).localStorage,previous=storage.getItem(LEGACY_SELECTION),saved=JSON.stringify(artifact.metadata);
+          storage.setItem(LEGACY_SELECTION,saved);
+          try{await replaceLegacy(api,artifact,assertCurrent);}
+          catch(error){if(storage.getItem(LEGACY_SELECTION)===saved){if(previous===null)storage.removeItem(LEGACY_SELECTION);else storage.setItem(LEGACY_SELECTION,previous);}throw error;}
+          return {detail:'读者运行脚本已更新至 v'+artifact.metadata.version+'；下次启动联网恢复此版本（主卡4.3临时兼容）'};
         }
         if(!root.ReaderScriptInstaller)throw Error('脚本安装模块不可用');
         var artifact=await readArtifact(plan,'reader-runtime.js');assertCurrent();
@@ -153,9 +176,24 @@
   };
   root.openDreamReleaseUpdates=root.openReaderUpdateCenter;
   root.openDreamWorldbookUpdate=root.openReaderUpdateCenter;
-  // Compatibility for older adapters. Local restoration belongs to the card host, never to
-  // the update page; startup must not check releases, download code or install a library row.
-  async function restore(){}
+  // TEMP_MAIN_CARD_43: restore only the exact manually accepted runtime, without checking
+  // latest releases or updating regexes/worldbooks. The 4.4 host keeps its local-only restore.
+  function restore(){
+    var api=liveApi();if(!legacyCard(api))return Promise.resolve();if(restoring)return restoring;
+    restoring=(async function(){
+      try{
+        var raw=(root.parent||root).localStorage.getItem(LEGACY_SELECTION);if(!raw)return;
+        var pin=JSON.parse(raw);
+        if(!pin||pin.schema!==1||pin.repository!=='Adirm007/reader'||!/^\d{1,8}(?:\.\d{1,8}){1,5}$/.test(pin.version||'')||!/^[a-f0-9]{40}$/.test(pin.sourceCommit||'')||!/^[a-f0-9]{64}$/.test(pin.manifestSha256||''))throw Error('已选择版本记录无效，请重新检查更新');
+        var client=root.DreamFixedReleaseClient;if(client.compare(pin.version,api.runtimeVersion)<=0)return;
+        var assertCurrent=guard(),artifact=await client.resource(pin,'reader-runtime.js');
+        if(artifact.metadata.repository!==pin.repository||artifact.metadata.version!==pin.version||artifact.metadata.sourceCommit!==pin.sourceCommit||artifact.metadata.manifestSha256!==pin.manifestSha256)throw Error('已选择运行脚本的固定版本来源不符');
+        if((root.parent||root).localStorage.getItem(LEGACY_SELECTION)!==raw)return;
+        await replaceLegacy(api,artifact,assertCurrent);
+      }catch(error){api.updateRestoreError='已选择版本尚未恢复：'+message(error);}
+    })().finally(function(){restoring=null;});
+    return restoring;
+  }
   root.ReaderUpdates=Object.freeze({createCoordinator:createCoordinator,components:coreComponents,restore:restore,check:function(){return instance().check().then(function(results){try{receipt(results);}catch(e){}return results;});},apply:function(progress){return instance().apply(progress);}});
   // A previously installed updater can only download the new complete fixed loader.
   // That accepted, pinned loader finishes its own first script migration on load.

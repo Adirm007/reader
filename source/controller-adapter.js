@@ -199,6 +199,9 @@
   updatePortraitImage();
   audio.addEventListener('play', function () { window.__readerHostApi?.refresh(); });
   audio.addEventListener('pause', function () { window.__readerHostApi?.refresh(); });
+  // TEMP_MAIN_CARD_43: the old auto-regex host restores its last accepted reader version.
+  if (!window.__readerHostApi?.scriptOwner && window.__readerHostApi?.getUpdateOptions?.().hostMode !== 'auto-regex')
+    setTimeout(function () { if (window.__readerControllerAlive) window.ReaderUpdates?.restore(); }, 0);
   if (window.__readerHostApi?.getUpdateOptions?.().hostMode !== 'auto-regex')
     setTimeout(function () { if (window.__readerControllerAlive) dreamWbAutoCheck(); }, 5000);
 })();
