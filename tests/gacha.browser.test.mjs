@@ -61,9 +61,9 @@ test('default standing art decodes in the lobby, appearance picker, gacha hero a
     });
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.locator('#dfb').click();
-    await decodedImg('#dlb-art');
+    await decodedImg('#dlb-overlay [data-u4-her]');
     await page.evaluate(() => ReaderCore.open('persona'));
-    await decodedImg('.dlb-pcard[data-id="default"] img');
+    await decodedImg('#dlb-overlay .q-photo[data-id="default"] img');
     await page.evaluate(() => ReaderCore.open('lobby'));
     await page.locator('#dlb-overlay [data-dlb="gacha"]').first().click();
     await page.locator('.bs-gacha').waitFor({ state: 'visible' });
