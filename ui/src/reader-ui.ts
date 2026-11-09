@@ -3,7 +3,7 @@
  * renderer used, so the existing dlbClick chain performs all actions, prices and state changes. The
  * switch layer (source/reader-ui-switch.js) decides when this layer draws and feeds it the state. */
 import type { Fragments, Hooks, LobbyState, Theme, ThemeKit } from './core/types';
-import { hydrate, hydrateHover, load, has } from './core/assets';
+import { hydrate, hydrateHover, load, has, urls } from './core/assets';
 import { fontFaceCss } from './core/fonts';
 import { esc, nameOf, priceOf, bookText, setText, each, pad2 } from './core/dom';
 import baseCss from './base.css';
@@ -292,6 +292,16 @@ export function createReaderUI() {
     /** What a v4 light letter needs from the controller: loaded art and the theme's display faces. */
     letterUi(theme: string, appearance: string, refresh?: () => void): { art: Record<string, string>; css: string } {
       return { art: this.letterArt(theme, appearance, refresh), css: fontFaceCss(themeOf(theme)) };
+    },
+
+    /** Fate cards share the lobby's manifest and preferred image source, including the current outfit. */
+    gachaArt(theme: string, appearance: string): { figure?: string; backdrop?: string } {
+      const t = themeOf(theme);
+      const art = (kind: string) => {
+        const wanted = `${t}/${kind}/${appearance}`;
+        return urls(has(wanted) ? wanted : `${t}/${kind}/default`)[0];
+      };
+      return { figure: art('standing'), backdrop: art('avatar') };
     },
 
     /** Art for the light letters; filled in asynchronously, returns what has already loaded. */

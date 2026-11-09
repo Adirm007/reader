@@ -70,7 +70,9 @@ summary::-webkit-details-marker { display: none }
 #record-btn.is-playing .lv-disc { animation: lvSpin 3s linear infinite }
 .lv-tab .lv-cap { padding: 3px 8px; background: rgba(0, 0, 0, .28); border-radius: 2px }
 [data-dream-theme=summer] .lv-photo { padding: 5px; transform: rotate(3deg); background: #fbf8f0;
-  -webkit-mask: radial-gradient(circle 3px at 3px 3px, transparent 98%, #000) -3px -3px / 8px 8px; mask: radial-gradient(circle 3px at 3px 3px, transparent 98%, #000) -3px -3px / 8px 8px }
+  /* Keep the stamp perforations on the 5px paper border and the portrait fully opaque. */
+  -webkit-mask: linear-gradient(#000 0 0) center / calc(100% - 10px) calc(100% - 10px) no-repeat, radial-gradient(circle 3px at 3px 3px, transparent 98%, #000) -3px -3px / 8px 8px;
+  mask: linear-gradient(#000 0 0) center / calc(100% - 10px) calc(100% - 10px) no-repeat, radial-gradient(circle 3px at 3px 3px, transparent 98%, #000) -3px -3px / 8px 8px }
 [data-dream-theme=summer] :is(.lv-record, .lv-tab) { color: #12404c; text-shadow: none }
 [data-dream-theme=summer] .lv-disc { border-radius: 4px; width: 46px; height: 30px; background: radial-gradient(circle at 30% 50%, #fbf8f0 0 4px, #333 4.5px 8px, transparent 8.5px), radial-gradient(circle at 70% 50%, #fbf8f0 0 4px, #333 4.5px 8px, transparent 8.5px), linear-gradient(180deg, #1f6f9a, #154e6e) }
 [data-dream-theme=summer] .lv-tab .lv-cap { background: #fbf8f0; color: #1f6f9a; box-shadow: 0 1px 3px rgba(0, 0, 0, .2) }

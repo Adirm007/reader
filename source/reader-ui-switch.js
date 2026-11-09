@@ -10,7 +10,8 @@
   var legacy = {
     cafe: cfSkeleton, summer: sxSkeleton, ink: jnSkeleton, ensure: dlbEnsureCss, top: dlbTopHTML, main: dlbMainHTML,
     go: dlbGo, page: dlbPageHTML, clock: dlbClockSync, fp: dlbSyncFpDom, juke: dlbJukeSync, badges: dlbBadges, apply: applyVisualTheme,
-    rhythm: typeof handleRhythm === 'function' ? handleRhythm : null
+    rhythm: typeof handleRhythm === 'function' ? handleRhythm : null,
+    gachaArt: typeof dreamGachaArt === 'function' ? dreamGachaArt : null
   };
   function on() { try { return UI.enabled(window.localStorage); } catch (e) { return true; } }
   function theme() { try { var t = getVisualTheme(); return t === 'summer' || t === 'ink' ? t : 'cafe'; } catch (e) { return 'cafe'; } }
@@ -71,6 +72,16 @@
     return f;
   }
   var hooks = { state: state };
+  if (legacy.gachaArt) {
+    dreamGachaArt = function () {
+      var art = legacy.gachaArt.apply(this, arguments);
+      if (!on() || typeof UI.gachaArt !== 'function') return art;
+      var current = UI.gachaArt(theme(), safe(function () { return getCurrentAppearance(); }, 'default'));
+      if (current.figure) art.figure = current.figure;
+      if (current.backdrop && !safe(function () { return getCurrentPersona() === 'custom'; }, false)) art.backdrop = current.backdrop;
+      return art;
+    };
+  }
   function legacySkeleton(t) { return (legacy[t] || legacy.cafe)(); }
   // Swap the whole overlay content between the new skeleton and the legacy one (same overlay node, so its
   // timer, listeners and ownership stay). What openDreamLobby does for a legacy skeleton is repeated here.

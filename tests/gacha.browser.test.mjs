@@ -9,6 +9,7 @@ import { build } from '../tools/build_core.mjs';
 let chromium;
 try { ({ chromium } = createRequire(new URL('../../_tools/shot/package.json', import.meta.url))('playwright-core')); } catch {}
 const chrome = process.env.CHROME || 'C:/Program Files/Google/Chrome/Application/chrome.exe';
+const uiAssets = JSON.parse(readFileSync(new URL('../ui/assets.json', import.meta.url), 'utf8')).files;
 
 // Synthetic catalogue and model replies only: no real database, cover or paid model request.
 const fixture = `<!doctype html><html><body><div id="chat"></div><textarea id="send_textarea"></textarea><button id="send_but">发送</button><script>
@@ -67,6 +68,7 @@ test('default standing art decodes in the lobby, appearance picker, gacha hero a
     await page.evaluate(() => ReaderCore.open('lobby'));
     await page.locator('#dlb-overlay [data-dlb="gacha"]').first().click();
     await page.locator('.bs-gacha').waitFor({ state: 'visible' });
+    assert.ok((await page.locator('.bs-gacha').evaluate(el => el.style.getPropertyValue('--gc-figure'))).includes(uiAssets['cafe/standing/default'].path), 'gacha must use the same new standing art as the lobby, not merely a decodable legacy image');
     assert.deepEqual(await decodedBackground('.gc-hero-fig'), { present: true, decoded: true }, 'the actual default PNG must render through the gacha CSS image variable');
     await page.locator('.bs-gacha .gc-theme', { hasText: '奇幻' }).first().click();
     const cast = page.locator('.bs-gacha .gc-actions button', { hasText: '撒网' });
@@ -77,7 +79,23 @@ test('default standing art decodes in the lobby, appearance picker, gacha hero a
       mkdirSync(process.env.READER_QA_DIR, { recursive: true });
       await page.screenshot({ path: join(process.env.READER_QA_DIR, 'default-art-casting.png') });
     }
-    await page.evaluate(() => {window.__releaseArtSearch?.(); runtimeModule.stop();});
+    await page.evaluate(() => {window.__releaseArtSearch?.(); document.getElementById('reader-core-controller').contentWindow.ReaderGacha.close(); ReaderCore.close();});
+    for (const [theme, appearance] of [['summer', 'classic'], ['ink', 'white_hoodie'], ['cafe', 'black_knit']]) {
+      await page.evaluate(({theme, appearance}) => {
+        const c = document.getElementById('reader-core-controller').contentWindow;
+        c.applyVisualTheme(theme, false); c.setAppearance(appearance); ReaderCore.open('lobby');
+      }, {theme, appearance});
+      await decodedImg('#dlb-overlay [data-u4-her]');
+      await page.locator('#dlb-overlay [data-dlb="gacha"]').first().click();
+      await page.locator('.bs-gacha').waitFor({ state: 'visible' });
+      const art = await page.locator('.bs-gacha').evaluate(el => ({theme: el.dataset.theme, figure: el.style.getPropertyValue('--gc-figure'), host: el.style.getPropertyValue('--gc-host'), backdrop: el.style.getPropertyValue('--gc-stage')}));
+      assert.equal(art.theme, theme);
+      assert.ok(art.figure.includes(uiAssets[`${theme}/standing/${appearance}`].path), `${theme}: selected outfit uses the new standing art`);
+      assert.equal(art.host, art.figure, `${theme}: casting uses the same new standing art`);
+      assert.ok(art.backdrop.includes(uiAssets[`${theme}/avatar/${appearance}`].path), `${theme}: stage follows the new avatar`);
+      await page.evaluate(() => {document.getElementById('reader-core-controller').contentWindow.ReaderGacha.close(); ReaderCore.close();});
+    }
+    await page.evaluate(() => runtimeModule.stop());
   } finally {
     await browser.close();
     server.close();
