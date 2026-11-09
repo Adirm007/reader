@@ -78,7 +78,7 @@ test('the actual card build keeps playback during a manual save and restores the
         playing: !__beforeAudio.paused, count: document.querySelectorAll('#reader-core-controller').length };
     }, artifact);
     assert.deepEqual(saved, { pending: true, state: { runningVersion: '2.0', pendingVersion: '3.0' }, sameApi: true, sameFrame: true, sameAudio: true, playing: true, count: 1 });
-    await page.waitForTimeout(200);
+    await page.waitForFunction(() => !__beforeAudio.paused && __beforeAudio.currentTime > 0);
     assert.equal(await page.evaluate(() => !__beforeAudio.paused && __beforeAudio.currentTime > 0), true);
     await page.reload();
     await page.evaluate(async () => { window.entry = await import('/card.js'); await entry.start({ base: location.origin }); });

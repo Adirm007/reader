@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "name": "dream-reader-render",
-  "version": "2026.11.09.1",
+  "version": "2026.11.10.1",
   "license": "LICENSE",
   "files": {
     "reader.css": {
@@ -15,19 +15,19 @@
       "sha256": "8197775e596d03a57b7488289efff07e8992398643ef4dff6cddc089d2942d5d"
     },
     "reader.js": {
-      "path": "dist/reader.4105ded00452.js",
-      "bytes": 1280687,
-      "sha256": "4105ded0045256f700b3bd25e989428b03979dd3db1f5260605e97324948646a"
+      "path": "dist/reader.eb46aca28b31.js",
+      "bytes": 1284538,
+      "sha256": "eb46aca28b312ee3cbaf600c18b3bb9290e962399eb38f246bd14d93cd5e1118"
     },
     "reader-runtime.js": {
       "path": "dist/reader-runtime.js",
-      "bytes": 1447305,
-      "sha256": "1b24a9dd4cfc6674dfdc956d5087e21ada395afcdd98982c6423ab026b613407"
+      "bytes": 1451514,
+      "sha256": "f0a818a094df5c44699243bab175088e7d4c9e9a1cbc86b604256c3ac934ccc7"
     },
     "reader-letter.json": {
       "path": "regex/读者对话渲染-脚本版.json",
       "bytes": 50341,
-      "sha256": "74c9ca63da7046f9ad0d0eb297623cdcb2afde8c630047b3f2213dfbbe0df6ed"
+      "sha256": "0f81448b90c20aff85d0623343bd0f9f2852db008625ec4a39c3d45aa8acb9ae"
     }
   }
 }

@@ -19,7 +19,7 @@ async function browserFixture(run) {
     release: { repository: 'Adirm007/reader', version: '2.0', distributionCommit: 'c'.repeat(40), digest: 'd'.repeat(64) },
   };
   const fixture = `<!doctype html><html><body><div id="chat"></div><textarea id="send_textarea"></textarea><button id="send_but">发送</button><script>
-window.__calls=[];window.__artifact=${JSON.stringify(artifact)};
+window.__calls=[];window.__restoreJobs=[];window.__artifact=${JSON.stringify(artifact)};
 window.__ctx={chatId:'a',characterId:0,name1:'测试作家',name2:'夜梦',characters:[{avatar:'reader.png'}],chatMetadata:{variables:{系统核心:'九十九夜梦'}},chat:[{mes:'opening',swipe_id:0}],saveMetadata:()=>Promise.resolve()};
 window.SillyTavern={getContext:()=>__ctx};window.__data={stat_data:{命运点数:10000,主角:{状态效果:{}}}};
 const forbidden=name=>()=>{__calls.push(name);throw Error('legacy runtime must not change '+name);};
@@ -31,6 +31,8 @@ window.ReaderCoreConfig={bookseaBase:location.origin+'/'};
 // The ready event fires synchronously before the adapter's zero-delay restore timer.
 document.addEventListener('reader:ready',()=>{
   const controller=document.getElementById('reader-core-controller').contentWindow;
+  const updates=controller.ReaderUpdates;
+  controller.ReaderUpdates={...updates,restore:()=>{const job=updates.restore();__restoreJobs.push(job);return job;}};
   controller.DreamFixedReleaseClient={...controller.DreamFixedReleaseClient,
     latest:async repository=>{__calls.push({kind:'latest',repository});return {repository,version:'2.0'};},
     resource:async(selected,name)=>{
@@ -87,6 +89,9 @@ test('legacy auto-regex manually updates the real runtime and restores only its 
     await page.reload();
     await start();
     await page.waitForFunction(() => window.ReaderCore?.runtimeVersion === '2.0');
+    // start() exposes the candidate API before its controller is ready. Await the
+    // actual timer-driven restoration, including the original module's ownership transfer.
+    await page.evaluate(() => __restoreJobs[0]);
     assert.deepEqual(await page.evaluate(() => ({ count: document.querySelectorAll('#reader-core-controller').length, calls: __calls })),
       { count: 1, calls: [{ kind: 'resource', selected: artifact.metadata, name: 'reader-runtime.js' }] });
     assert.deepEqual(await page.evaluate(() => {

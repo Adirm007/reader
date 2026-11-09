@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "name": "dream-reader-render-fixed",
-  "version": "2026.11.09.1",
+  "version": "2026.11.10.1",
   "license": "LICENSE",
   "files": {
     "reader.css": {
@@ -15,19 +15,19 @@
       "sha256": "8197775e596d03a57b7488289efff07e8992398643ef4dff6cddc089d2942d5d"
     },
     "reader.js": {
-      "path": "dist/reader.4105ded00452.js",
-      "bytes": 1280687,
-      "sha256": "4105ded0045256f700b3bd25e989428b03979dd3db1f5260605e97324948646a"
+      "path": "dist/reader.eb46aca28b31.js",
+      "bytes": 1284538,
+      "sha256": "eb46aca28b312ee3cbaf600c18b3bb9290e962399eb38f246bd14d93cd5e1118"
     },
     "reader-runtime.js": {
       "path": "dist/reader-runtime.js",
-      "bytes": 1447305,
-      "sha256": "1b24a9dd4cfc6674dfdc956d5087e21ada395afcdd98982c6423ab026b613407"
+      "bytes": 1451514,
+      "sha256": "f0a818a094df5c44699243bab175088e7d4c9e9a1cbc86b604256c3ac934ccc7"
     },
     "reader-letter.json": {
       "path": "regex/读者对话渲染-脚本版.json",
       "bytes": 50341,
-      "sha256": "74c9ca63da7046f9ad0d0eb297623cdcb2afde8c630047b3f2213dfbbe0df6ed"
+      "sha256": "0f81448b90c20aff85d0623343bd0f9f2852db008625ec4a39c3d45aa8acb9ae"
     }
   },
   "installMode": "script",
@@ -107,10 +107,20 @@
       "bytes": 2057083,
       "sha256": "c5c23a1a624c2e742ed8250ebf55174151f6353e3fdc09ecd6fce248a84bf0e3"
     },
+    "gallery/index.json": {
+      "path": "gallery/index.json",
+      "bytes": 3179,
+      "sha256": "85828dcea9d801ae5457b714140773a0c4acaa220a999438bd42e2047c56480d"
+    },
     "gallery/INKWELL ASCENT.png": {
       "path": "gallery/INKWELL ASCENT.png",
       "bytes": 1663627,
       "sha256": "95438a4d27e08288d11d33d97a96ac0ab4aa98bdaee4ac12a901b715a3894d61"
+    },
+    "gallery/joker.png": {
+      "path": "gallery/joker.png",
+      "bytes": 1662244,
+      "sha256": "a1b96db50eaf5c96459ad866b317ea2056d0a3ce2583ac0d01684911f244ee9f"
     },
     "gallery/KEY TURN.png": {
       "path": "gallery/KEY TURN.png",
@@ -121,6 +131,11 @@
       "path": "gallery/KOI GATE.png",
       "bytes": 1651660,
       "sha256": "cd78a5e719b47209e9640d8df7ac46cdf4a69eb9830667fa8b07edd4ab97426c"
+    },
+    "gallery/links.txt": {
+      "path": "gallery/links.txt",
+      "bytes": 208,
+      "sha256": "3ac52658a8d7847e2d6129004aec183ec1d98fc1951eb61b4d46ad9f542d77d5"
     },
     "gallery/LOOP.png": {
       "path": "gallery/LOOP.png",
@@ -201,21 +216,6 @@
       "path": "gallery/T.png",
       "bytes": 1753810,
       "sha256": "9822d2081d539b87b7322f5f6a304ac3a40ba8053b7d4f58766cf357dd05b2f4"
-    },
-    "gallery/index.json": {
-      "path": "gallery/index.json",
-      "bytes": 3179,
-      "sha256": "85828dcea9d801ae5457b714140773a0c4acaa220a999438bd42e2047c56480d"
-    },
-    "gallery/joker.png": {
-      "path": "gallery/joker.png",
-      "bytes": 1662244,
-      "sha256": "a1b96db50eaf5c96459ad866b317ea2056d0a3ce2583ac0d01684911f244ee9f"
-    },
-    "gallery/links.txt": {
-      "path": "gallery/links.txt",
-      "bytes": 208,
-      "sha256": "3ac52658a8d7847e2d6129004aec183ec1d98fc1951eb61b4d46ad9f542d77d5"
     },
     "gallery/♠J.png": {
       "path": "gallery/♠J.png",
@@ -787,25 +787,20 @@
       "bytes": 1766003,
       "sha256": "9021ef7df30a8024d871e4bfec78a7d5321db3db0725452b52ad003161fecd87"
     },
-    "personas/README.md": {
-      "path": "personas/README.md",
-      "bytes": 1279,
-      "sha256": "db1eb1b239b1cce25edf720b5fb9ca0f10d0eabaf631d65d7e0962f326b60b70"
-    },
     "personas/index.json": {
       "path": "personas/index.json",
       "bytes": 513,
       "sha256": "e3c7dfad02919881f2c31fe435655af2db3092114b24ba30b09c58474247bc65"
     },
+    "personas/README.md": {
+      "path": "personas/README.md",
+      "bytes": 1279,
+      "sha256": "db1eb1b239b1cce25edf720b5fb9ca0f10d0eabaf631d65d7e0962f326b60b70"
+    },
     "personas/缀诗的少女.json": {
       "path": "personas/缀诗的少女.json",
       "bytes": 5946,
       "sha256": "46d3568dac97f4a86629a75aa726b8c93136e1ec0e3da1c76399c5b106ce142c"
-    },
-    "worldbook/README.md": {
-      "path": "worldbook/README.md",
-      "bytes": 1544,
-      "sha256": "590bff840d9de2f6299b0b4195e425e3f8b2d6facff740e28371e58f9ad4c7a3"
     },
     "worldbook/entries.json": {
       "path": "worldbook/entries.json",
@@ -821,6 +816,11 @@
       "path": "worldbook/notes.txt",
       "bytes": 2036,
       "sha256": "37781ed1d6e30e31826e0aa4e98afe956e6f7d1cf3187f4f3ca3f1e9deb5a809"
+    },
+    "worldbook/README.md": {
+      "path": "worldbook/README.md",
+      "bytes": 1544,
+      "sha256": "590bff840d9de2f6299b0b4195e425e3f8b2d6facff740e28371e58f9ad4c7a3"
     },
     "worldbook/读者核心本体.txt": {
       "path": "worldbook/读者核心本体.txt",

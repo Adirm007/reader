@@ -182,7 +182,7 @@ test('every lobby theme and the paper menu open the gacha directly; the old five
     /var gch=e\.target\.closest\('\[data-dream-gacha\]'\);if\(gch\)\{dreamOpenGacha\(\);return;\}var t=e\.target\.closest\('\[data-order\]'\)/,
     /if\(act==='gacha'\)\{dreamOpenGacha\(\);return;\}/]) assert.match(legacy, pattern);
   assert.match(body, /<li class="m-item" onclick="dreamOpenGacha\(\)"><span>命运抽卡<\/span><span class="m-cost">200FP<\/span><\/li>/);
-  assert.match(legacy, /\['gacha','命运抽卡','[^']+'\]\n\];/, 'the independent API settings list a 命运抽卡 route');
+  assert.match(legacy, /\['gacha','命运抽卡','[^']+'\]\r?\n\];/, 'the independent API settings list a 命运抽卡 route');
 });
 
 test('the full-regex build carries the same gacha after its transactions', async () => {
