@@ -2,9 +2,6 @@
  * itself would print or write: the chalkboard, the reservation book, a till receipt, a table tent. */
 import type { LobbyState, ThemeKit } from '../../core/types';
 import { act, esc, twoFrame, priceOf, nameOf, bookText, each } from '../../core/dom';
-import lobbyCss from './lobby.css';
-import pagesCss from './pages.css';
-import popupsCss from './popups.css';
 import envelopeCss from './envelope.css';
 
 const WEEK = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
@@ -114,7 +111,7 @@ function menu(s: LobbyState): string {
 /* The two things that do stand on the counter besides the book and the till. */
 function counterProps(s: LobbyState): string {
   return `<button type="button" class="u4c-obj o-jar"${act('prayer')}>${twoFrame('cafe/prop-jar')}<span class="q-tag"><b>祷诗</b><small>抽一张诗笺 · 免费</small></span></button>`
-    + `<button type="button" class="u4c-obj o-fortune"${act('gacha')}>${twoFrame('cafe/prop-fortune')}<span class="q-tag"><b>命运抽卡</b><small>${s.gachaPrice ? esc(s.gachaPrice) + ' FP 一张' : '占卜卡匣'}</small></span></button>`;
+    + `<button type="button" class="u4c-obj o-fortune"${act('gacha')}>${twoFrame('cafe/prop-fortune')}<span class="q-tag"><b>命运抽卡</b><small>${s.gachaPrice ? '<span class="mini">' + esc(s.gachaPrice) + '</span> FP 一张' : '占卜卡匣'}</small></span></button>`;
 }
 
 function juke(s: LobbyState): string {
@@ -136,7 +133,6 @@ function greeting(): string {
 
 export const cafe: ThemeKit = {
   id: 'cafe',
-  css: lobbyCss + pagesCss + popupsCss,
   envelopeCss,
   scene: s => '<div class="u4c-plate q-wide" data-u4-bg="cafe/plate-wide"></div><div class="u4c-plate q-tall" data-u4-bg="cafe/plate-tall"></div>'
     + '<div class="u4c-rain"></div><div class="u4c-pool"></div>'
@@ -165,7 +161,8 @@ export const cafe: ThemeKit = {
       eggs: { prop: 'cafe/prop-drawers', title: '彩蛋服务台', lede: '后场的药柜。一个抽屉放一样东西，拉开就能换。' },
     },
     words: { who: '她是谁', look: '今天穿哪一身', address: '称呼', custom: '自己写一个', shelf: '书架', services: '可以点的', pair: '主人格与镜中人',
-      sea: '书海迷宫', toggles: '小开关', desk: '管理台', tools: '唱片与信纸' },
+      sea: '书海迷宫', toggles: '小开关', desk: '管理台', tools: '唱片与信纸',
+      receiptShop: 'CAFÉ NOCTURNE', receiptVerb: '盖章下单', receiptCancel: '再想想' },
     ornament: () => '<i class="q-clip" aria-hidden="true"></i>',
   },
   sync(root, kind, s) {

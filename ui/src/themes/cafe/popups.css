@@ -117,8 +117,43 @@ html[data-u4-theme="cafe"] {
   & #chess-overlay .chess-board { box-shadow: 0 0 0 6px #2a170c, 0 0 0 8px #b8894a, 0 10px 24px rgba(0, 0, 0, .6) !important }
   & #chess-overlay .chess-close { color: var(--pc-chalk2) !important }
 
+  /* the persona studio's footer bar keeps the sheet's own colour */
+  & #cp-overlay .cp-actions { background: #f3e8d2 !important; border-top: 1px solid rgba(43, 33, 26, .3) !important; box-shadow: none !important }
+  & #cp-overlay .cp-status { color: inherit !important; opacity: .75 }
+
   /* the legacy panels are centred with width:100%; give the cloth a table's size */
   & #chess-overlay .chess-select { width: min(600px, 92vw) !important; padding: 34px 28px 30px !important }
   & #chess-overlay .chess-game { width: auto !important; max-width: 96vw; padding: 52px 26px 22px !important }
   & #chess-overlay .chess-close { top: 10px !important; right: 12px !important }
+
+  /* ---------- the draw: the card box from the counter opens on the baize under the lamp ---------- */
+  & .bs-gacha .gc-stage { --gc-art: #e0be7a; background: radial-gradient(ellipse 60% 42% at 50% 26%, rgba(242, 180, 90, .2), transparent 70%), radial-gradient(ellipse at 50% 62%, #22382b, #101a14 70%, #070b09) !important }
+  & .bs-gacha .gc-stage-sky:after { display: none }
+  & .bs-gacha .gc-stage-ring { color: #c9a26a; opacity: .26 }
+  & .bs-gacha .gc-tome { width: 196px; height: 138px; margin: -69px 0 0 -98px; perspective: 900px }
+  & .bs-gacha .gc-tome-block { inset: 6px; border-radius: 3px; background: radial-gradient(ellipse at 50% 40%, #8e2a22, #4a120c 75%); box-shadow: inset 0 0 0 2px #2a170c, 0 16px 30px rgba(0, 0, 0, .6) }
+  & .bs-gacha .gc-tome-page { inset: 16px 34px; border-radius: 3px; opacity: 1; background: repeating-linear-gradient(45deg, rgba(240, 216, 154, .2) 0 2px, transparent 2px 7px), #5a2418; box-shadow: inset 0 0 0 2px #e0be7a, 0 2px 4px rgba(0, 0, 0, .5) }
+  & .bs-gacha .gc-tome-page.p2 { inset: 20px 40px 12px; transform: rotate(-3deg) }
+  & .bs-gacha .gc-tome-page.p3 { inset: 24px 46px 8px; transform: rotate(4deg) }
+  & .bs-gacha .gc-tome-cover { transform-origin: 50% 0 }
+  & .bs-gacha .gc-tome-face { border-radius: 6px; background: repeating-linear-gradient(90deg, rgba(0, 0, 0, .07) 0 3px, transparent 3px 11px), linear-gradient(180deg, #7a4f30, #4a2d1a 60%, #2e1b0f);
+    box-shadow: inset 0 0 0 3px #2a170c, inset 0 0 0 5px rgba(224, 190, 122, .45), 0 16px 30px rgba(0, 0, 0, .6) !important }
+  & .bs-gacha .gc-tome-face svg { display: none }
+  & .bs-gacha .gc-tome-face::before { content: ""; position: absolute; left: 50%; top: 50%; width: 34px; height: 42px; margin: -21px 0 0 -17px; border-radius: 4px;
+    background: radial-gradient(circle at 50% 40%, #2a170c 0 3.5px, transparent 4px), linear-gradient(180deg, #f1d89a, #b8894a 55%, #6e4e26); box-shadow: 0 2px 3px rgba(0, 0, 0, .5) }
+  & .bs-gacha .gc-tome-inside { border-radius: 6px; background: radial-gradient(ellipse at 50% 40%, #8e2a22, #5a1610 70%); box-shadow: inset 0 0 0 3px #2a170c }
+  & .bs-gacha .gc-tome-inside::before { display: none }
+  & .bs-gacha .gc-stage.is-open .gc-tome-cover { transform: rotateX(112deg) }
+  & .bs-gacha .gc-stage.is-open .gc-tome-page { animation: none }
+  & .bs-gacha .gc-beam { background: linear-gradient(0deg, rgba(255, 214, 150, .85), rgba(242, 180, 90, .35) 30%, transparent) }
+  @media (prefers-reduced-motion: no-preference) {
+    & .bs-gacha .gc-stage.is-cards .gc-card { animation-name: u4cfDeal }
+  }
+
+  /* ---------- toasts: a slip torn off the till ---------- */
+  & #dream-p-toast { padding: 12px 18px 16px !important; color: #2b2722 !important; background: linear-gradient(180deg, #fbf8f1, #efeadf) !important; border: 0 !important; border-radius: 0 !important;
+    font: 14px/1.5 "Nimbus Mono PS", "DejaVu Sans Mono", "Courier New", monospace !important; box-shadow: none !important; filter: drop-shadow(0 8px 14px rgba(0, 0, 0, .45));
+    clip-path: polygon(0 0, 100% 0, 100% calc(100% - 6px), 95% 100%, 90% calc(100% - 6px), 85% 100%, 80% calc(100% - 6px), 75% 100%, 70% calc(100% - 6px), 65% 100%, 60% calc(100% - 6px), 55% 100%, 50% calc(100% - 6px), 45% 100%, 40% calc(100% - 6px), 35% 100%, 30% calc(100% - 6px), 25% 100%, 20% calc(100% - 6px), 15% 100%, 10% calc(100% - 6px), 5% 100%, 0 calc(100% - 6px)) }
 }
+
+@keyframes u4cfDeal { from { opacity: 0; transform: translateY(28vh) rotate(-18deg) scale(.55) } 60% { opacity: 1 } to { opacity: 1; transform: none } }

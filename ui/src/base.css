@@ -3,6 +3,8 @@
 #dlb-overlay.u4-on { background: #0b0807 }
 
 #u4r {
+  /* invisible (but still there to click) until the theme sheet is unpacked; the sheet ends with #u4r{opacity:1} */
+  opacity: 0; transition: opacity .2s;
   position: absolute; inset: 0; overflow: hidden; container: u4 / size;
   font: 15px/1.55 var(--u4-body); color: var(--u4-ink, #2b211a); text-align: left; letter-spacing: 0;
   -webkit-font-smoothing: antialiased; -webkit-text-size-adjust: 100%;
@@ -45,8 +47,22 @@
   & button:is(:hover, :focus-visible) .u4-2f.has-f2 .f2 { opacity: 1 }
   & button:is(:hover, :focus-visible) .u4-2f.has-f2 .f1 { opacity: 0 }
 
+  /* the order slip (ReaderUI.confirmOrder): each theme draws the slip itself */
+  & .u4-rc { position: absolute; inset: 0; z-index: 9; display: grid; place-items: center; padding: 16px; background: rgba(8, 5, 3, .42); animation: u4rcIn .2s ease-out }
+  & .u4-rc .q-slip { position: relative; width: min(340px, 100%) }
+  & .u4-rc .q-lines { display: grid; grid-template-columns: auto 1fr; gap: 4px 16px; margin: 0 }
+  & .u4-rc dt { margin: 0 }
+  & .u4-rc dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums }
+  & .u4-rc .q-acts { display: flex; gap: 10px; justify-content: flex-end; align-items: center }
+  & .u4-rc .q-acts button { min-height: 44px; padding: 0 16px }
+  & .u4-rc .q-mark { position: absolute; pointer-events: none; opacity: 0 }
+  & .u4-rc.is-no { animation: u4rcOut .16s ease-in forwards }
+
   &.u4-reduce *, &.u4-reduce *::before, &.u4-reduce *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important }
 }
+
+@keyframes u4rcIn { from { opacity: 0 } }
+@keyframes u4rcOut { to { opacity: 0 } }
 
 @media (prefers-reduced-motion: reduce) {
   #u4r *, #u4r *::before, #u4r *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important }

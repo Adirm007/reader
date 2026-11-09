@@ -6,6 +6,7 @@
 // 切换点 source/reader-ui-switch.js 是手写的，不由这里生成。
 import {build, transform} from 'esbuild';
 import {readFile, writeFile} from 'node:fs/promises';
+import {deflateSync} from 'node:zlib';
 import {createHash} from 'node:crypto';
 import {Script} from 'node:vm';
 import {fileURLToPath} from 'node:url';
@@ -20,6 +21,23 @@ const cssMin = async (text, name = 'css') => {
   if (r.warnings.length) throw new Error(`${name}: ` + r.warnings.map(w => `${w.text} (line ${w.location?.line})`).join('; '));
   return r.code.trim();
 };
+// Each theme's lobby, sub-page and window styles travel deflated (base64) and are unpacked in the browser with
+// DecompressionStream when that theme is first used: only one theme is ever in use, and the runtime stays small.
+const THEMES = ['cafe', 'summer', 'ink'], THEME_SHEETS = ['lobby.css', 'pages.css', 'popups.css'];
+const themeSources = THEMES.flatMap(t => THEME_SHEETS.map(f => `src/themes/${t}/${f}`));
+const packed = {}, unpacked = {};
+for (const t of THEMES) {
+  let css = '';
+  for (const f of THEME_SHEETS) css += await cssMin(await readFile(resolve(here, `src/themes/${t}/${f}`), 'utf8'), `themes/${t}/${f}`);
+  css += '#u4r{opacity:1}';   // the base sheet keeps the stage invisible until the theme's sheet is in
+  guard(`themes/${t}`, css);
+  unpacked[t] = Buffer.byteLength(css);
+  packed[t] = deflateSync(Buffer.from(css, 'utf8'), {level: 9}).toString('base64');
+}
+const themeCss = {name: 'reader-ui-theme-css', setup(b) {
+  b.onResolve({filter: /^virtual:theme-css$/}, () => ({path: 'theme-css', namespace: 'reader-ui-theme-css'}));
+  b.onLoad({filter: /.*/, namespace: 'reader-ui-theme-css'}, () => ({contents: JSON.stringify(packed), loader: 'json'}));
+}};
 const textFiles = {name: 'reader-ui-text', setup(b) {
   // The bundle needs only id -> sha8 (paths are derived); bytes, sizes and full digests stay in ui/assets.json.
   b.onLoad({filter: /assets\.json$/}, async a => {
@@ -45,10 +63,10 @@ function guard(name, text) {
 }
 
 const result = await build({entryPoints: [resolve(here, 'src/entry.ts')], bundle: true, format: 'iife', platform: 'browser', target: 'es2020',
-  charset: 'utf8', minify: true, legalComments: 'none', write: false, metafile: true, absWorkingDir: here, plugins: [textFiles]});
+  charset: 'utf8', minify: true, legalComments: 'none', write: false, metafile: true, absWorkingDir: here, plugins: [themeCss, textFiles]});
 const js = result.outputFiles[0].text.trim();
 guard('reader-ui.js', js);
-const inputs = Object.keys(result.metafile.inputs).sort();
+const inputs = [...Object.keys(result.metafile.inputs).filter(f => !f.startsWith('reader-ui-theme-css:')), ...themeSources].sort();
 const digest = createHash('sha256');
 for (const file of inputs) digest.update(file.replace(/\\/g, '/') + '\n').update((await readFile(resolve(here, file), 'utf8')).replace(/\r\n/g, '\n'));
 const version = /READER_UI_VERSION = '([^']+)'/.exec(await readFile(resolve(here, 'src/reader-ui.ts'), 'utf8'))?.[1] ?? '0';
@@ -64,4 +82,4 @@ if (letter) {
   await writeFile(resolve(here, '../source/reader-letter.css'), letter + '\n');
 }
 
-console.log(JSON.stringify({version, ui: Buffer.byteLength(source), letter: Buffer.byteLength(letter), inputs: inputs.length, out: relative(process.cwd(), resolve(here, '../source/reader-ui.js'))}));
+console.log(JSON.stringify({version, ui: Buffer.byteLength(source), themes: Object.fromEntries(THEMES.map(t => [t, [unpacked[t], packed[t].length]])), letter: Buffer.byteLength(letter), inputs: inputs.length, out: relative(process.cwd(), resolve(here, '../source/reader-ui.js'))}));

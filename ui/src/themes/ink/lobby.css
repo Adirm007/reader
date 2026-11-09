@@ -225,3 +225,24 @@
 @container u4 (aspect-ratio >= 5/6) and (height < 560px) {
   #u4r.u4i .u4i-scroll { width: 70% }
 }
+
+/* ---------- the order slip: a sheet inside a cinnabar frame, sealed when it goes through ---------- */
+#u4r.u4i {
+  & .u4-rc { background: rgba(20, 14, 10, .4) }
+  & .u4-rc .q-slip { padding: 26px 26px 20px; color: var(--ink); background: var(--fiber), linear-gradient(180deg, var(--xuan-l), var(--xuan));
+    box-shadow: inset 0 0 0 8px var(--xuan-l), inset 0 0 0 10px var(--cinnabar), inset 0 0 0 13px var(--xuan-l), inset 0 0 0 14px rgba(184, 50, 42, .6), 0 18px 40px rgba(10, 6, 4, .55);
+    animation: u4jnUnfold .4s cubic-bezier(.2, .8, .2, 1) both }
+  & .u4-rc .q-shop { margin: 4px 0 0; text-align: center; font: 13px var(--u4-body); letter-spacing: .4em; color: var(--ink-3) }
+  & .u4-rc .q-t { margin: 8px 0 12px; text-align: center; font: 30px/1.2 var(--brush); letter-spacing: .14em }
+  & .u4-rc .q-lines { font: 14px/1.8 var(--u4-body); padding: 0 6px }
+  & .u4-rc .q-cost { font-weight: 700; color: var(--price) }
+  & .u4-rc .q-short { color: var(--cinnabar) }
+  & .u4-rc .q-acts { margin-top: 16px; padding: 0 6px }
+  & .u4-rc .q-no { color: var(--ink-3); font: 18px var(--brush); letter-spacing: .2em }
+  & .u4-rc .q-yes { width: 56px; height: 56px; padding: 0; color: #f6ead8; background: var(--cinnabar); border-radius: 4px; font: 22px var(--brush); box-shadow: inset 0 0 0 3px rgba(246, 234, 216, .6), 0 3px 6px rgba(20, 10, 6, .3) }
+  & .u4-rc .q-yes:hover { transform: rotate(-4deg) }
+  & .u4-rc .q-mark { left: 22px; bottom: 18px; width: 70px; height: 70px; border: 4px solid var(--cinnabar); border-radius: 6px; transform: rotate(-8deg); mix-blend-mode: multiply }
+  & .u4-rc .q-mark::before { content: "定"; position: absolute; inset: 0; display: grid; place-items: center; font: 40px/1 var(--brush); color: var(--cinnabar) }
+  & .u4-rc.is-yes .q-mark { animation: u4jnSeal .32s cubic-bezier(.3, 1.5, .5, 1) forwards }
+}
+@keyframes u4jnUnfold { from { opacity: 0; clip-path: inset(0 0 100% 0) } to { opacity: 1; clip-path: inset(0 0 0 0) } }

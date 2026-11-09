@@ -2,9 +2,6 @@
  * pinned to its cork board (ferry tickets, notes, a postage-meter stamp) and set out on the ledge below. */
 import type { LobbyState, ThemeKit } from '../../core/types';
 import { act, esc, twoFrame, priceOf, nameOf, bookText } from '../../core/dom';
-import lobbyCss from './lobby.css';
-import pagesCss from './pages.css';
-import popupsCss from './popups.css';
 import envelopeCss from './envelope.css';
 
 const WEEK = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
@@ -99,7 +96,7 @@ function board(s: LobbyState): string {
 }
 
 function shore(s: LobbyState): string {
-  return `<button type="button" class="u4s-obj o-gacha"${act('gacha')}>${twoFrame('summer/prop-gacha')}<span class="q-tag"><b class="u4s-disp">命运抽卡</b><small>${s.gachaPrice ? esc(s.gachaPrice) + ' FP 一颗' : '扭蛋机'}</small></span></button>`
+  return `<button type="button" class="u4s-obj o-gacha"${act('gacha')}>${twoFrame('summer/prop-gacha')}<span class="q-tag"><b class="u4s-disp">命运抽卡</b><small>${s.gachaPrice ? '<span class="mini">' + esc(s.gachaPrice) + '</span> FP 一颗' : '扭蛋机'}</small></span></button>`
     + `<button type="button" class="u4s-obj o-shell"${act('prayer')}>${twoFrame('summer/prop-shell')}<span class="q-tag"><b class="u4s-disp">祷诗</b><small>贝壳里的诗 · 免费</small></span></button>`;
 }
 
@@ -112,7 +109,6 @@ function radio(s: LobbyState): string {
 
 export const summer: ThemeKit = {
   id: 'summer',
-  css: lobbyCss + pagesCss + popupsCss,
   envelopeCss,
   scene: s => '<div class="u4s-plate q-wide" data-u4-bg="summer/plate-wide"></div><div class="u4s-plate q-tall" data-u4-bg="summer/plate-tall"></div>'
     + `<figure class="u4s-her"><img alt="" data-u4-her data-u4-img="summer/standing/${esc(s.appearance.id)}" data-u4-fallback="${esc(s.standing)}"></figure>`
@@ -140,7 +136,8 @@ export const summer: ThemeKit = {
       eggs: { prop: 'summer/prop-lockers', title: '彩蛋服务台', lede: '邮局墙边的储物柜。一格放一样东西，开着的门挂着黄钥匙牌。' },
     },
     words: { who: '她是谁', look: '今天的打扮', address: '称呼', custom: '自己写一个', shelf: '书架', services: '柜台业务', pair: '主人格与倒影',
-      sea: '书海迷宫', toggles: '小开关', desk: '管理台', tools: '卡带与信纸' },
+      sea: '书海迷宫', toggles: '小开关', desk: '管理台', tools: '卡带与信纸',
+      receiptShop: '海边邮局 · 船票', receiptVerb: '检票', receiptCancel: '先不了' },
     ornament: () => '<i class="q-tape q-a" aria-hidden="true"></i><i class="q-tape q-b" aria-hidden="true"></i>',
   },
   celebrate(root, kind) {

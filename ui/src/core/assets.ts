@@ -77,6 +77,8 @@ export function load(id: string, fallback?: string): Promise<string | null> {
     return null;
   })();
   loads.set(key, pending);
+  // A miss is not remembered: the next hydrate (after any click in the lobby, a resize, a page change) tries again.
+  void pending.then(url => { if (!url && loads.get(key) === pending) loads.delete(key); });
   return pending;
 }
 
@@ -97,7 +99,7 @@ function fill(el: HTMLElement): Promise<void> {
   el.setAttribute('data-u4-pending', '');
   return load(id, el.getAttribute('data-u4-fallback') || undefined).then(url => {
     if (url && el.isConnected) apply(el, url, isImg ? 'img' : 'bg');
-    else if (!url) el.classList.add('is-missing');
+    else if (!url) { el.classList.add('is-missing'); el.removeAttribute('data-u4-pending'); }
   });
 }
 

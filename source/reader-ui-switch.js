@@ -109,15 +109,33 @@
   dlbJukeSync = function () { legacy.juke(); UI.sync(dlbOv(), 'juke'); };
   dlbBadges = function () { legacy.badges(); UI.sync(dlbOv(), 'badges'); };
   // The order's own promise says whether it went through: cancelled confirms return nothing, failed charges reject.
+  // With the new layer on, the question is asked on the theme's order slip first; the legacy order then runs with
+  // its own confirm() answered yes (it asks synchronously before anything is charged).
   if (legacy.rhythm) {
-    handleRhythm = function (kind) {
-      var result = legacy.rhythm.apply(this, arguments);
+    var runRhythm = function (self, args, kind) {
+      var result = legacy.rhythm.apply(self, args);
       if (result && typeof result.then === 'function') {
         result.then(function () { if (on()) UI.notify(dlbOv(), { type: 'paid', kind: kind }); }, function () {});
       }
       return result;
     };
+    handleRhythm = function (kind) {
+      var self = this, args = arguments;
+      var config = safe(function () { return RHYTHM_CONFIG[kind]; }, null);
+      if (!on() || !config || !pD || typeof UI.confirmOrder !== 'function') return runRhythm(self, args, kind);
+      return UI.confirmOrder(pD, theme(), { kind: kind, cost: config.cost }).then(function (ok) {
+        if (ok === null) return runRhythm(self, args, kind);
+        if (!ok) return undefined;
+        var nativeConfirm = window.confirm;
+        window.confirm = function () { return true; };
+        try { return runRhythm(self, args, kind); } finally { window.confirm = nativeConfirm; }
+      });
+    };
   }
+  // A theme sheet that cannot be unpacked turns the new layer off; an open lobby is reopened in the legacy look.
+  UI.onFail = function () {
+    try { if (dlbOv()) { closeDreamLobby(); setTimeout(function () { try { openDreamLobby(); } catch (e) {} }, 350); } } catch (e) {}
+  };
 
   // Floating envelope (#dfb) and the light letters follow the same switch.
   function envelope() { try { if (pD) UI.installEnvelope(pD, on() ? theme() : null); } catch (e) {} }

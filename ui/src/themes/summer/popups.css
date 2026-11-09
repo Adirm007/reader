@@ -55,7 +55,7 @@ html[data-u4-theme="summer"] {
     --gc-shell-line: #1f6f9a; --gc-shell-inset: #fbf8f0;
     --gc-pri: linear-gradient(180deg, #2b84b4, #1f6f9a 60%, #185d82); --gc-pri-hover: linear-gradient(180deg, #3592c2, #2479a8 60%, #1a6690); --gc-pri-line: #154e6e;
     --gc-on: linear-gradient(160deg, #fff6d6, #f6e4a8); --gc-on-ink: #12404c;
-    --gc-card-back: repeating-linear-gradient(135deg, #c8372d 0 10px, #fbf8f0 10px 16px, #1f6f9a 16px 26px, #fbf8f0 26px 32px);
+    --gc-card-back: linear-gradient(#fbf8f0, #fbf8f0) center / calc(100% - 14px) calc(100% - 14px) no-repeat, repeating-linear-gradient(135deg, #c8372d 0 9px, #fbf8f0 9px 14px, #1f6f9a 14px 23px, #fbf8f0 23px 28px);
   }
   & .bs-gacha .gc-shell { border: 12px solid transparent !important; border-radius: 3px;
     background: var(--gc-shell) padding-box, var(--ps-air) border-box !important; box-shadow: 0 24px 70px rgba(21, 78, 110, .45) !important }
@@ -102,8 +102,40 @@ html[data-u4-theme="summer"] {
   & #chess-overlay .chess-board { box-shadow: 0 0 0 6px #fff, 0 8px 18px rgba(80, 50, 20, .35) !important }
   & #chess-overlay .chess-close { color: var(--ps-teal) !important }
 
+  /* the persona studio's footer bar keeps the sheet's own colour */
+  & #cp-overlay .cp-actions { background: #fbf8f0 !important; border-top: 1px solid rgba(31, 111, 154, .35) !important; box-shadow: none !important }
+  & #cp-overlay .cp-status { color: inherit !important; opacity: .75 }
+
   /* the legacy panels are centred with width:100%; give the cloth a table's size */
   & #chess-overlay .chess-select { width: min(600px, 92vw) !important; padding: 34px 28px 30px !important }
   & #chess-overlay .chess-game { width: auto !important; max-width: 96vw; padding: 52px 26px 22px !important }
   & #chess-overlay .chess-close { top: 10px !important; right: 12px !important }
+
+  /* ---------- the draw: a capsule pops open at dusk by the sea ---------- */
+  & .bs-gacha .gc-stage { --gc-art: #ffffff; background: linear-gradient(180deg, #1b2f57 0%, #33497f 34%, #b9697a 60%, #f2b36b 73%, #24597a 73.4%, #0f2f45 100%) !important }
+  & .bs-gacha .gc-stage-sky:after { opacity: .45 }
+  & .bs-gacha .gc-stage-ring { color: #ffffff; opacity: .18 }
+  & .bs-gacha .gc-card { --gc-art: #1f6f9a }
+  & .bs-gacha .gc-cardback { color: #1f6f9a }
+  & .bs-gacha .gc-tome { width: 150px; height: 150px; margin: -75px 0 0 -75px }
+  & .bs-gacha .gc-tome-block { inset: 50% 0 0; border-radius: 0 0 75px 75px; background: radial-gradient(circle at 34% 18%, rgba(255, 255, 255, .8), transparent 34%), linear-gradient(180deg, rgba(232, 246, 252, .94), rgba(166, 212, 232, .94));
+    box-shadow: 0 16px 30px rgba(0, 0, 0, .35), inset 0 3px 0 rgba(255, 255, 255, .6) }
+  & .bs-gacha .gc-tome-page { inset: 58% 30% 16%; border-radius: 3px; opacity: 1; background: repeating-linear-gradient(180deg, transparent 0 6px, rgba(31, 111, 154, .25) 6px 7px), #fbf8f0; box-shadow: 0 0 0 1px rgba(31, 111, 154, .25) }
+  & .bs-gacha .gc-tome-page.p2, & .bs-gacha .gc-tome-page.p3 { display: none }
+  & .bs-gacha .gc-tome-cover { inset: 0 0 50%; transform-origin: 90% 100% }
+  & .bs-gacha .gc-tome-face { border-radius: 75px 75px 0 0; background: radial-gradient(circle at 34% 34%, rgba(255, 255, 255, .65), transparent 30%), linear-gradient(180deg, #f07a5f, #c8372d) !important;
+    box-shadow: inset 0 -4px 0 rgba(0, 0, 0, .15), 0 0 0 2px rgba(255, 255, 255, .3) !important }
+  & .bs-gacha .gc-tome-face svg, & .bs-gacha .gc-tome-face::after, & .bs-gacha .gc-tome-inside { display: none }
+  & .bs-gacha .gc-stage.is-open .gc-tome-cover { transform: translate(18px, -54px) rotate(34deg) }
+  & .bs-gacha .gc-stage.is-open .gc-tome-page { animation: none }
+  & .bs-gacha .gc-beam { background: linear-gradient(0deg, rgba(255, 246, 214, .9), rgba(246, 196, 69, .35) 30%, transparent) }
+  @media (prefers-reduced-motion: no-preference) {
+    & .bs-gacha .gc-stage.is-cards .gc-card { animation-name: u4sxDrop; animation-duration: .95s; animation-timing-function: linear }
+  }
+
+  /* ---------- toasts: a note on a postcard ---------- */
+  & #dream-p-toast { padding: 12px 18px !important; color: #12404c !important; background: #fffdf6 !important; border: 0 !important; border-left: 6px solid #1f6f9a !important; border-radius: 2px !important;
+    font: 14px/1.5 "Noto Sans CJK SC", "PingFang SC", "Microsoft YaHei", sans-serif !important; box-shadow: 0 8px 18px rgba(21, 78, 110, .3) !important }
 }
+
+@keyframes u4sxDrop { 0% { opacity: 0; transform: translateY(-55vh) } 50% { opacity: 1; transform: translateY(0) } 66% { transform: translateY(-4.5vh) } 80% { transform: translateY(0) } 90% { transform: translateY(-1.2vh) } 100% { opacity: 1; transform: none } }

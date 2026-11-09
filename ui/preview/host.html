@@ -78,6 +78,44 @@
       return id;
     });
   };
+  var wait = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
+  var pick = function (sel, text) { return Array.prototype.find.call(document.querySelectorAll(sel), function (b) { return !text || b.textContent.indexOf(text) >= 0; }); };
+  // The gacha test's catalogue: 120 works, one character each, no network.
+  function mockFetch(url) {
+    url = String(url);
+    var json = function (v) { return new Response(JSON.stringify(v), {headers: {'Content-Type': 'application/json'}}); }, m;
+    if ((m = /api\.bgm\.tv\/v0\/search\/subjects\?limit=(\d+)&offset=(\d+)/.exec(url))) {
+      var limit = +m[1], offset = +m[2];
+      return Promise.resolve(json({total: 120, limit: limit, offset: offset, data: Array.from({length: limit}, function (_, i) { var n = (offset + i) % 120; return {id: 5000 + n, type: 2, name: '作品' + n, name_cn: '测试作品' + n, summary: '少女在会移动的图书馆里醒来。', date: '2001-01-01', images: {}, tags: [{name: '奇幻'}], rating: {score: 7}}; })}));
+    }
+    if (/api\.bgm\.tv\/v0\/subjects\/\d+\/characters/.test(url)) return Promise.resolve(json([{id: 1, name: '旅人', relation: '主角', type: 1}]));
+    if (/api\.bgm\.tv\/v0\/subjects\/\d+$/.test(url)) return Promise.resolve(json({summary: '少女在会移动的图书馆里醒来，必须在三个夜晚里找回被借走的名字。', infobox: []}));
+    if (/api\.bgm\.tv\/v0\/characters\//.test(url)) return Promise.resolve(json({summary: '', infobox: []}));
+    return Promise.resolve(new Response('{}', {status: 503}));
+  }
+  async function runDemo(demo) {
+    if (demo === 'slip' || demo === 'toast') {
+      ReaderCore.open('lobby'); await wait(900);
+      pick('#dlb-overlay [data-dlb="special"][data-k="喜"]').click(); await wait(700);
+      if (demo === 'toast') { document.querySelector('.u4-rc .q-yes').click(); await wait(900); }
+      return;
+    }
+    if (demo === 'booksea') { ReaderCore.open('eggs'); await wait(900); pick('[data-dlb="eggbooksea"]').click(); return; }
+    if (demo === 'form' || demo === 'studio') { ReaderCore.open(demo === 'form' ? 'eggs' : 'persona'); await wait(900); pick(demo === 'form' ? '[data-dlb="eggwb"]' : '[data-dlb="custompersona"]').click(); return; }
+    if (demo === 'stage' || demo === 'stagecards') {
+      document.getElementById('reader-core-controller').contentWindow.fetch = mockFetch;
+      ReaderCore.open('lobby'); await wait(900);
+      pick('#dlb-overlay [data-dlb="gacha"]').click(); await wait(1000);
+      pick('.bs-gacha .gc-theme', '奇幻').click(); await wait(250);
+      pick('.bs-gacha .gc-actions button', '撒网').click(); await wait(250);
+      document.querySelector('.bs-gacha .gc-actions button.is-armed').click();
+      for (var i = 0; i < 80 && !document.querySelector('.bs-gacha .gc-grid .gc-work'); i++) await wait(250);
+      document.querySelector('.bs-gacha .gc-grid .gc-work').click(); await wait(400);
+      pick('.bs-gacha .gc-drawer button', '选为小池').click();
+      for (var j = 0; j < 80 && !document.querySelector('.bs-gacha .gc-tabs'); j++) await wait(250);
+      pick('.bs-gacha .gc-draws button', '十连').click();
+    }
+  }
   window.addEventListener('load', async function () {
     window.runtimeModule = await import('/preview/build/reader-runtime.js');
     runtimeModule.start();
@@ -86,6 +124,9 @@
     if (letters.length) await mountLetters(letters);
     var open = q.get('open');
     if (open) setTimeout(function () { ReaderCore.open(open); }, letters.length ? 400 : 60);
+    // demo=slip|toast|stage|stagecards|booksea|form|studio: walk to that moment for screenshots (preview only)
+    var demo = q.get('demo');
+    if (demo) setTimeout(function () { runDemo(demo).catch(function (e) { console.error('demo', e); }); }, 900);
     document.documentElement.setAttribute('data-preview-ready', '1');
   });
 })();

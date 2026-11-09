@@ -8,6 +8,8 @@ import { fontFaceCss } from './core/fonts';
 import { esc, nameOf, priceOf, bookText, setText, each, pad2 } from './core/dom';
 import baseCss from './base.css';
 import { pageHTML } from './pages';
+import { canUnpack, themeCss } from './core/theme-css';
+import shellCss from './booksea-shell.css';
 import { cafe } from './themes/cafe/kit';
 import { summer } from './themes/summer/kit';
 import { ink } from './themes/ink/kit';
@@ -117,6 +119,12 @@ function syncHer(root: Root, s: LobbyState): void {
 }
 
 const envelopeArt = new Map<string, string | null>();
+/* Unpacked theme sheets; a failure turns the new layer off for the rest of the session (legacy takes over). */
+const sheets = new Map<Theme, string>();
+let broken = false;
+function warm(t: Theme): Promise<string> {
+  return themeCss(t).then(css => { sheets.set(t, css); return css; });
+}
 
 export function createReaderUI() {
   return {
@@ -129,13 +137,21 @@ export function createReaderUI() {
 
     /** localStorage.dream_ui_v4 = 'off' brings the legacy interface back. */
     enabled(store?: Storage | null): boolean {
+      if (broken || !canUnpack()) return false;
       try { return (store || window.localStorage).getItem('dream_ui_v4') !== 'off'; } catch { return true; }
     },
 
+    /** Called by the switch layer when a theme sheet could not be unpacked (the lobby is reopened in legacy). */
+    onFail: null as null | (() => void),
+
     install(doc: Document, theme: string): void {
-      const t = themeOf(theme);
-      style(doc, 'dream-u4-style', fontFaceCss(t) + baseCss + kitOf(t).css);
+      const t = themeOf(theme), head = fontFaceCss(t) + baseCss;
+      style(doc, 'dream-u4-style', head + (sheets.get(t) ?? ''));
       mark(doc, t);
+      if (sheets.has(t)) return;
+      warm(t).then(css => {
+        if (doc.documentElement?.getAttribute('data-u4-theme') === t && doc.getElementById('dream-u4-style')) style(doc, 'dream-u4-style', head + css);
+      }, () => { broken = true; this.onFail?.(); });
     },
 
     uninstall(doc: Document): void {
@@ -193,7 +209,9 @@ export function createReaderUI() {
       syncClock(root);
       syncAll(root, 'all', s);
       const view = root.ownerDocument.defaultView || window;
-      void hydrate(root).then(() => hydrateHover(root, view));
+      // What to fetch depends on the layout (a phone never loads the wide plate), so measure once the sheet is in.
+      const go = () => { if (root.isConnected) void hydrate(root).then(() => hydrateHover(root, view)); };
+      if (sheets.has(t)) go(); else warm(t).then(go, go);
     },
 
     sync(ov: HTMLElement | null, kind: string, s?: LobbyState): void {
@@ -213,13 +231,56 @@ export function createReaderUI() {
       kitOf(root.__u4.theme).celebrate?.(root, event.kind, root.__u4.hooks.state());
     },
 
+    /** A paid order asks first on a slip in the theme's material (till receipt, ferry ticket, a sheet to seal)
+     *  instead of the browser's confirm(). Resolves true/false; null when there is no lobby to show it in. */
+    confirmOrder(doc: Document, theme: string, order: { kind: string; cost: number }): Promise<boolean | null> {
+      const root = doc.getElementById('u4r') as Root | null;
+      if (!root?.__u4 || broken) return Promise.resolve(null);
+      root.querySelector('.u4-rc')?.remove();
+      const t = themeOf(theme), w = kitOf(t).skin.words, s = root.__u4.hooks.state();
+      const name = order.kind.indexOf('日常:') === 0 ? '预约日常 · ' + order.kind.slice(3) : order.kind === '随机涟漪' ? '随机涟漪' : '买一份' + order.kind;
+      const have = Number(String(s.fp).replace(/[^0-9]/g, '')), known = s.fp !== '——' && !Number.isNaN(have);
+      const fmt = (n: number) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+      const box = doc.createElement('div');
+      box.className = 'u4-rc';
+      box.innerHTML = `<div class="q-slip" role="dialog" aria-modal="true" aria-labelledby="u4-rc-t"><p class="q-shop">${w.receiptShop || ''}</p>`
+        + `<h3 class="q-t" id="u4-rc-t">${esc(name)}</h3><dl class="q-lines"><dt>价格</dt><dd class="q-cost">${fmt(order.cost)} FP</dd>`
+        + (known ? `<dt>现有</dt><dd>${fmt(have)} FP</dd><dt>之后</dt><dd class="${have < order.cost ? 'q-short' : ''}">${fmt(have - order.cost)} FP</dd>` : '')
+        + `</dl><div class="q-acts"><button type="button" class="q-no">${w.receiptCancel || '取消'}</button><button type="button" class="q-yes">${w.receiptVerb || '确认'}</button></div><i class="q-mark" aria-hidden="true"></i></div>`;
+      root.appendChild(box);
+      const before = doc.activeElement as HTMLElement | null, yes = box.querySelector<HTMLElement>('.q-yes'), no = box.querySelector<HTMLElement>('.q-no');
+      return new Promise(resolve => {
+        let done = false;
+        const finish = (ok: boolean) => {
+          if (done) return;
+          done = true;
+          doc.removeEventListener('keydown', key, true);
+          box.classList.add(ok ? 'is-yes' : 'is-no');
+          window.setTimeout(() => { box.remove(); try { before?.focus?.(); } catch { /* gone */ } resolve(ok); }, ok ? 360 : 160);
+        };
+        const key = (e: KeyboardEvent) => {
+          if (e.key === 'Escape' || e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); finish(e.key === 'Enter' && doc.activeElement !== no); }
+          else if (e.key === 'Tab') { e.preventDefault(); (doc.activeElement === yes ? no : yes)?.focus(); }
+        };
+        doc.addEventListener('keydown', key, true);
+        box.addEventListener('click', e => {
+          e.stopPropagation();
+          const hit = e.target as Element;
+          if (hit.closest('.q-yes')) finish(true);
+          else if (hit.closest('.q-no') || !hit.closest('.q-slip')) finish(false);
+        });
+        yes?.focus();
+      });
+    },
+
     /** Floating envelope (#dfb) look for the theme; empty string removes it. */
     installEnvelope(doc: Document, theme: string | null): void {
       if (!theme) { style(doc, 'dream-u4-envelope', ''); mark(doc, null); return; }
       const t = themeOf(theme), id = `${t}/envelope`;
       mark(doc, t);
+      if (!sheets.has(t)) void warm(t).catch(() => { broken = true; });
       const art = envelopeArt.get(id);
-      let css = kitOf(t).envelopeCss;
+      let css = kitOf(t).envelopeCss + shellCss;
       if (art) css = `#dfb.dream-fb{--u4-env:url("${art}")}` + css;
       style(doc, 'dream-u4-envelope', css);
       if (art === undefined && has(id)) {

@@ -104,8 +104,40 @@ html[data-u4-theme="ink"] {
   & #chess-overlay :is(.chess-labels-top, .chess-labels-bot, .chess-labels-left, .chess-labels-right) span { color: var(--pi-ink3) !important }
   & #chess-overlay .chess-close { color: var(--pi-ink3) !important }
 
+  /* the persona studio's footer bar keeps the sheet's own colour */
+  & #cp-overlay .cp-actions { background: #f2ebdb !important; border-top: 1px solid rgba(184, 50, 42, .45) !important; box-shadow: none !important }
+  & #cp-overlay .cp-status { color: inherit !important; opacity: .75 }
+
   /* the legacy panels are centred with width:100%; give the cloth a table's size */
   & #chess-overlay .chess-select { width: min(600px, 92vw) !important; padding: 34px 28px 30px !important }
   & #chess-overlay .chess-game { width: auto !important; max-width: 96vw; padding: 52px 26px 22px !important }
   & #chess-overlay .chess-close { top: 10px !important; right: 12px !important }
+
+  /* ---------- the draw: the stick holder is shaken until the slips jump out ---------- */
+  & .bs-gacha .gc-stage { --gc-art: #f6ead8; background: radial-gradient(ellipse 55% 45% at 50% 40%, rgba(239, 230, 210, .1), transparent 70%), linear-gradient(180deg, #1f2a2a, #121a1a 60%, #0b1010) !important }
+  & .bs-gacha .gc-stage-sky:after { display: none }
+  & .bs-gacha .gc-stage-ring { color: #b8322a; opacity: .3 }
+  & .bs-gacha .gc-tome { width: 96px; height: 170px; margin: -60px 0 0 -48px }
+  & .bs-gacha .gc-tome-block, & .bs-gacha .gc-tome-inside { display: none }
+  & .bs-gacha .gc-tome-cover { transform: none !important }
+  & .bs-gacha .gc-tome-face { border-radius: 12px 12px 18px 18px / 8px 8px 18px 18px;
+    background: repeating-linear-gradient(180deg, transparent 0 52px, rgba(70, 60, 20, .55) 52px 55px, transparent 55px 58px), linear-gradient(90deg, #6f6a3a, #b3a35e 30%, #d6c77f 48%, #a8984f 70%, #5f5a30) !important;
+    box-shadow: inset 0 12px 0 -8px rgba(0, 0, 0, .3), 0 14px 26px rgba(0, 0, 0, .5) !important }
+  & .bs-gacha .gc-tome-face svg, & .bs-gacha .gc-tome-face::after { display: none }
+  & .bs-gacha .gc-tome-page { inset: auto; left: 50%; top: -40px; width: 10px; height: 130px; margin-left: -5px; border-radius: 2px; opacity: 1; z-index: 1; transform-origin: 50% 100%; transform: rotate(var(--r, 0deg));
+    background: linear-gradient(180deg, #b8322a 0 18px, #eadfbe 18px); box-shadow: 0 0 0 1px rgba(60, 40, 10, .35) }
+  & .bs-gacha .gc-tome-page.p2 { --r: -9deg; margin-left: -18px }
+  & .bs-gacha .gc-tome-page.p3 { --r: 8deg; margin-left: 8px }
+  & .bs-gacha .gc-stage.is-open .gc-tome-page { animation: u4jnStick .55s cubic-bezier(.3, 1.4, .5, 1) both }
+  & .bs-gacha .gc-beam { background: linear-gradient(0deg, rgba(246, 234, 216, .85), rgba(184, 50, 42, .3) 30%, transparent) }
+  @media (prefers-reduced-motion: no-preference) {
+    & .bs-gacha .gc-stage.is-cards .gc-card { animation-name: u4jnRise }
+  }
+
+  /* ---------- toasts: a slip of paper with a red edge ---------- */
+  & #dream-p-toast { padding: 12px 18px 12px 22px !important; color: #1d1b18 !important; background: linear-gradient(180deg, #f6f0e2, #efe6d2) !important; border: 0 !important; border-left: 4px solid #b8322a !important; border-radius: 0 !important;
+    font: 15px/1.5 "Noto Serif CJK SC", "Source Han Serif SC", "Songti SC", serif !important; box-shadow: 0 8px 18px rgba(10, 6, 4, .45) !important }
 }
+
+@keyframes u4jnRise { from { opacity: 0; transform: translateY(30vh) scaleY(.7) } 60% { opacity: 1 } to { opacity: 1; transform: none } }
+@keyframes u4jnStick { from { transform: translateY(0) rotate(var(--r, 0deg)) } to { transform: translateY(-58px) rotate(var(--r, 0deg)) } }

@@ -43,7 +43,7 @@ export type PageId = 'persona' | 'tuning' | 'decouple' | 'template' | 'eggs';
 export interface PageSkin {
   /** Landmark object per page (a two-frame prop id without -f1/-f2) and the page's words. */
   pages: Record<PageId, { prop: string; title: string; lede: string }>;
-  /** Group headings, e.g. { who: '她是谁', look: '今天的打扮', … }. */
+  /** Group headings, e.g. { who: '她是谁', look: '今天的打扮', … }, and the order slip's receiptShop/receiptVerb/receiptCancel. */
   words: Record<string, string>;
   /** Optional ornament markup placed inside the sheet (tape, rods, seals). */
   ornament?: (page: PageId) => string;
@@ -56,7 +56,7 @@ export interface Hooks {
 
 export interface ThemeKit {
   id: Theme;
-  css: string;
+  /** The lobby, sub-page and window sheets are packed by build.mjs (core/theme-css.ts); only this one is inline. */
   envelopeCss: string;
   scene(s: LobbyState): string;
   top(page: string, s: LobbyState): string;

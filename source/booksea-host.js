@@ -35,7 +35,7 @@
       shell?.remove(); host.removeEventListener('resize', fit);
       shell = doc.createElement('section');
       shell.dataset.readerBooksea = 'true'; shell.setAttribute('role', 'dialog'); shell.setAttribute('aria-label', '普罗泰利西翁');
-      shell.style.cssText = 'position:fixed;top:12px;left:12px;right:12px;bottom:112px;z-index:9000;display:flex;flex-direction:column;border:1px solid #8e795c;border-radius:10px;overflow:hidden;background:#191c2b;box-shadow:0 10px 48px #0008;color:#eee3cb';
+      shell.style.cssText = 'position:fixed;top:12px;left:12px;right:12px;bottom:112px;z-index:9000;display:flex;flex-direction:column;border:1px solid #8e795c;border-radius:10px;overflow:hidden;background:#241110;box-shadow:0 10px 48px #0008;color:#eee3cb';
       var bar = doc.createElement('header');
       bar.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 12px;flex-shrink:0;font:14px/1.6 system-ui;background:#272a38';
       var title = doc.createElement('strong'); title.textContent = '普罗泰利西翁'; title.style.flex = '1'; bar.append(title);
@@ -46,8 +46,8 @@
       status = doc.createElement('p'); status.setAttribute('role', 'status'); status.textContent = '书页正在展开……'; status.style.cssText = 'margin:12px;font:14px/1.8 system-ui'; shell.append(status);
       retry = button('重试', function () { retry.hidden = true; pending = null; void open().catch(report); }); retry.hidden = true;
       frame = doc.createElement('iframe'); frame.title = '书海游戏';
-      frame.style.cssText = 'display:block;width:100%;flex:1;min-height:0;border:0;background:#191c2b';
-      frame.srcdoc = '<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>html,body{margin:0;min-height:100%;background:#191c2b;color:#eee3cb;font:16px/1.6 system-ui}*{box-sizing:border-box}#booksea-game{max-width:1280px;margin:auto;padding:8px}</style><main id="booksea-game"></main></html>';
+      frame.style.cssText = 'display:block;width:100%;flex:1;min-height:0;border:0;background:#241110';
+      frame.srcdoc = '<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>html,body{margin:0;min-height:100%;background:#241110;color:#eee3cb;font:16px/1.6 system-ui}*{box-sizing:border-box}#booksea-game{max-width:1280px;margin:auto;padding:8px}</style><main id="booksea-game"></main></html>';
       shell.append(frame);
       var createdFrame = frame;
       var loaded = new Promise(function (resolve, reject) {

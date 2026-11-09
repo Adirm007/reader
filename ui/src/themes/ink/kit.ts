@@ -2,9 +2,6 @@
  * xuan paper; she is the painting in a hanging scroll laid out beside it. Seals confirm, ink circles select. */
 import type { LobbyState, ThemeKit } from '../../core/types';
 import { act, esc, twoFrame, priceOf, nameOf, bookText } from '../../core/dom';
-import lobbyCss from './lobby.css';
-import pagesCss from './pages.css';
-import popupsCss from './popups.css';
 import envelopeCss from './envelope.css';
 
 const WEEK = ['日', '一', '二', '三', '四', '五', '六'];
@@ -86,7 +83,7 @@ function pond(): string {
 
 function props(s: LobbyState): string {
   return `<button type="button" class="u4i-obj o-sticks"${act('prayer')}>${twoFrame('ink/prop-sticks')}<span class="slip">祷诗 · 免费</span></button>`
-    + `<button type="button" class="u4i-obj o-coins"${act('gacha')}>${twoFrame('ink/prop-coins')}<span class="slip">命运抽卡${s.gachaPrice ? ' · ' + esc(s.gachaPrice) + ' FP' : ''}</span></button>`;
+    + `<button type="button" class="u4i-obj o-coins"${act('gacha')}>${twoFrame('ink/prop-coins')}<span class="slip">命运抽卡${s.gachaPrice ? ' · <span class="mini">' + esc(s.gachaPrice) + '</span> FP' : ''}</span></button>`;
 }
 
 /* A turntable seen from straight above, like everything else on the desk. */
@@ -101,7 +98,6 @@ function player(s: LobbyState): string {
 
 export const ink: ThemeKit = {
   id: 'ink',
-  css: lobbyCss + pagesCss + popupsCss,
   envelopeCss,
   scene: s => '<div class="u4i-plate q-wide" data-u4-bg="ink/plate-wide"></div><div class="u4i-plate q-tall" data-u4-bg="ink/plate-tall"></div><div class="u4i-rain"></div>'
     + '<div class="u4i-scroll"><i class="rod q-top"></i><div class="mount"><i class="band"></i><div class="painting" data-u4-bg="ink/scroll-bg">'
@@ -131,7 +127,8 @@ export const ink: ThemeKit = {
       eggs: { prop: 'ink/prop-stationerybox', title: '彩蛋服务台', lede: '文具匣的抽屉。启用的格子钤一方朱印。' },
     },
     words: { who: '名签', look: '画册', address: '称呼', custom: '自拟', shelf: '书匣', services: '可取之物', pair: '主印与副印',
-      sea: '书海迷宫', toggles: '小机关', desk: '案头事务', tools: '唱片与笔墨' },
+      sea: '书海迷宫', toggles: '小机关', desk: '案头事务', tools: '唱片与笔墨',
+      receiptShop: '墨笺 · 回执', receiptVerb: '钤印', receiptCancel: '作罢' },
     ornament: () => '<i class="q-rod q-l" aria-hidden="true"></i><i class="q-rod q-r" aria-hidden="true"></i>',
   },
   celebrate(root, kind) {
