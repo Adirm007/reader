@@ -64,7 +64,8 @@
   & .u4i-almanac .col .q-ds { writing-mode: vertical-rl; font-size: var(--fs-s); color: var(--ink-3); letter-spacing: .2em; min-height: 11cqh }
   & .u4i-almanac .col .q-pr { font-size: var(--fs-s); color: var(--ink-3); white-space: nowrap }
   & .u4i-almanac .col .q-pr b { font: 700 max(14px, 1.9cqh) var(--u4-body); color: var(--price) }
-  & .u4i-almanac .col .circle { position: absolute; left: 50%; top: .6cqh; width: 8cqh; height: 11cqh; transform: translateX(-50%); opacity: 0; transition: opacity .3s }
+  /* Keep hover animation layers local, so the rotated paper's other text does not re-rasterize. */
+  & .u4i-almanac .col .circle { position: absolute; left: 50%; top: .6cqh; width: 8cqh; height: 11cqh; transform: translateX(-50%); opacity: 0; transition: opacity .3s; will-change: opacity }
   & .u4i-almanac .col .circle path { stroke-dasharray: 190; stroke-dashoffset: 190; transition: stroke-dashoffset .6s ease-out }
   & .u4i-almanac .col.on .circle, & .u4i-almanac .col:hover .circle { opacity: 1 }
   & .u4i-almanac .col.on .circle path { stroke-dashoffset: 0 }
@@ -75,7 +76,7 @@
   & .u4i-almanac .q-picked b { font-size: var(--fs-l) }
   & .u4i-almanac .q-picked small { font-size: var(--fs-s); color: var(--ink-3) }
   & .u4i-almanac .q-order { display: flex; align-items: center; gap: 1cqh; font-size: var(--fs-m); color: var(--ink) }
-  & .u4i-almanac .q-order svg { width: 6cqh; height: 6cqh; min-width: 40px; min-height: 40px; transition: transform .18s }
+  & .u4i-almanac .q-order svg { width: 6cqh; height: 6cqh; min-width: 40px; min-height: 40px; transition: transform .18s; will-change: transform }
   & .u4i-almanac .q-order:hover svg { transform: rotate(-6deg) translateY(-.3cqh) }
   & .u4i-almanac .q-order span { display: flex; flex-direction: column; letter-spacing: .12em }
   & .u4i-almanac .q-order span > b { font: 700 max(15px, 2cqh) var(--u4-body); color: var(--price); letter-spacing: 0 }
@@ -86,7 +87,7 @@
   & .u4i-papers h2 { display: flex; align-items: baseline; gap: 1cqh; margin: 0 0 1.4cqh; font-size: max(22px, 3.2cqh); color: var(--ink) }
   & .u4i-papers h2 small { font: var(--fs-s) var(--u4-body); color: var(--ink-3); letter-spacing: .2em }
   & .u4i-papers .q-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.6cqh }
-  & .u4i-flower { position: relative; display: flex; flex-direction: column; align-items: center; gap: .8cqh; padding: 1.6cqh .6cqh 1.4cqh; min-height: 38cqh; color: var(--ink); transition: transform .3s ease;
+  & .u4i-flower { position: relative; display: flex; flex-direction: column; align-items: center; gap: .8cqh; padding: 1.6cqh .6cqh 1.4cqh; min-height: 38cqh; color: var(--ink); transition: transform .3s ease; will-change: transform;
     box-shadow: .2cqh .5cqh .8cqh rgba(40, 20, 10, .2) }
   & .u4i-flower.q-yuan { background: var(--fiber), linear-gradient(180deg, #f6e1dc, #f2d6cf) }
   & .u4i-flower.xi { background: var(--fiber), linear-gradient(180deg, #f5ead6, #efe1c4) }
