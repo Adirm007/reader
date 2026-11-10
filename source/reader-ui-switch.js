@@ -168,14 +168,15 @@
   dlbBodyEggs = function () {
     var enabled = oldFrontend();
     var row = dlbRowToggle('egglegacyui', 'display', '启用老版前端', 'LEGACY UI',
-      '大厅、立绘、信件与命运抽卡等一起切回旧版；关闭后恢复新版', enabled, enabled ? '已开启' : '已关闭', !enabled);
+      '大厅、立绘、信件与命运抽卡等一起切回旧版；关闭后恢复新版', enabled, enabled ? '已启用' : '已关闭', !enabled);
+    row = row.replace('<i class="dlb-sw"></i>', '');
     row = row.replace('class="dlb-row', 'role="button" tabindex="0" aria-pressed="' + enabled + '" class="dlb-row');
     return oldEggs().replace(/<div class="dlb-row dlb-fold(?: on)?" data-dlb="eggfold" data-k="yuan">/, function (next) { return row + next; });
   };
   var oldMenu = buildMenuHTML;
   buildMenuHTML = function () {
     var row = '<div class="sub-opt" role="button" tabindex="0" data-action="toggleLegacyFrontend"><span>启用老版前端</span><span data-reader-legacy-ui-status>'
-      + (oldFrontend() ? '已开启' : '已关闭') + '</span></div>';
+      + (oldFrontend() ? '已启用' : '已关闭') + '</span></div>';
     return oldMenu().replace(/<div class="sub-opt" data-action="toggleTheme">[\s\S]*?<\/div>/, function (themeRow) { return themeRow + row; });
   };
   function refreshFrontend() {
@@ -184,7 +185,7 @@
     if (dlbOv()) { dlbGo(dlbPage || 'main'); dlbLayout(); }
     [document, pD].forEach(function (doc) {
       if (!doc) return;
-      doc.querySelectorAll('[data-reader-legacy-ui-status]').forEach(function (node) { node.textContent = oldFrontend() ? '已开启' : '已关闭'; });
+      doc.querySelectorAll('[data-reader-legacy-ui-status]').forEach(function (node) { node.textContent = oldFrontend() ? '已启用' : '已关闭'; });
     });
     if (window.ReaderGacha && window.ReaderGacha.isOpen()) dreamOpenGacha();
     if (window.__readerHostApi) window.__readerHostApi.refresh();
