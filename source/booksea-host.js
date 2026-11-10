@@ -6,7 +6,7 @@
     var bridge = options.window || globals, host = options.host || bridge.parent, doc = host.document;
     var base = new URL(options.base || 'https://adirm007.github.io/Protelysion/').href;
     var shell, frame, status, retry, app, pending, disposed = false, visible = false, generation = 0, activation = 0;
-    var cancelReady;
+    var cancelReady, backdropObserver;
     var aborter = new AbortController(), identity = currentIdentity();
     function currentIdentity() {
       var ctx = (bridge.SillyTavern || host.SillyTavern).getContext();
@@ -31,11 +31,16 @@
       var rect = composer && composer.getBoundingClientRect();
       shell.style.bottom = Math.max(96, rect && rect.height > 0 ? host.innerHeight - rect.top + 8 : 112) + 'px';
     }
+    function syncBackdrop() {
+      var root = frame?.contentDocument?.documentElement;
+      if (root) root.style.setProperty('--reader-booksea-background', doc.documentElement.hasAttribute('data-u4-theme') ? '#241110' : '#191c2b');
+    }
     function create() {
+      backdropObserver?.disconnect();
       shell?.remove(); host.removeEventListener('resize', fit);
       shell = doc.createElement('section');
       shell.dataset.readerBooksea = 'true'; shell.setAttribute('role', 'dialog'); shell.setAttribute('aria-label', '普罗泰利西翁');
-      shell.style.cssText = 'position:fixed;top:12px;left:12px;right:12px;bottom:112px;z-index:9000;display:flex;flex-direction:column;border:1px solid #8e795c;border-radius:10px;overflow:hidden;background:#241110;box-shadow:0 10px 48px #0008;color:#eee3cb';
+      shell.style.cssText = 'position:fixed;top:12px;left:12px;right:12px;bottom:112px;z-index:9000;display:flex;flex-direction:column;border:1px solid #8e795c;border-radius:10px;overflow:hidden;background:#191c2b;box-shadow:0 10px 48px #0008;color:#eee3cb';
       var bar = doc.createElement('header');
       bar.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 12px;flex-shrink:0;font:14px/1.6 system-ui;background:#272a38';
       var title = doc.createElement('strong'); title.textContent = '普罗泰利西翁'; title.style.flex = '1'; bar.append(title);
@@ -46,15 +51,17 @@
       status = doc.createElement('p'); status.setAttribute('role', 'status'); status.textContent = '书页正在展开……'; status.style.cssText = 'margin:12px;font:14px/1.8 system-ui'; shell.append(status);
       retry = button('重试', function () { retry.hidden = true; pending = null; void open().catch(report); }); retry.hidden = true;
       frame = doc.createElement('iframe'); frame.title = '书海游戏';
-      frame.style.cssText = 'display:block;width:100%;flex:1;min-height:0;border:0;background:#241110';
-      frame.srcdoc = '<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>html,body{margin:0;min-height:100%;background:#241110;color:#eee3cb;font:16px/1.6 system-ui}*{box-sizing:border-box}#booksea-game{max-width:1280px;margin:auto;padding:8px}</style><main id="booksea-game"></main></html>';
+      frame.style.cssText = 'display:block;width:100%;flex:1;min-height:0;border:0;background:#191c2b';
+      frame.srcdoc = '<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>html,body{margin:0;min-height:100%;background:var(--reader-booksea-background,#191c2b);color:#eee3cb;font:16px/1.6 system-ui}*{box-sizing:border-box}#booksea-game{max-width:1280px;margin:auto;padding:8px}</style><main id="booksea-game"></main></html>';
       shell.append(frame);
       var createdFrame = frame;
       var loaded = new Promise(function (resolve, reject) {
         cancelReady = function () { reject(new Error('书海窗口已关闭')); };
-        createdFrame.addEventListener('load', function () { cancelReady = null; resolve(); }, {once: true});
+        createdFrame.addEventListener('load', function () { syncBackdrop(); cancelReady = null; resolve(); }, {once: true});
       });
       doc.body.append(shell); fit(); display(visible);
+      backdropObserver = new bridge.MutationObserver(syncBackdrop);
+      backdropObserver.observe(doc.documentElement, {attributes: true, attributeFilter: ['data-u4-theme']});
       host.addEventListener('resize', fit);
       return loaded;
     }
@@ -172,6 +179,7 @@
     function dispose() {
       if (disposed) return;
       disposed = true; generation++; cancelReady?.(); cancelReady = null; aborter.abort(); app?.dispose(); app = undefined;
+      backdropObserver?.disconnect();
       shell?.remove(); shell = frame = undefined; host.removeEventListener('resize', fit); focus(false);
     }
     return {open: open, hide: hide, dispose: dispose, inspect: function () { return {loaded: !!app, visible: visible, disposed: disposed, identity: identity}; }};

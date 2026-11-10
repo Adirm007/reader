@@ -11,7 +11,7 @@ const hash = text => createHash('sha256').update(text).digest('hex');
 
 export async function build({ write = false, version } = {}) {
   version ||= JSON.parse(await read('release-manifest.json')).version;
-  const [runtimeSource, prelude, adapter, legacySource, css, body, letterSource, letterBody, cache, profile, transactions, booksea, templates, bookseaAlbum, gacha, ui, uiSwitch, letterStyle] = await Promise.all([
+  const [runtimeSource, prelude, adapter, legacySource, css, body, letterSource, letterBody, cache, profile, transactions, booksea, templates, bookseaAlbum, gacha, ui, uiSwitch, letterStyle, legacyLetterBody] = await Promise.all([
     read('source/core-runtime.mjs'), read('source/controller-prelude.js'), read('source/controller-adapter.js'),
     read('source/legacy-reader.js'), read('source/legacy-reader.css'), read('source/legacy-body.html'),
     read('source/letter.js'), read('source/letter-body.html'), read('source/black-author-cache.js'), read('source/black-author.prompt.json'),
@@ -23,6 +23,8 @@ export async function build({ write = false, version } = {}) {
     read('source/reader-ui.js'), read('source/reader-ui-switch.js'),
     // 轻信样式（ui/src/letter 生成）；没有时退回旧信件样式。
     optional('source/reader-letter.css'),
+    // The last pre-reset light-letter DOM (v2026.11.08.1), kept with its original stylesheet.
+    read('source/legacy-letter-body.html'),
   ]);
   // Replace only the old top-level bootstrap. All feature implementations remain normal editable source.
   const bootstrap = /\ninitDreamSys\(\);\s*setTimeout\(function\(\)\{try\{dreamWbAutoCheck\(\);\}catch\(e\)\{\}\},5000\);/;
@@ -32,9 +34,6 @@ export async function build({ write = false, version } = {}) {
   const releaseTools = await Promise.all(['fixed-release-client.js','fixed-runtime.js','regex-update-guard.js','release-updates.js','standalone-bootstrap.js','script-installer.js','fixed-migration.js','update-center.js'].map(name => read('source/' + name)));
   const controller = [prelude, transactions, gacha, ui, booksea, bookseaAlbum, initialization, legacy, templates, ...releaseTools, adapter, uiSwitch].join('\n;\n');
   new Script(controller, { filename: 'reader-controller.js' });
-  const assets = { version, css, body: body.replace('<!--DREAM_LETTER-->', ''), controller };
-  // Function replacement: minified code may contain `$&` / `$'` (e.g. a variable named `$`), which a string replacement would expand.
-  const runtime = runtimeSource.replace("import { ASSETS } from 'reader:assets';", () => 'const ASSETS = ' + JSON.stringify(assets) + ';');
   const letterCss = letterStyle ? letterStyle.trim() : css + '\n.menu-board{display:none!important}.reader-letter-compact .cafe-v20-responsive{display:none!important}.reader-letter-compact .outer-collapse:not([open]){display:block}.reader-letter-compact .flower-btn{display:block}';
   if (/\$(?:\d|<)|\{\{|<\/style/i.test(letterCss)) throw new Error('Letter style contains a replacement token, a macro or a style terminator');
   // The old updater accepts new light rules even when its script branch is blocked. Carry
@@ -43,8 +42,15 @@ export async function build({ write = false, version } = {}) {
   const letterBridge = (await read('source/letter-updater-bridge.js'))
     .replace('__READER_LETTER_VERSION__', () => JSON.stringify(version))
     .replace('__READER_LEGACY_UPDATER_SOURCE__', () => updaterData);
-  const completeLetterSource = letterBridge + '\n;' + letterSource;
-  const replaceString = '```html\n<!doctype html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>' + letterCss + '</style></head><body>' + letterBody.replace('<!--DREAM_LETTER-->', '$1') + '<script>' + completeLetterSource + '</script></body></html>\n```';
+  const legacyLetterCss = css + '\n.menu-board{display:none!important}.reader-letter-compact .cafe-v20-responsive{display:none!important}.reader-letter-compact .outer-collapse:not([open]){display:block}.reader-letter-compact .flower-btn{display:block}';
+  const letterViews = { current: {html: letterBody.replace('<!--DREAM_LETTER-->', ''), css: letterCss}, legacy: {html: legacyLetterBody.replace('<!--DREAM_LETTER-->', ''), css: legacyLetterCss} };
+  // Already displayed old light letters get the same view data from the runtime, without another download or updater.
+  const assets = { version, css, body: body.replace('<!--DREAM_LETTER-->', ''), controller, letterViews };
+  // Function replacement: minified code may contain `$&` / `$'` (e.g. a variable named `$`), which a string replacement would expand.
+  const runtime = runtimeSource.replace("import { ASSETS } from 'reader:assets';", () => 'const ASSETS = ' + JSON.stringify(assets) + ';');
+  const legacyLetterView = JSON.stringify(letterViews.legacy).replace(/</g, '\\u003c');
+  const completeLetterSource = letterBridge + '\n;' + letterSource.replace('__READER_LEGACY_LETTER_VIEW__', () => legacyLetterView);
+  const replaceString = '```html\n<!doctype html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style id="reader-letter-style">' + letterCss + '</style></head><body>' + letterBody.replace('<!--DREAM_LETTER-->', '$1') + '<script>' + completeLetterSource + '</script></body></html>\n```';
   if (/<\/script/i.test(completeLetterSource)) throw new Error('Letter source contains a script terminator');
   if (replaceString.length > 200000 || /<audio\b|function\s+openDreamLobby\(/i.test(replaceString)) throw new Error('Letter is incompatible with the old updater');
   const rules = [{ id: 'b1c5a3f2-1007-4e0a-9d7e-5a1e0c0d1007', scriptName: '读者对话渲染-脚本版', readerRuntime: {schema: 1, version, kind: 'light-letter'},

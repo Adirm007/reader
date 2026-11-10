@@ -145,7 +145,8 @@ test('retained complete letter frames use the shared menu and remain available i
   for(const theme of ['cafe','summer','ink']){
    await page.evaluate(theme=>{document.getElementById('reader-core-controller').contentWindow.applyVisualTheme(theme,false);ReaderCore.refresh();},theme);
    if(await late.locator('.letter-interaction').getAttribute('open')===null)await late.locator('.envelope-casing').click();
-   await late.locator(theme==='ink'?'.jn-scroll-menu':'#menu-trigger').click();await page.locator('#dlb-overlay [data-dlb="page"][data-page="eggs"]').first().click();
+   assert.equal(await late.locator('.wrapper-v9-fix.lv').count(),1,theme+' upgrades the complete frame to the selected new frontend');
+   await late.locator('#menu-trigger[data-reader-action="menu"]').click();await page.locator('#dlb-overlay [data-dlb="page"][data-page="eggs"]').first().click();
    assert.equal(await page.locator('#dlb-overlay [data-dlb="egghidefloat"]').count(),1,theme+' has the same switch through the complete inline frame');
    await page.locator('#dlb-overlay [data-dlb="egghidefloat"]').click();assert.equal(await page.locator('#dfb').count(),1);
    await page.locator('#dlb-overlay [data-dlb="egghidefloat"]').click();assert.equal(await page.locator('#dfb').count(),0);

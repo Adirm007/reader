@@ -28,7 +28,7 @@ export interface LobbyState {
 }
 
 export interface EggState {
-  display: string; unseal: boolean; silent: boolean; beautify: boolean; letterLimit: boolean; hideFloat: boolean;
+  display: string; unseal: boolean; silent: boolean; beautify: boolean; letterLimit: boolean; hideFloat: boolean; legacyUi: boolean;
   yuan: boolean; yuanStream: boolean; yuanPref: string; api: string;
   /** Which folds are open (legacy dlbEggOpen). */
   open: { theme?: boolean; yuan?: boolean; disc?: boolean; font?: boolean; fsz?: boolean };

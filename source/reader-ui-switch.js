@@ -14,6 +14,7 @@
     gachaArt: typeof dreamGachaArt === 'function' ? dreamGachaArt : null
   };
   function on() { try { return UI.enabled(window.localStorage); } catch (e) { return true; } }
+  function oldFrontend() { return gLS('dream_ui_v4', 'on') === 'off'; }
   function theme() { try { var t = getVisualTheme(); return t === 'summer' || t === 'ink' ? t : 'cafe'; } catch (e) { return 'cafe'; } }
   function fresh(ov) { return !!(ov && ov.querySelector('#u4r')); }
   function safe(fn, fallback) { try { var v = fn(); return v === undefined || v === null ? fallback : v; } catch (e) { return fallback; } }
@@ -50,6 +51,7 @@
         beautify: !!safe(function () { return getCafeEnvelopeBeautifyState(); }, false),
         letterLimit: !!safe(function () { return getLetterLimitState(); }, false),
         hideFloat: safe(function () { return gLS('dream_hide_persistent_float', 'off') === 'on'; }, false),
+        legacyUi: oldFrontend(),
         yuan: !!safe(function () { return getYuanPlusEnabled(); }, false),
         yuanStream: !!safe(function () { return getYuanPlusStreamEnabled(); }, false),
         yuanPref: String(safe(function () { return getYuanPlusPreference(); }, '')),
@@ -72,6 +74,15 @@
     return f;
   }
   var hooks = { state: state };
+  var oldOpenLobby = openDreamLobby, oldCloseLobby = closeDreamLobby;
+  openDreamLobby = function () {
+    if (dlbOv() && typeof UI.unmount === 'function') UI.unmount(dlbOv());
+    return oldOpenLobby.apply(this, arguments);
+  };
+  closeDreamLobby = function () {
+    if (dlbOv() && typeof UI.unmount === 'function') UI.unmount(dlbOv());
+    return oldCloseLobby.apply(this, arguments);
+  };
   if (legacy.gachaArt) {
     dreamGachaArt = function () {
       var art = legacy.gachaArt.apply(this, arguments);
@@ -86,6 +97,7 @@
   // Swap the whole overlay content between the new skeleton and the legacy one (same overlay node, so its
   // timer, listeners and ownership stay). What openDreamLobby does for a legacy skeleton is repeated here.
   function swap(ov, t, toNew) {
+    if (typeof UI.unmount === 'function') UI.unmount(ov);
     ov.innerHTML = toNew ? UI.skeleton(t, state()) : legacySkeleton(t);
     ov.classList.toggle('u4-on', toNew);
     if (toNew) return;
@@ -106,6 +118,7 @@
   dlbMainHTML = function () { return fresh(dlbOv()) ? UI.main(theme(), state()) : legacy.main(); };
   dlbPageHTML = function (page) { return fresh(dlbOv()) && UI.supports(theme(), page) ? UI.page(theme(), page, state(), fragments(page)) : legacy.page(page); };
   dlbGo = function (page) {
+    dlbEnsureCss();
     var ov = dlbOv();
     if (ov) {
       var t = theme(), want = on() && UI.supports(t, page);
@@ -144,14 +157,62 @@
       });
     };
   }
-  // A theme sheet that cannot be unpacked turns the new layer off; an open lobby is reopened in the legacy look.
-  UI.onFail = function () {
-    try { if (dlbOv()) { closeDreamLobby(); setTimeout(function () { try { openDreamLobby(); } catch (e) {} }, 350); } } catch (e) {}
-  };
+  // A failed theme sheet falls back across the lobby, windows, envelope and letters together.
+  UI.onFail = function () { try { refreshFrontend(); } catch (e) {} };
 
   // Floating envelope (#dfb) and the light letters follow the same switch.
   function envelope() { try { if (pD) UI.installEnvelope(pD, on() ? theme() : null); } catch (e) {} }
   applyVisualTheme = function () { var result = legacy.apply.apply(this, arguments); envelope(); return result; };
+  // Both renderers keep the same preference and controls, so the old UI always has a way back.
+  var oldEggs = dlbBodyEggs;
+  dlbBodyEggs = function () {
+    var enabled = oldFrontend();
+    var row = dlbRowToggle('egglegacyui', 'display', '启用老版前端', 'LEGACY UI',
+      '大厅、立绘、信件与命运抽卡等一起切回旧版；关闭后恢复新版', enabled, enabled ? '已开启' : '已关闭', !enabled);
+    row = row.replace('class="dlb-row', 'role="button" tabindex="0" aria-pressed="' + enabled + '" class="dlb-row');
+    return oldEggs().replace(/<div class="dlb-row dlb-fold(?: on)?" data-dlb="eggfold" data-k="yuan">/, function (next) { return row + next; });
+  };
+  var oldMenu = buildMenuHTML;
+  buildMenuHTML = function () {
+    var row = '<div class="sub-opt" role="button" tabindex="0" data-action="toggleLegacyFrontend"><span>启用老版前端</span><span data-reader-legacy-ui-status>'
+      + (oldFrontend() ? '已开启' : '已关闭') + '</span></div>';
+    return oldMenu().replace(/<div class="sub-opt" data-action="toggleTheme">[\s\S]*?<\/div>/, function (themeRow) { return themeRow + row; });
+  };
+  function refreshFrontend() {
+    dlbEnsureCss();
+    envelope();
+    if (dlbOv()) { dlbGo(dlbPage || 'main'); dlbLayout(); }
+    [document, pD].forEach(function (doc) {
+      if (!doc) return;
+      doc.querySelectorAll('[data-reader-legacy-ui-status]').forEach(function (node) { node.textContent = oldFrontend() ? '已开启' : '已关闭'; });
+    });
+    if (window.ReaderGacha && window.ReaderGacha.isOpen()) dreamOpenGacha();
+    if (window.__readerHostApi) window.__readerHostApi.refresh();
+    else nAll('frontend');
+  }
+  function toggleFrontend(event) {
+    var control = event.target.closest && event.target.closest('[data-dlb="egglegacyui"],[data-action="toggleLegacyFrontend"]');
+    if (!control) return;
+    if (event.type === 'keydown' && (control.tagName === 'BUTTON' || event.key !== 'Enter' && event.key !== ' ')) return;
+    event.preventDefault(); event.stopPropagation();
+    try { window.localStorage.setItem('dream_ui_v4', oldFrontend() ? 'on' : 'off'); }
+    catch (error) { showToast('前端设置未能保存，请检查浏览器存储空间后重试'); return; }
+    refreshFrontend();
+  }
+  (pD && pD !== document ? [document, pD] : [document]).forEach(function (doc) {
+    doc.addEventListener('click', toggleFrontend, true);
+    doc.addEventListener('keydown', toggleFrontend, true);
+  });
+  var oldCommand = window.dreamCmd;
+  window.dreamCmd = function (command) {
+    if (command === 'frontend') {
+      if (window.__readerHostApi) refreshFrontend();
+      else { dlbEnsureCss(); envelope(); if (dlbOv()) dlbGo(dlbPage || 'main'); }
+      return;
+    }
+    return oldCommand && oldCommand.apply(this, arguments);
+  };
+  window.addEventListener('storage', function (event) { if (event.key === 'dream_ui_v4' || event.key === null) refreshFrontend(); });
   envelope();
   var app = window.ReaderController;
   if (app && typeof app.settings === 'function') {

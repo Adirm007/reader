@@ -22,7 +22,7 @@ const SHORT: Record<Theme, string> = { cafe: 'u4c', summer: 'u4s', ink: 'u4i' };
 const themeOf = (t: unknown): Theme => (t === 'summer' || t === 'ink' ? t : 'cafe');
 const kitOf = (t: unknown): ThemeKit => KITS[themeOf(t)];
 
-type Root = HTMLElement & { __u4?: { hooks: Hooks; theme: Theme; line: number; minute: string; fxTimer?: number } };
+type Root = HTMLElement & { __u4?: { hooks: Hooks; theme: Theme; line: number; minute: string; fxTimer?: number; cleanup?: () => void; cancelOrder?: () => void } };
 
 function rootOf(ov: ParentNode | null | undefined): Root | null {
   return (ov?.querySelector?.('#u4r') as Root | null) ?? null;
@@ -193,6 +193,7 @@ export function createReaderUI() {
           timer = window.setTimeout(() => { void hydrate(root); }, 250);
         };
         view0?.addEventListener('resize', relayout);
+        root.__u4.cleanup = () => { view0?.removeEventListener('resize', relayout); window.clearTimeout(timer); };
         root.addEventListener('click', event => {
           const target = event.target as Element | null;
           const greeting = target?.closest?.('[data-u4-greet]');
@@ -221,6 +222,12 @@ export function createReaderUI() {
       syncAll(root, kind, s || root.__u4.hooks.state());
     },
 
+    unmount(ov: HTMLElement): void {
+      const state = rootOf(ov)?.__u4;
+      state?.cancelOrder?.();
+      state?.cleanup?.();
+    },
+
     /** A paid order went through (handleRhythm resolved): play the theme's acknowledgement once. */
     notify(ov: HTMLElement | null, event: { type: string; kind?: string }): void {
       const root = rootOf(ov);
@@ -236,6 +243,7 @@ export function createReaderUI() {
     confirmOrder(doc: Document, theme: string, order: { kind: string; cost: number }): Promise<boolean | null> {
       const root = doc.getElementById('u4r') as Root | null;
       if (!root?.__u4 || broken) return Promise.resolve(null);
+      root.__u4.cancelOrder?.();
       root.querySelector('.u4-rc')?.remove();
       const t = themeOf(theme), w = kitOf(t).skin.words, s = root.__u4.hooks.state();
       const name = order.kind.indexOf('日常:') === 0 ? '预约日常 · ' + order.kind.slice(3) : order.kind === '随机涟漪' ? '随机涟漪' : '买一份' + order.kind;
@@ -254,10 +262,13 @@ export function createReaderUI() {
         const finish = (ok: boolean) => {
           if (done) return;
           done = true;
+          if (root.__u4?.cancelOrder === cancel) root.__u4.cancelOrder = undefined;
           doc.removeEventListener('keydown', key, true);
           box.classList.add(ok ? 'is-yes' : 'is-no');
           window.setTimeout(() => { box.remove(); try { before?.focus?.(); } catch { /* gone */ } resolve(ok); }, ok ? 360 : 160);
         };
+        const cancel = () => finish(false);
+        root.__u4!.cancelOrder = cancel;
         const key = (e: KeyboardEvent) => {
           if (e.key === 'Escape' || e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); finish(e.key === 'Enter' && doc.activeElement !== no); }
           else if (e.key === 'Tab') { e.preventDefault(); (doc.activeElement === yes ? no : yes)?.focus(); }
@@ -285,7 +296,7 @@ export function createReaderUI() {
       style(doc, 'dream-u4-envelope', css);
       if (art === undefined && has(id)) {
         envelopeArt.set(id, null);
-        void load(id).then(url => { envelopeArt.set(id, url); if (url && doc.getElementById('dream-u4-envelope')) this.installEnvelope(doc, t); });
+        void load(id).then(url => { envelopeArt.set(id, url); if (url && doc.documentElement?.getAttribute('data-u4-theme') === t && doc.getElementById('dream-u4-envelope')) this.installEnvelope(doc, t); });
       }
     },
 

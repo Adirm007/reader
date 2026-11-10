@@ -4,6 +4,7 @@ import { ASSETS } from 'reader:assets';
 const FRAME_ID = 'reader-core-controller';
 const OLD_BUTTON_ID = 'reader-core-launcher';
 const LEGACY_SOURCE = Symbol.for('reader.legacy-letter.source');
+const LIGHT_PRESENTATION = Symbol.for('reader.light-letter.presentation');
 let running = null;
 let successor = null;
 let lifecycle = 0;
@@ -24,6 +25,82 @@ function macroText(text, win, script = false) {
   const escaped = value => script ? JSON.stringify(String(value)).slice(1, -1).replace(/'/g, '\\u0027').replace(/`/g, '\\u0060').replace(/\$/g, '\\u0024') : String(value).replace(/[&<>"']/g, character => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[character]));
   return text.replace(/<user>|\{\{user\}\}/gi, () => escaped(context.name1 || '作家'))
     .replace(/<(?:bot|char)>|\{\{char\}\}/gi, () => escaped(context.name2 || '九十九夜梦'));
+}
+
+// A regex update leaves old light-letter scripts alive in existing message frames. Upgrade only
+// their presentation after the old refresh has updated its private settings. Keep its delegated
+// actions and the exact card/body/details/fold nodes: the historical fold closures and observer
+// still refer to those live nodes, so no second script, registration or observer is needed.
+function refreshHistoricalLetter(letter, settings, adoptedApi = null) {
+  const target = letter.frame?.contentWindow, doc = letter.frame?.contentDocument;
+  if (!target || !ASSETS.letterViews || !doc?.body || !target.ReaderLetter && !adoptedApi || target.ReaderLetter?.presentation >= 2) return;
+  let view = doc[LIGHT_PRESENTATION];
+  if (!view) {
+    const style = doc.createElement('style'); style.id = 'reader-letter-presentation'; doc.head.appendChild(style);
+    // Complete legacy frames have inline handlers and an old player; convert their markup once too.
+    view = {style, legacy: adoptedApi ? null : !doc.querySelector('.wrapper-v9-fix.lv')};
+    Object.defineProperty(doc, LIGHT_PRESENTATION, {value: view});
+  }
+  // Old refresh functions keep writing their original extra style. Disable that sheet and use
+  // one final controlled sheet for both generations, including legacy ink/summer overrides.
+  for (const style of doc.head.querySelectorAll('style')) if (style !== view.style) style.disabled = true;
+  const useLegacy = !settings.ui, selected = useLegacy ? ASSETS.letterViews.legacy : ASSETS.letterViews.current;
+  if (view.legacy !== useLegacy) {
+    const old = doc.querySelector('.wrapper-v9-fix'), template = doc.createElement('template');
+    if (!old) return;
+    template.innerHTML = selected.html;
+    const next = template.content.querySelector('.wrapper-v9-fix');
+    const body = old.querySelector('.text-body-royal'), card = old.querySelector('.cafe-v20-responsive');
+    const details = old.querySelector('.letter-interaction'), outer = old.querySelector('.outer-collapse');
+    const fold = card?.querySelector('.letter-fold-toggle'), signature = old.querySelector('.sig-mini')?.textContent || '';
+    const scroll = body?.scrollTop || 0, unfolded = card?.classList.contains('letter-unfolded');
+    if (!next || !body || !card || !details) return;
+    // Only retired message-frame players are touched; the shared controller keeps playing.
+    if (adoptedApi) for (const audio of old.querySelectorAll('audio')) { try { audio.pause(); } catch {} }
+    next.querySelector('.text-body-royal')?.replaceWith(body);
+    if (fold) body.after(fold);
+    const nextDetails = next.querySelector('.letter-interaction');
+    if (!nextDetails) return;
+    details.replaceChildren(...Array.from(nextDetails.childNodes)); nextDetails.replaceWith(details);
+    const nextCard = next.querySelector('.cafe-v20-responsive');
+    if (!nextCard) return;
+    card.className = nextCard.className; card.classList.toggle('letter-unfolded', !!unfolded);
+    card.replaceChildren(...Array.from(nextCard.childNodes)); nextCard.replaceWith(card);
+    const nextOuter = next.querySelector('.outer-collapse'); if (nextOuter && outer) nextOuter.open = outer.open;
+    const sign = next.querySelector('.sig-mini'); if (sign) sign.textContent = signature;
+    old.replaceWith(next); body.scrollTop = scroll; view.legacy = useLegacy;
+  }
+  const css = selected.css + '\n' + (settings.ui ? settings.ui.css || '' : settings.extraCss || '');
+  if (view.style.textContent !== css) view.style.textContent = css;
+  doc.documentElement.setAttribute('data-dream-theme', settings.theme || 'cafe');
+  for (const key of ['scene','paper']) {
+    const art = settings.ui?.art?.[key], value = art ? 'url("' + String(art).replace(/"/g, '%22') + '")' : '';
+    if (value) doc.documentElement.style.setProperty('--lv-' + key, value); else doc.documentElement.style.removeProperty('--lv-' + key);
+  }
+  const avatar = doc.getElementById('char-face-img');
+  avatar?.classList.add('is-in');
+  if (avatar && settings.avatar && avatar.getAttribute('src') !== settings.avatar) avatar.src = settings.avatar;
+  const wrapper = doc.querySelector('.wrapper-v9-fix');
+  if (wrapper) wrapper.style.zoom = (settings.fontSize || 16) / (settings.defaultFontSize || 16);
+  doc.querySelectorAll('.text-body-royal,.sig-mini').forEach(node => { if (settings.font?.family) node.style.fontFamily = settings.font.family; });
+  doc.querySelectorAll('[data-dream-dear],#dream-dear-name').forEach(node => { if (settings.address) node.textContent = settings.address; });
+  if (settings.autoUnseal) {
+    const letter = doc.querySelector('.letter-interaction'); if (letter) letter.open = true;
+    const casing = letter?.querySelector('.envelope-casing'); if (casing) casing.style.display = 'none';
+  }
+  doc.getElementById('record-btn')?.classList.toggle('is-playing', !!settings.playing);
+  if (adoptedApi) for (const node of doc.querySelectorAll('[data-reader-action]')) {
+    // Complete frames predate the light letter's delegated click bridge. Bind the new controls
+    // directly, without another document listener or invoking their retired player functions.
+    node.onclick = event => {
+      event.preventDefault(); event.stopPropagation();
+      if (node.getAttribute('data-reader-action') === 'music') void adoptedApi.command('togglePlay');
+      else void adoptedApi.open('lobby');
+    };
+    if (node.tagName !== 'BUTTON') node.onkeydown = event => {
+      if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); event.stopPropagation(); node.click(); }
+    };
+  }
 }
 
 export function start(options = {}) {
@@ -96,6 +173,9 @@ export function start(options = {}) {
     replace('dreamCmd', refresh);
     replace('togglePlay', () => { void api.command('togglePlay'); });
     replace('handleTrackBtnClick', () => { void api.command('handleTrackBtnClick'); });
+    // Historical portrait retries/toggle listeners remain in the retired frame. They must use
+    // the shared presentation's current avatar instead of putting the pre-reset portrait back.
+    replace('getAvatarUrl', () => api.settings().avatar || '');
     const letter = {
       frame, messageId, swipeId: sourceSwipe,
       isCurrent: () => {
@@ -220,7 +300,7 @@ export function start(options = {}) {
     const settings = api.settings();
     for (const letter of state.letters) {
       if (!letter.frame?.isConnected) { state.legacyFrames.get(letter.frame)?.restore(); state.legacyFrames.delete(letter.frame); state.letters.delete(letter); continue; }
-      try { letter.refresh?.(settings); } catch { state.legacyFrames.get(letter.frame)?.restore(); state.legacyFrames.delete(letter.frame); state.letters.delete(letter); }
+      try { letter.refresh?.(settings); refreshHistoricalLetter(letter, settings, state.legacyFrames.has(letter.frame) ? api : null); } catch { state.legacyFrames.get(letter.frame)?.restore(); state.legacyFrames.delete(letter.frame); state.letters.delete(letter); }
     }
     state.frame?.contentWindow?.ReaderController?.refreshEnvelope?.();
   }

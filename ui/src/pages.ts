@@ -84,6 +84,8 @@ function eggs(t: Theme, s: LobbyState, f: Fragments, w: Record<string, string>):
   const label = THEMES.find(x => x.id === t)?.name || '';
   const desk = fold('eggfold', 'theme', '主题', '信件、大厅和悬浮信封一起换', !!o.theme, label, 'dlb-fold-theme-sv')
     + `<div class="q-foldbody" id="dlb-fold-theme"${hide(o.theme)}><div class="q-themes">${themeCards}</div></div>`
+    + `<button type="button" class="q-row${e.legacyUi ? ' on' : ''}"${act('egglegacyui')} aria-pressed="${e.legacyUi}"><b class="q-nm">启用老版前端</b>`
+    + `<small class="q-ds">大厅、立绘、信件与命运抽卡等一起切回旧版；关闭后恢复新版</small>${sv(e.legacyUi, '已开启', '已关闭')}<i class="dlb-minisw${e.legacyUi ? ' on' : ''}" aria-hidden="true"></i></button>`
     + fold('eggfold', 'yuan', '缘加强', '「买一份缘」按你的偏好生成邂逅对象', !!o.yuan, e.yuan ? '已启用' : '已禁用', 'dlb-fold-yuan-sv', !e.yuan)
     + `<div class="q-foldbody" id="dlb-fold-yuan"${hide(o.yuan)}>`
     + sw('eggyuan', 7, '功能开关', '开启后，「买一份缘」生成的角色直接写进世界书，不必再存一遍', e.yuan, '已启用', '已禁用', 'dlb-egg-yp')
