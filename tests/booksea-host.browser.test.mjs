@@ -13,6 +13,7 @@ try { ({ chromium } = createRequire(new URL('../../_tools/shot/package.json', im
 const chrome = process.env.CHROME || 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const runnable = !!chromium && existsSync(chrome);
 const source = await readFile(new URL('../source/booksea-host.js', import.meta.url), 'utf8');
+const shellCss = await readFile(new URL('../ui/src/booksea-shell.css', import.meta.url), 'utf8');
 const distribution = `
 window.BookseaDistribution = { async bootPersistent(root, config, win, hooks) {
   const host = win.parent, state = host.__state;
@@ -35,7 +36,7 @@ const manifest = bytes => ({ revision: 'test-bootstrap', files: { 'distribution.
   bytes: Buffer.byteLength(bytes), sha256: createHash('sha256').update(bytes).digest('hex'),
 } } });
 
-async function fixture(t, { failDistributionOnce = false } = {}) {
+async function fixture(t, { failDistributionOnce = false, viewport = { width: 1100, height: 800 }, mobile = false, expandedComposer = false, decorated = false } = {}) {
   const requests = { manifest: 0, distribution: 0 };
   const server = createServer((request, response) => {
     const pathname = new URL(request.url, 'http://localhost').pathname;
@@ -50,17 +51,19 @@ async function fixture(t, { failDistributionOnce = false } = {}) {
       response.end(distribution);
     } else {
       response.setHeader('Content-Type', 'text/html; charset=utf-8');
-      response.end('<!doctype html><html><body><form id="send_form" style="position:fixed;bottom:0;height:80px"><textarea></textarea></form></body></html>');
+      const composerStyle = expandedComposer ? 'position:fixed;inset:24px 0 0' : 'position:fixed;bottom:0;left:0;right:0;height:80px';
+      response.end('<!doctype html><html><meta name="viewport" content="width=device-width,initial-scale=1"><body><div id="form_sheld" style="' + composerStyle + '"><form id="send_form" style="position:fixed;bottom:0;height:80px"><textarea></textarea></form></div></body></html>');
     }
   });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const origin = `http://127.0.0.1:${server.address().port}`;
   const browser = await chromium.launch({ executablePath: chrome, headless: true });
-  const page = await browser.newPage({ viewport: { width: 1100, height: 800 } });
+  const page = await browser.newPage({ viewport, isMobile: mobile });
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   t.after(async () => { await browser.close(); await new Promise(resolve => server.close(resolve)); });
   await page.goto(origin);
+  if (decorated) await page.addStyleTag({ content: shellCss });
   await page.evaluate(async ({ source, base }) => {
     window.__ctx = { characterId: 1, chatId: 'a' };
     window.SillyTavern = { getContext: () => window.__ctx };
@@ -202,5 +205,179 @@ test('启动期间连续打开只创建一个应用，并只派发最后一次�
   assert.deepEqual(await page.evaluate(() => __state.actions), ['narrative']);
   assert.equal(await page.locator('[data-reader-booksea] iframe').count(), 1);
   assert.equal(requests.distribution, 1);
+  assert.deepEqual(errors, []);
+});
+
+for (const decorated of [false, true]) {
+ for (const viewport of [{ width: 390, height: 844 }, { width: 844, height: 390 }]) {
+  test(`移动端${decorated ? '新外壳' : '普通外壳'} ${viewport.width}×${viewport.height} 的扩展输入区域不会把书海挤成细条`, { skip: !runnable, timeout: 30_000 }, async t => {
+    const { page, errors } = await fixture(t, { viewport, mobile: true, expandedComposer: true, decorated });
+    const minimumGameHeight = viewport.width > viewport.height ? viewport.height * .75 : Math.min(240, viewport.height * .5);
+    await page.evaluate(() => __host.open());
+    const layout = await page.evaluate(() => {
+      const shell = document.querySelector('[data-reader-booksea]');
+      const frame = shell.querySelector('iframe');
+      return { shell: shell.getBoundingClientRect().toJSON(), frame: frame.getBoundingClientRect().toJSON(), width: innerWidth, height: innerHeight };
+    });
+    assert.ok(layout.frame.height >= minimumGameHeight, `书海游戏区域高度应可用，实际 ${layout.frame.height}px`);
+    assert.ok(layout.shell.top >= 0 && layout.shell.bottom <= layout.height, '书海窗口应完整位于可见屏幕内');
+    assert.ok(layout.shell.left >= 0 && layout.shell.right <= layout.width, '书海窗口不应横向溢出');
+    await page.getByRole('button', { name: '全屏', exact: true }).click();
+    const fullscreen = await page.locator('[data-reader-booksea] iframe').boundingBox();
+    assert.ok(fullscreen.height >= viewport.height - 90, '全屏后应保留几乎整屏的游戏区域');
+    await page.getByRole('button', { name: '还原', exact: true }).click();
+    const restored = await page.locator('[data-reader-booksea] iframe').boundingBox();
+    assert.ok(restored.height >= minimumGameHeight, '还原后游戏区域也不应缩成细条');
+    assert.deepEqual(errors, []);
+  });
+ }
+ test(`移动端${decorated ? '新外壳' : '普通外壳'}避让正常输入栏并随键盘缩小后的视口调整`, { skip: !runnable, timeout: 30_000 }, async t => {
+   const { page, errors } = await fixture(t, { viewport: { width: 390, height: 844 }, mobile: true, decorated });
+   await page.evaluate(() => __host.open());
+   const normal = await page.evaluate(() => ({
+     shell: document.querySelector('[data-reader-booksea]').getBoundingClientRect().toJSON(),
+     composer: document.querySelector('#form_sheld').getBoundingClientRect().toJSON(),
+   }));
+   assert.ok(normal.shell.bottom <= normal.composer.top, '普通输入栏仍应保留可见空间');
+   await page.locator('#send_form textarea').focus();
+   await page.setViewportSize({ width: 390, height: 360 });
+   await page.waitForFunction(() => innerHeight === 360 && document.querySelector('[data-reader-booksea]').getBoundingClientRect().bottom <= 360);
+   const reduced = await page.locator('[data-reader-booksea] iframe').boundingBox();
+   assert.ok(reduced.height >= 120, `键盘缩小视口后游戏区域仍可操作，实际 ${reduced.height}px`);
+   await page.getByRole('button', { name: '全屏', exact: true }).click();
+   const fullscreen = await page.locator('[data-reader-booksea] iframe').boundingBox();
+   assert.ok(fullscreen.height >= 270, '缩小视口内的全屏仍应充分利用可见空间');
+   await page.getByRole('button', { name: '还原', exact: true }).click();
+   const restored = await page.locator('[data-reader-booksea] iframe').boundingBox();
+   assert.ok(restored.height >= 120, '键盘视口内还原不能丢失游戏区域');
+   await page.setViewportSize({ width: 390, height: 844 });
+   await page.waitForFunction(() => document.querySelector('[data-reader-booksea] iframe').getBoundingClientRect().height > 500);
+   assert.deepEqual(errors, []);
+ });
+}
+
+test('移动布局：实际输入栏也铺满屏幕时保留可操作的书海区域', { skip: !runnable, timeout: 30_000 }, async t => {
+  const { page, errors } = await fixture(t, { viewport: { width: 390, height: 844 }, mobile: true, decorated: true });
+  await page.locator('#send_form').evaluate(form => { form.style.height = 'calc(100vh - 24px)'; });
+  await page.evaluate(() => __host.open());
+  for (const viewport of [{ width: 390, height: 844 }, { width: 844, height: 390 }]) {
+    await page.setViewportSize(viewport);
+    await page.waitForFunction(() => document.querySelector('[data-reader-booksea]').getBoundingClientRect().height >= innerHeight * .8);
+    const frame = await page.locator('[data-reader-booksea] iframe').boundingBox();
+    const minimumGameHeight = viewport.height * (viewport.width > viewport.height ? .75 : .6);
+    assert.ok(frame.height >= minimumGameHeight, `输入栏占满屏幕后游戏高度仍应可用，实际 ${frame.height}px`);
+  }
+  assert.deepEqual(errors, []);
+});
+
+test('移动布局：输入栏仅改变高度时自动避让，隐藏后复开沿用游戏并重新适配', { skip: !runnable, timeout: 30_000 }, async t => {
+  const { page, errors } = await fixture(t, { viewport: { width: 390, height: 844 }, mobile: true, decorated: true });
+  await page.evaluate(() => {
+    // Exclude the window-resize path even if Chromium delivers a late initial event.
+    const add = window.addEventListener.bind(window);
+    window.__blockedResizeListeners = 0;
+    window.addEventListener = (type, listener, options) => {
+      if (type === 'resize') { __blockedResizeListeners++; return; }
+      return add(type, listener, options);
+    };
+  });
+  await page.evaluate(() => __host.open());
+  const initial = await page.locator('[data-reader-booksea]').boundingBox();
+  await page.evaluate(() => {
+    document.querySelector('#send_form').style.height = '240px';
+  });
+  await page.waitForFunction(() => document.querySelector('[data-reader-booksea]').getBoundingClientRect().bottom <= document.querySelector('#send_form').getBoundingClientRect().top);
+  const resized = await page.locator('[data-reader-booksea]').boundingBox();
+  assert.ok(initial.height - resized.height >= 100, '输入栏增高应由 ResizeObserver 收回相应空间');
+  assert.equal(await page.evaluate(() => __blockedResizeListeners), 1, '书海的 window resize 监听已被阻断，输入栏变化仍能自行适配');
+  await page.evaluate(() => { __host.hide(); document.querySelector('#send_form').style.height = '820px'; });
+  await page.evaluate(() => __host.open());
+  const reopened = await page.locator('[data-reader-booksea] iframe').boundingBox();
+  assert.ok(reopened.height >= 600, '复开时重新适配扩大的输入栏');
+  assert.equal(await page.evaluate(() => __state.boots), 1, '复开继续使用同一个游戏实例');
+  assert.deepEqual(errors, []);
+});
+
+test('移动布局：visualViewport 的 resize、scroll 与偏移在全屏和还原时保持几何边界', { skip: !runnable, timeout: 30_000 }, async t => {
+  const { page, errors } = await fixture(t, { viewport: { width: 390, height: 844 }, mobile: true, decorated: true });
+  await page.evaluate(() => {
+    window.__viewport = Object.assign(new EventTarget(), { offsetTop: 120, offsetLeft: 15, width: 360, height: 400 });
+    Object.defineProperty(window, 'visualViewport', { configurable: true, value: __viewport });
+  });
+  await page.evaluate(() => __host.open());
+  const initial = await page.locator('[data-reader-booksea]').boundingBox();
+  assert.equal(initial.x, 27);
+  assert.equal(initial.y, 132);
+  assert.ok(initial.x + initial.width <= 375 && initial.y + initial.height <= 520);
+  await page.evaluate(() => {
+    Object.assign(__viewport, { offsetTop: 160, offsetLeft: 8, width: 374, height: 480 });
+    __viewport.dispatchEvent(new Event('resize'));
+  });
+  const resized = await page.locator('[data-reader-booksea]').boundingBox();
+  assert.equal(resized.x, 20);
+  assert.equal(resized.y, 172);
+  assert.ok(resized.x + resized.width <= 382 && resized.y + resized.height <= 640);
+  await page.getByRole('button', { name: '全屏', exact: true }).click();
+  await page.evaluate(() => {
+    Object.assign(__viewport, { offsetTop: 200, offsetLeft: 20, width: 350, height: 300 });
+    __viewport.dispatchEvent(new Event('scroll'));
+  });
+  const fullscreen = await page.locator('[data-reader-booksea]').boundingBox();
+  assert.deepEqual(fullscreen, { x: 20, y: 200, width: 350, height: 300 });
+  assert.ok((await page.locator('[data-reader-booksea] iframe').boundingBox()).height >= 220);
+  await page.getByRole('button', { name: '还原', exact: true }).click();
+  const restored = await page.locator('[data-reader-booksea]').boundingBox();
+  assert.equal(restored.y, 212);
+  assert.ok(restored.x >= 20 && restored.x + restored.width <= 370 && restored.y + restored.height <= 500);
+  assert.deepEqual(errors, []);
+});
+
+test('移动布局：dispose 移除窗口及视口监听并断开输入栏与背景观察器', { skip: !runnable, timeout: 30_000 }, async t => {
+  const { page, errors } = await fixture(t, { viewport: { width: 390, height: 844 }, mobile: true });
+  await page.evaluate(() => {
+    function trackListeners(target, types) {
+      const active = new Map(types.map(type => [type, new Set()]));
+      const add = target.addEventListener.bind(target), remove = target.removeEventListener.bind(target);
+      target.addEventListener = (type, listener, options) => { active.get(type)?.add(listener); return add(type, listener, options); };
+      target.removeEventListener = (type, listener, options) => { active.get(type)?.delete(listener); return remove(type, listener, options); };
+      return () => [...active.values()].reduce((total, listeners) => total + listeners.size, 0);
+    }
+    window.__viewport = Object.assign(new EventTarget(), { offsetTop: 0, offsetLeft: 0, width: 390, height: 844 });
+    Object.defineProperty(window, 'visualViewport', { configurable: true, value: __viewport });
+    window.__windowListeners = trackListeners(window, ['resize', 'orientationchange']);
+    window.__viewportListeners = trackListeners(__viewport, ['resize', 'scroll']);
+    window.__observers = [];
+    const bridge = document.querySelector('#reader-owner').contentWindow;
+    for (const kind of ['ResizeObserver', 'MutationObserver']) {
+      const Native = bridge[kind];
+      bridge[kind] = class {
+        constructor(callback) {
+          this.record = { kind, targets: new Set(), callbacks: 0, disconnected: false };
+          __observers.push(this.record);
+          this.native = new Native((...args) => { this.record.callbacks++; callback(...args); });
+        }
+        observe(...args) { this.record.targets.add(args[0]); return this.native.observe(...args); }
+        disconnect() { this.record.targets.clear(); this.record.disconnected = true; this.native.disconnect(); }
+      };
+    }
+  });
+  await page.evaluate(() => __host.open());
+  const active = await page.evaluate(() => ({ window: __windowListeners(), viewport: __viewportListeners(), observers: __observers.map(item => ({ kind: item.kind, targets: item.targets.size })) }));
+  assert.deepEqual(active, { window: 2, viewport: 2, observers: [{ kind: 'MutationObserver', targets: 1 }, { kind: 'ResizeObserver', targets: 2 }] });
+  await page.evaluate(() => __host.dispose());
+  const disposed = await page.evaluate(() => ({ window: __windowListeners(), viewport: __viewportListeners(), observers: __observers.every(item => item.disconnected && item.targets.size === 0) }));
+  assert.deepEqual(disposed, { window: 0, viewport: 0, observers: true });
+  const callbacks = await page.evaluate(() => __observers.map(item => item.callbacks));
+  await page.evaluate(async () => {
+    document.querySelector('#send_form').style.height = '300px';
+    document.documentElement.setAttribute('data-u4-theme', 'coffee');
+    dispatchEvent(new Event('resize'));
+    dispatchEvent(new Event('orientationchange'));
+    __viewport.dispatchEvent(new Event('resize'));
+    __viewport.dispatchEvent(new Event('scroll'));
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  });
+  assert.deepEqual(await page.evaluate(() => __observers.map(item => item.callbacks)), callbacks, '断开后不再执行观察回调');
+  assert.equal(await page.locator('[data-reader-booksea]').count(), 0);
   assert.deepEqual(errors, []);
 });

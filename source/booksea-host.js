@@ -6,7 +6,7 @@
     var bridge = options.window || globals, host = options.host || bridge.parent, doc = host.document;
     var base = new URL(options.base || 'https://adirm007.github.io/Protelysion/').href;
     var shell, frame, status, retry, app, pending, disposed = false, visible = false, generation = 0, activation = 0;
-    var cancelReady, backdropObserver;
+    var cancelReady, backdropObserver, composerObserver;
     var aborter = new AbortController(), identity = currentIdentity();
     function currentIdentity() {
       var ctx = (bridge.SillyTavern || host.SillyTavern).getContext();
@@ -16,7 +16,7 @@
       if (disposed || bridge.__readerControllerAlive === false || currentIdentity() !== identity) throw new Error('聊天已切换，旧书海窗口已关闭');
     }
     function focus(value) { if (visible === value) return; visible = value; if (options.onFocus) options.onFocus(value); }
-    function display(value) { if (shell) { shell.hidden = !value; shell.style.display = value ? 'flex' : 'none'; } }
+    function display(value) { if (shell) { shell.hidden = !value; shell.style.display = value ? 'flex' : 'none'; if (value) fit(); } }
     async function timedFetch(win, url, init, milliseconds) {
       var controller = new AbortController(), cancel = function () { controller.abort(); };
       aborter.signal.addEventListener('abort', cancel, {once: true});
@@ -26,10 +26,36 @@
       finally { bridge.clearTimeout(timer); aborter.signal.removeEventListener('abort', cancel); }
     }
     function fit() {
-      if (!shell || shell.dataset.fullscreen === 'true') return;
-      var composer = doc.querySelector('#form_sheld') || doc.querySelector('#send_form');
+      if (!shell) return;
+      var viewport = host.visualViewport, full = shell.dataset.fullscreen === 'true', gap = full ? 0 : 12;
+      var top = Math.max(0, viewport?.offsetTop || 0), left = Math.max(0, viewport?.offsetLeft || 0);
+      var height = Math.max(0, Math.min(viewport?.height || host.innerHeight, host.innerHeight - top));
+      var width = Math.max(0, Math.min(viewport?.width || host.innerWidth, host.innerWidth - left));
+      // Mobile themes may stretch the wrapper across the chat. Measure the actual input bar first.
+      var composer = doc.querySelector('#send_form') || doc.querySelector('#form_sheld');
       var rect = composer && composer.getBoundingClientRect();
-      shell.style.bottom = Math.max(96, rect && rect.height > 0 ? host.innerHeight - rect.top + 8 : 112) + 'px';
+      var bottom = full ? 0 : Math.max(96, rect && rect.height > 0 && rect.bottom > top && rect.top < top + height ? top + height - rect.top + 8 : 112);
+      // An expanded input or a keyboard must never consume the whole game window.
+      if (!full && height - gap - bottom < Math.min(320, height * .8)) bottom = gap;
+      shell.style.top = 'calc(' + top + 'px + max(' + gap + 'px, env(safe-area-inset-top, 0px)))';
+      shell.style.left = 'calc(' + left + 'px + max(' + gap + 'px, env(safe-area-inset-left, 0px)))';
+      shell.style.right = 'calc(' + (host.innerWidth - left - width) + 'px + max(' + gap + 'px, env(safe-area-inset-right, 0px)))';
+      shell.style.bottom = 'calc(' + (host.innerHeight - top - height) + 'px + max(' + bottom + 'px, env(safe-area-inset-bottom, 0px)))';
+    }
+    function stopFitting() {
+      composerObserver?.disconnect();
+      host.removeEventListener('resize', fit);
+      host.removeEventListener('orientationchange', fit);
+      host.visualViewport?.removeEventListener('resize', fit);
+      host.visualViewport?.removeEventListener('scroll', fit);
+    }
+    function startFitting() {
+      host.addEventListener('resize', fit);
+      host.addEventListener('orientationchange', fit);
+      host.visualViewport?.addEventListener('resize', fit);
+      host.visualViewport?.addEventListener('scroll', fit);
+      composerObserver = new bridge.ResizeObserver(fit);
+      for (var composer of doc.querySelectorAll('#send_form, #form_sheld')) composerObserver.observe(composer);
     }
     function syncBackdrop() {
       var root = frame?.contentDocument?.documentElement;
@@ -37,7 +63,7 @@
     }
     function create() {
       backdropObserver?.disconnect();
-      shell?.remove(); host.removeEventListener('resize', fit);
+      shell?.remove(); stopFitting();
       shell = doc.createElement('section');
       shell.dataset.readerBooksea = 'true'; shell.setAttribute('role', 'dialog'); shell.setAttribute('aria-label', '普罗泰利西翁');
       shell.style.cssText = 'position:fixed;top:12px;left:12px;right:12px;bottom:112px;z-index:9000;display:flex;flex-direction:column;border:1px solid #8e795c;border-radius:10px;overflow:hidden;background:#191c2b;box-shadow:0 10px 48px #0008;color:#eee3cb';
@@ -45,7 +71,7 @@
       bar.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 12px;flex-shrink:0;font:14px/1.6 system-ui;background:#272a38';
       var title = doc.createElement('strong'); title.textContent = '普罗泰利西翁'; title.style.flex = '1'; bar.append(title);
       function button(label, handler) { var b = doc.createElement('button'); b.type = 'button'; b.textContent = label; b.style.cssText = 'font:inherit;min-height:32px;padding:3px 10px;color:inherit;background:#3e4051;border:1px solid #8e795c;border-radius:5px;cursor:pointer'; b.onclick = handler; bar.append(b); return b; }
-      button('全屏', function () { var full = shell.dataset.fullscreen !== 'true'; shell.dataset.fullscreen = String(full); shell.style.inset = full ? '0' : '12px 12px 112px'; this.textContent = full ? '还原' : '全屏'; fit(); });
+      button('全屏', function () { var full = shell.dataset.fullscreen !== 'true'; shell.dataset.fullscreen = String(full); this.textContent = full ? '还原' : '全屏'; fit(); });
       button('返回聊天', function () { void hide(); });
       shell.append(bar);
       status = doc.createElement('p'); status.setAttribute('role', 'status'); status.textContent = '书页正在展开……'; status.style.cssText = 'margin:12px;font:14px/1.8 system-ui'; shell.append(status);
@@ -62,7 +88,7 @@
       doc.body.append(shell); fit(); display(visible);
       backdropObserver = new bridge.MutationObserver(syncBackdrop);
       backdropObserver.observe(doc.documentElement, {attributes: true, attributeFilter: ['data-u4-theme']});
-      host.addEventListener('resize', fit);
+      startFitting();
       return loaded;
     }
     function bridgeInto(win) {
@@ -180,7 +206,7 @@
       if (disposed) return;
       disposed = true; generation++; cancelReady?.(); cancelReady = null; aborter.abort(); app?.dispose(); app = undefined;
       backdropObserver?.disconnect();
-      shell?.remove(); shell = frame = undefined; host.removeEventListener('resize', fit); focus(false);
+      stopFitting(); shell?.remove(); shell = frame = undefined; focus(false);
     }
     return {open: open, hide: hide, dispose: dispose, inspect: function () { return {loaded: !!app, visible: visible, disposed: disposed, identity: identity}; }};
   }
