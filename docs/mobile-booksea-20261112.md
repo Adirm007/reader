@@ -1,5 +1,7 @@
 # 2026.11.12.1 书海移动端入口修复
 
+> 后续更正：本版没有修复用户实际酒馆默认移动样式下的问题。原测试遗漏宿主 CSS，输入区挤压只是另一个可触发场景。真实根因与补修见 [2026.11.12.2](mobile-booksea-host-css-20261112.md)。
+
 用户反馈手机书海只显示顶部细条，通常从读者进入。实际入口为 `controller-adapter.js` → `createReaderBookseaHost` → 书海 `bootPersistent`。
 
 ## 根因与修复

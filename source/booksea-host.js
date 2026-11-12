@@ -40,7 +40,10 @@
       shell.style.top = 'calc(' + top + 'px + max(' + gap + 'px, env(safe-area-inset-top, 0px)))';
       shell.style.left = 'calc(' + left + 'px + max(' + gap + 'px, env(safe-area-inset-left, 0px)))';
       shell.style.right = 'calc(' + (host.innerWidth - left - width) + 'px + max(' + gap + 'px, env(safe-area-inset-right, 0px)))';
-      shell.style.bottom = 'calc(' + (host.innerHeight - top - height) + 'px + max(' + bottom + 'px, env(safe-area-inset-bottom, 0px)))';
+      // SillyTavern mobile fixes body beneath a transformed, zero-height html element.
+      // Give the window its own viewport height; top/bottom alone collapse in that containing block.
+      shell.style.bottom = 'auto';
+      shell.style.height = 'calc(' + height + 'px - max(' + gap + 'px, env(safe-area-inset-top, 0px)) - max(' + bottom + 'px, env(safe-area-inset-bottom, 0px)))';
     }
     function stopFitting() {
       composerObserver?.disconnect();
@@ -66,7 +69,7 @@
       shell?.remove(); stopFitting();
       shell = doc.createElement('section');
       shell.dataset.readerBooksea = 'true'; shell.setAttribute('role', 'dialog'); shell.setAttribute('aria-label', '普罗泰利西翁');
-      shell.style.cssText = 'position:fixed;top:12px;left:12px;right:12px;bottom:112px;z-index:9000;display:flex;flex-direction:column;border:1px solid #8e795c;border-radius:10px;overflow:hidden;background:#191c2b;box-shadow:0 10px 48px #0008;color:#eee3cb';
+      shell.style.cssText = 'box-sizing:border-box;position:fixed;top:12px;left:12px;right:12px;bottom:112px;z-index:9000;display:flex;flex-direction:column;border:1px solid #8e795c;border-radius:10px;overflow:hidden;background:#191c2b;box-shadow:0 10px 48px #0008;color:#eee3cb';
       var bar = doc.createElement('header');
       bar.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 12px;flex-shrink:0;font:14px/1.6 system-ui;background:#272a38';
       var title = doc.createElement('strong'); title.textContent = '普罗泰利西翁'; title.style.flex = '1'; bar.append(title);

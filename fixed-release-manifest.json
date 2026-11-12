@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "name": "dream-reader-render-fixed",
-  "version": "2026.11.12.1",
+  "version": "2026.11.12.2",
   "license": "LICENSE",
   "files": {
     "reader.css": {
@@ -21,13 +21,13 @@
     },
     "reader-runtime.js": {
       "path": "dist/reader-runtime.js",
-      "bytes": 1588992,
-      "sha256": "b896a865efb6e353979b423989e4861937b77acd4d034573fc1a3e80a14e81ab"
+      "bytes": 1589267,
+      "sha256": "0869e92199688c7aedfd15bbd8f0f4c25a465bf63a8204b27226774d47a45633"
     },
     "reader-letter.json": {
       "path": "regex/读者对话渲染-脚本版.json",
       "bytes": 169258,
-      "sha256": "a514b78b245b147d34f4aabe1bfbb080bab88db11296f2f120adc1d7e3f6137d"
+      "sha256": "57a71324c680468e9698b6dea8f988029398183ae6a1109c52e392317827c133"
     }
   },
   "installMode": "script",

@@ -36,7 +36,7 @@ const manifest = bytes => ({ revision: 'test-bootstrap', files: { 'distribution.
   bytes: Buffer.byteLength(bytes), sha256: createHash('sha256').update(bytes).digest('hex'),
 } } });
 
-async function fixture(t, { failDistributionOnce = false, viewport = { width: 1100, height: 800 }, mobile = false, expandedComposer = false, decorated = false } = {}) {
+async function fixture(t, { failDistributionOnce = false, viewport = { width: 1100, height: 800 }, mobile = false, expandedComposer = false, decorated = false, hostCss = false } = {}) {
   const requests = { manifest: 0, distribution: 0 };
   const server = createServer((request, response) => {
     const pathname = new URL(request.url, 'http://localhost').pathname;
@@ -52,7 +52,8 @@ async function fixture(t, { failDistributionOnce = false, viewport = { width: 11
     } else {
       response.setHeader('Content-Type', 'text/html; charset=utf-8');
       const composerStyle = expandedComposer ? 'position:fixed;inset:24px 0 0' : 'position:fixed;bottom:0;left:0;right:0;height:80px';
-      response.end('<!doctype html><html><meta name="viewport" content="width=device-width,initial-scale=1"><body><div id="form_sheld" style="' + composerStyle + '"><form id="send_form" style="position:fixed;bottom:0;height:80px"><textarea></textarea></form></div></body></html>');
+      const hostStyle = hostCss ? '<style>html{-webkit-transform:translateZ(0)}body{position:fixed;height:100dvh;width:100%;margin:0;overflow:hidden}</style>' : '';
+      response.end('<!doctype html><html><meta name="viewport" content="width=device-width,initial-scale=1">' + hostStyle + '<body><div id="form_sheld" style="' + composerStyle + '"><form id="send_form" style="position:fixed;bottom:0;height:80px"><textarea></textarea></form></div></body></html>');
     }
   });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
@@ -381,3 +382,37 @@ test('移动布局：dispose 移除窗口及视口监听并断开输入栏与背
   assert.equal(await page.locator('[data-reader-booksea]').count(), 0);
   assert.deepEqual(errors, []);
 });
+
+for (const decorated of [false, true]) {
+  for (const viewport of [{ width: 390, height: 844 }, { width: 844, height: 390 }]) {
+    test(`真实宿主 CSS：${decorated ? '新外壳' : '普通外壳'} ${viewport.width}×${viewport.height} 在零高根定位块内仍保持可用`, { skip: !runnable, timeout: 30_000 }, async t => {
+      const { page, errors } = await fixture(t, { viewport, mobile: true, decorated, hostCss: true });
+      await page.evaluate(() => __host.open());
+      assert.equal(await page.evaluate(() => document.documentElement.getBoundingClientRect().height), 0, '固定 body 与根元素变换重现酒馆零高包含块');
+      async function assertUsable(size) {
+        const minimum = size.width > size.height ? size.height * .75 : 240;
+        const layout = await page.evaluate(() => ({
+          shell: document.querySelector('[data-reader-booksea]').getBoundingClientRect().toJSON(),
+          frame: document.querySelector('[data-reader-booksea] iframe').getBoundingClientRect().toJSON(),
+        }));
+        assert.ok(layout.frame.height >= minimum, `真实宿主规则下游戏高度应至少 ${minimum}px，实际布局 ${JSON.stringify(layout)}`);
+        assert.ok(layout.shell.top >= 0 && layout.shell.bottom <= size.height, `窗口应位于真实可见高度内，视口 ${JSON.stringify(size)}，实际布局 ${JSON.stringify(layout)}`);
+      }
+      await assertUsable(viewport);
+      await page.getByRole('button', { name: '全屏', exact: true }).click();
+      assert.ok((await page.locator('[data-reader-booksea] iframe').boundingBox()).height >= viewport.height - 90, '零高根定位块内全屏仍应使用可见高度');
+      await page.getByRole('button', { name: '还原', exact: true }).click();
+      await assertUsable(viewport);
+      const rotated = { width: viewport.height, height: viewport.width };
+      await page.setViewportSize(rotated);
+      await page.waitForFunction(size => {
+        const shell = document.querySelector('[data-reader-booksea]').getBoundingClientRect();
+        const frame = document.querySelector('[data-reader-booksea] iframe').getBoundingClientRect();
+        const minimum = size.width > size.height ? size.height * .75 : 240;
+        return innerWidth === size.width && innerHeight === size.height && shell.bottom <= size.height && frame.height >= minimum;
+      }, rotated);
+      await assertUsable(rotated);
+      assert.deepEqual(errors, []);
+    });
+  }
+}
