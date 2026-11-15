@@ -1,3 +1,11 @@
+# 2026.11.15.1 条目模板开放第七层级
+
+已正式发布 [v2026.11.15.1](https://github.com/Adirm007/reader/releases/tag/v2026.11.15.1)，GitHub 确认 `immutable=true`、`draft=false`。源提交 C 为 `80c1d4d4d79ff3883d4c154aab9bb8aaf3489baa`，分发提交 D 为 `5dd34f9259fe95fabe7f4eb76474196a2b4e9365`。
+
+默认模板「常规命定角色生成」的「要素/权能/法则」说明由第四/五/六层级改为第四/五/六/七层级（新旧前端两份同步）；抽卡价格表不变。
+
+`npm test` 339 项中 336 通过、3 失败：失败的是 `tests/legacy-ui.browser.test.mjs` 中老版前端切换的点击超时，在已发布的上一提交 `2259543` 上同样失败（4/4），属本机环境问题，与本次改动无关。
+
 # 2026.11.14.1 抽卡角色条目生成
 
 已正式发布 [v2026.11.14.1](https://github.com/Adirm007/reader/releases/tag/v2026.11.14.1)，GitHub 确认 `immutable=true`、`draft=false`，更新清单已收录。源提交 C 为 `4e356b0fc7cead298c6232c1998f0b9cd39b0338`，分发提交 D 为 `484fbd804f91f64d8e2d6890debbf9af697fe88b`。
