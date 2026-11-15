@@ -11,6 +11,11 @@ import {BAG_TAG,CONTRACT_PRICE,RECYCLE_DIVISOR,addToBag,applyGachaDraw,applyRecy
 import {DEFAULT_SPEC_ENTRIES,cleanSpecText,isSkillPage,needsSpec,normalizeSpecSettings,parseSpecs,readSpecEntries,specPrompt} from '../src/gacha/spec';
 import type {BagEntry} from '../src/gacha/bag';
 import {BOOKSEA_BUSY,DURABLE_KEY,bookseaActive,createReaderGacha,readerGachaPort,type ReaderGachaHost,type ReaderTx} from '../src/reader/gacha-reader';
+import {buildCharacterDossier,characterDossierText,characterPassages,hasCharacterMaterial,sameCharacter} from '../src/gacha/dossier';
+import {ENTRY_EXTRA_KEY,buildWorldbookEntry,defaultEntrySettings,ensureWorldbook,entryMarker,entryPrompt,findMarkedEntry,normalizeEntryRecords,normalizeEntrySettings,parseEntryReply,pickTemplate,readTemplateLibrary,setWorldbookEntryEnabled,worldbookEntryPort,writeWorldbookEntry,type WorldbookWriter} from '../src/gacha/entry';
+import type {SmallPool} from '../src/gacha/pool';
+import type {GachaSettings} from '../src/gacha/session';
+import {TEMPLATE_LIBRARY_KEY,readerTemplateLibrary} from '../src/reader/gacha-reader';
 
 /* ---------- 假网络：按 URL 片段返回 JSON ---------- */
 type Route = [RegExp, unknown | ((url: string, init?: RequestInit) => unknown)];
@@ -692,4 +697,282 @@ test('世界观物品生成细则：按条目名读世界书（启用的优先�
   assert.equal((await o.compile(o.spread()!.works[0]!)).by, 'model', '关掉细则就不读世界书');
   const r = fakeReader(), port = readerGachaPort(readerHost(r, {helper: {...r.helper, getCharWorldbookNames: () => ({primary: '命定之诗', additional: []}), async getWorldbook() {return [{name: '核心数值表', content: '系数'}];}}}));
   assert.deepEqual(await port.specs!(['核心数值表']), [{name: '核心数值表', content: '系数'}], '读者端口经酒馆助手读世界书');
+});
+
+/* ---------- 角色条目生成 ---------- */
+/** 假的酒馆助手世界书：按书名存条目，新条目给一个编号；记下新建、挂载与写入。 */
+function fakeWorldbooks(start: {primary: string | null; additional: string[]} = {primary: '主世界书', additional: []}, initial: Record<string, Obj[]> = {主世界书: []}) {
+  const books = new Map<string, Obj[]>(Object.entries(initial).map(([k, v]) => [k, structuredClone(v)])), calls: string[] = [];
+  let bound = structuredClone(start), uid = 100;
+  const helper = {
+    getCharWorldbookNames: () => structuredClone(bound),
+    getWorldbookNames: () => [...books.keys()],
+    getWorldbook: async (name: string) => {if (!books.has(name)) throw Error('没有世界书 ' + name); return structuredClone(books.get(name)!);},
+    createWorldbook: async (name: string) => {calls.push('create ' + name); books.set(name, []);},
+    createWorldbookEntries: async (name: string, entries: Obj[]) => {calls.push('add ' + name); const rows = entries.map(e => ({...structuredClone(e), uid: uid++})); books.get(name)!.push(...rows); return {worldbook: books.get(name), new_entries: rows};},
+    updateWorldbookWith: async (name: string, updater: (entries: Obj[]) => Obj[]) => {calls.push('update ' + name); books.set(name, updater(structuredClone(books.get(name) ?? [])));},
+    rebindCharWorldbooks: async (_c: 'current', next: {primary: string | null; additional: string[]}) => {calls.push('bind'); bound = structuredClone(next);},
+  };
+  return {helper: helper as unknown as WorldbookWriter, books, calls, get bound() {return bound;}};
+}
+/** 模板系统自带的默认模板与一个玩家自定义的模板（都是模板库里存的形状）。 */
+const FATED = {id: 'reader-default-fated-character', name: '常规命定角色生成', templateText: '基本信息:\n  姓名: ${中文姓名}\n  生命层级: {{life_tier}}\n性格:\n  核心: ${性格}', output: {targetWorldbook: '阿斯塔利亚人物志', strategyType: 'selective', keywordMode: 'smart', order: 601}, source: {kind: 'builtin'}};
+const MINE = {id: 'mine', name: '我的模板', templateText: '姓名: ${姓名}\n口癖: ${口癖}', generationInstruction: '照我的格式写。', output: {targetWorldbook: '自定义人物志', strategyType: 'constant', positionType: 'at_depth', depth: 2, role: 'assistant'}};
+const entryReply = (name: string) => `<reader_entry_name>${name}</reader_entry_name>\n<reader_content>\n基本信息:\n  姓名: ${name}\n  生命层级: 第三层级 (Lv.42)\n性格:\n  核心: ${'沉着、重诺，对同伴温和，对敌人毫不留情。'.repeat(6)}\n</reader_content>\n<reader_primary_keywords>\n${name}\n${name}的书页\n</reader_primary_keywords>\n<reader_secondary_keywords></reader_secondary_keywords>`;
+const SAO_POOL = {version: 2, workKey: 'bangumi:7', work: work('bangumi:7', '刀剑神域', {original: 'ソードアート・オンライン'}), items: [], fates: [], by: 'model', at: 1, sources: []} as SmallPool;
+const KIRITO: GachaCard = {id: 'bangumi:7#character0', kind: 'character', star: UNIQUE, name: '桐人', description: '被困在死亡游戏里的独行剑士', role: '主角', power: '二刀流，全服反应最快'};
+type WbRow = {name: string; enabled: boolean; content: string; probability: number; strategy: {type: string; keys: string[]; keys_secondary: {logic: string; keys: string[]}; scan_depth: unknown}; position: {type: string; order: number; role: string; depth: number}; recursion: Obj; effect: Obj; extra: Obj};
+
+test('角色条目生成：默认关闭；模板取自模板库（默认用模板系统自带的那个，也可以选自定义模板）；提示带着模板、角色资料与输出协议；解析容忍没加标签，回复被截断的不收；条目按模板的输出设置成形', () => {
+  assert.deepEqual(normalizeSettings({}).characterEntry, defaultEntrySettings()); assert.equal(defaultEntrySettings().enabled, false);
+  assert.deepEqual(normalizeEntrySettings({enabled: true, templateId: ' mine ', references: ['世界规则', '', '世界规则', 7]}), {enabled: true, templateId: 'mine', references: ['世界规则', '7']});
+  assert.deepEqual(normalizeEntrySettings({enabled: 'yes', references: []}), {enabled: false, templateId: '', references: []}, '清空的参考条目名不会被默认值顶回来');
+  const lib = readTemplateLibrary({yuanTemplateId: 'mine', templates: [MINE, FATED, {id: 'bad', name: '', templateText: 'x'}, {id: 'mine', name: '重复', templateText: 'y'}]});
+  assert.deepEqual(lib.templates.map(t => t.id), ['mine', 'reader-default-fated-character']); assert.equal(lib.defaultId, 'reader-default-fated-character', '默认模板是模板系统自带的那一个');
+  assert.equal(pickTemplate(lib, '')!.name, '常规命定角色生成'); assert.equal(pickTemplate(lib, 'mine')!.name, '我的模板'); assert.equal(pickTemplate(lib, 'gone')!.id, 'reader-default-fated-character', '选过的模板被删掉后回到默认');
+  assert.equal(readTemplateLibrary({yuanTemplateId: 'mine', templates: [MINE]}).defaultId, 'mine', '自带的模板被删掉时用模板系统正在用的');
+  assert.equal(pickTemplate(readTemplateLibrary(undefined), ''), undefined);
+  const fated = pickTemplate(lib, '')!, mine = pickTemplate(lib, 'mine')!;
+  assert.deepEqual([fated.output.targetWorldbook, fated.output.strategyType, fated.output.keywordMode, fated.output.order, fated.builtin], ['阿斯塔利亚人物志', 'selective', 'smart', 601, true]);
+  assert.deepEqual([mine.output.strategyType, mine.output.keywordMode, mine.output.positionType, mine.output.depth, mine.output.role], ['constant', 'none', 'at_depth', 2, 'assistant'], '蓝灯不取关键词');
+  const p = entryPrompt(fated, KIRITO, SAO_POOL, '〔这位角色〕桐人\n资料库里的介绍：黑衣剑士。', [{name: '生命层级与社会阶级', content: '第一层级到第七层级。'}]);
+  for (const part of ['【格式模板】\n基本信息:', '生命层级: {{life_tier}}', '【生成指令】', '【条目命名规则】', '姓名：桐人（主角）', '出处：动画《刀剑神域》（原题：ソードアート・オンライン）', '原作中的实力：二刀流，全服反应最快', '实力完全等同原作', '【参考资料】\n〔这位角色〕桐人',
+    '【当前世界观参考】\n【生命层级与社会阶级】\n第一层级到第七层级。', '<reader_primary_keywords>', '必须同时输出关键词标签。', '<reader_content>']) assert.ok(p.user.includes(part), part);
+  assert.match(p.system, /不编造原作没有的/);
+  const blue = entryPrompt(mine, KIRITO, SAO_POOL, '资料');
+  assert.ok(blue.user.includes('不要输出关键词标签。') && !blue.user.includes('【智能关键词规则】') && !blue.user.includes('【当前世界观参考】') && blue.user.includes('照我的格式写。'));
+  const parsed = parseEntryReply('```\n' + entryReply('桐人') + '\n```', '桐人');
+  assert.equal(parsed.entryName, '桐人'); assert.match(parsed.content, /^基本信息:\n  姓名: 桐人/); assert.ok(!parsed.content.includes('reader_')); assert.deepEqual(parsed.primary, ['桐人', '桐人的书页']); assert.deepEqual(parsed.secondary, []);
+  assert.equal(parseEntryReply('基本信息:\n  姓名: "桐谷和人"\n' + '性格: 沉着。'.repeat(30), '桐人').entryName, '桐谷和人', '没有条目名标签时从正文的姓名里取');
+  assert.equal(parseEntryReply('性格: 沉着。'.repeat(30), '桐人').entryName, '桐人', '正文里也没有姓名时用书页上的名字');
+  assert.throws(() => parseEntryReply('<reader_entry_name>桐人</reader_entry_name><reader_content>基本信息:\n' + '性格: 沉着。'.repeat(30), '桐人'), /没有写完/);
+  assert.throws(() => parseEntryReply('{}', '桐人'), /太短/); assert.throws(() => parseEntryReply('<reader_content></reader_content>', '桐人'), /没有返回条目正文/);
+  const marker = entryMarker(SAO_POOL, KIRITO);
+  assert.deepEqual(marker, {key: 'bangumi:7#桐人', work: '刀剑神域', character: '桐人'});
+  const green = buildWorldbookEntry(fated, parsed, marker) as WbRow;
+  assert.deepEqual([green.name, green.enabled, green.probability, green.content], ['桐人', true, 100, parsed.content]);
+  assert.deepEqual(green.strategy, {type: 'selective', keys: ['桐人', '桐人的书页'], keys_secondary: {logic: 'and_any', keys: []}, scan_depth: 'same_as_global'});
+  assert.deepEqual(green.position, {type: 'after_character_definition', order: 601, role: 'system', depth: 0});
+  assert.deepEqual(green.recursion, {delay_until: null, prevent_incoming: true, prevent_outgoing: true});
+  assert.deepEqual(green.extra, {[ENTRY_EXTRA_KEY]: {v: 1, key: 'bangumi:7#桐人', work: '刀剑神域', character: '桐人'}}, '条目上留着记号');
+  const constant = buildWorldbookEntry(mine, parsed, marker) as WbRow;
+  assert.deepEqual(constant.strategy.keys, []); assert.deepEqual(constant.position, {type: 'at_depth', order: 601, role: 'assistant', depth: 2});
+  assert.deepEqual((buildWorldbookEntry(fated, {...parsed, primary: []}, marker) as WbRow).strategy.keys, ['桐人'], '模型没给关键词时用条目名与角色名');
+  assert.deepEqual(normalizeEntryRecords({'角色·桐人': {book: '阿斯塔利亚人物志', name: '桐人', uid: 3, marker: 'bangumi:7#桐人', character: '桐人', work: '刀剑神域', workKey: 'bangumi:7', at: 5}, 坏的: {name: 'x'}}),
+    {'角色·桐人': {book: '阿斯塔利亚人物志', name: '桐人', uid: 3, marker: 'bangumi:7#桐人', character: '桐人', work: '刀剑神域', workKey: 'bangumi:7', at: 5, held: true, enabled: true}});
+  assert.deepEqual(normalizeDurable({}).entries, {});
+});
+
+test('角色条目生成：世界书读写——目标世界书不存在就新建并挂到角色卡上；同名的别的条目不覆盖；关闭只改开关不删条目；按记号认出写过的条目', async () => {
+  const wb = fakeWorldbooks({primary: '主世界书', additional: ['别的书']}, {主世界书: [{uid: 1, name: '桐人', content: '玩家自己写的', enabled: true}], 别的书: []});
+  const entry = {name: '桐人', enabled: true, content: '正文'.repeat(80), extra: {[ENTRY_EXTRA_KEY]: {v: 1, key: 'bangumi:7#桐人', work: '刀剑神域', character: '桐人'}}};
+  const ref = await writeWorldbookEntry(wb.helper, '阿斯塔利亚人物志', entry);
+  assert.deepEqual(ref, {book: '阿斯塔利亚人物志', name: '桐人', uid: 100});
+  assert.deepEqual(wb.calls, ['create 阿斯塔利亚人物志', 'bind', 'add 阿斯塔利亚人物志']); assert.deepEqual(wb.bound, {primary: '主世界书', additional: ['别的书', '阿斯塔利亚人物志']}, '挂成附加世界书，原来的绑定不动');
+  // 已经挂着的书不再新建、不再重挂；书里有同名的别的条目时加上作品名区分。
+  assert.deepEqual(await writeWorldbookEntry(wb.helper, '主世界书', entry), {book: '主世界书', name: '桐人（《刀剑神域》）', uid: 101});
+  assert.equal(wb.calls.filter(c => c === 'bind' || c.startsWith('create')).length, 2); assert.equal(wb.books.get('主世界书')![0]!.content, '玩家自己写的');
+  // 没有主世界书的角色卡：新建的书成为主世界书。
+  const lone = fakeWorldbooks({primary: null, additional: []}, {});
+  assert.equal(await ensureWorldbook(lone.helper, ' 人物志 '), '人物志'); assert.deepEqual(lone.bound, {primary: '人物志', additional: []});
+  await assert.rejects(ensureWorldbook(lone.helper, '  '), /没有设置目标世界书/);
+  // 关闭：只改开关。
+  assert.equal(await setWorldbookEntryEnabled(wb.helper, ref, false), true);
+  const rows = () => wb.books.get('阿斯塔利亚人物志')!;
+  assert.deepEqual([rows()[0]!.enabled, rows()[0]!.content, rows().length], [false, entry.content, 1]);
+  assert.deepEqual(await findMarkedEntry(wb.helper, '阿斯塔利亚人物志', 'bangumi:7#桐人'), {book: '阿斯塔利亚人物志', name: '桐人', uid: 100, enabled: false});
+  assert.equal(await findMarkedEntry(wb.helper, '阿斯塔利亚人物志', 'bangumi:7#亚丝娜'), undefined); assert.equal(await findMarkedEntry(wb.helper, '不存在的书', 'bangumi:7#桐人'), undefined);
+  // 玩家自己那条同名条目不会被动到；改了名的条目靠记号还认得，没有记号又对不上名字的不动。
+  assert.equal(await setWorldbookEntryEnabled(wb.helper, {book: '主世界书', name: '桐人（《刀剑神域》）', uid: 101}, false), true); assert.equal(wb.books.get('主世界书')![0]!.enabled, true);
+  rows()[0]!.name = '黑衣剑士';
+  assert.equal(await setWorldbookEntryEnabled(wb.helper, ref, true), false, '改了名、又没给记号：不动'); assert.equal(rows()[0]!.enabled, false);
+  assert.equal(await setWorldbookEntryEnabled(wb.helper, ref, true, 'bangumi:7#桐人'), true); assert.equal(rows()[0]!.enabled, true);
+  // 酒馆助手只有 updateWorldbookWith 时也能写；取不回编号时只按名字认。
+  const old = fakeWorldbooks(); delete (old.helper as unknown as Obj).createWorldbookEntries;
+  assert.deepEqual(await writeWorldbookEntry(old.helper, '主世界书', entry), {book: '主世界书', name: '桐人'});
+});
+
+test('角色资料：资料库里这位角色的条目、维基里讲他的段落、他自己的维基条目与 Fandom 页面汇总成详细资料；对不上名字时把同作角色交给模型辨认；什么都查不到时不算有资料', async () => {
+  assert.equal(sameCharacter(['桐人'], ['キリト', '桐人']), true); assert.equal(sameCharacter(['阿尔托莉雅'], ['阿尔托莉雅·潘德拉贡']), true); assert.equal(sameCharacter(['Kirito'], ['kirito ']), true);
+  assert.equal(sameCharacter(['Rem'], ['Remilia']), false, '拉丁字母太短不按包含算'); assert.equal(sameCharacter(['桐人'], ['亚丝娜']), false); assert.equal(sameCharacter(['爱'], ['爱丽丝']), false);
+  const WIKI = '《刀剑神域》是川原砾的轻小说。\n\n== 故事简介 ==\n一万名玩家被困在游戏里。桐人决定独自攻略。\n\n== 登场人物 ==\n=== 主要人物 ===\n桐人（キリト）\n本作主角，使用二刀流的独行玩家。\n亚丝娜（アスナ）\n女主角，血盟骑士团副团长。\n\n== 制作 ==\n桐人的配音是松冈祯丞。';
+  const passages = characterPassages(WIKI, ['桐人', 'キリト'], '中文维基百科');
+  assert.deepEqual(passages.map(s => s.heading), ['主要人物', '故事简介']); assert.match(passages[0]!.text, /二刀流/); assert.ok(!passages.some(s => s.text.includes('松冈祯丞')), '制作等章节不收');
+  assert.deepEqual(characterPassages('== 人物 ==\n=== 桐人 ===\n黑衣剑士。\n=== 亚丝娜 ===\n闪光。', ['桐人'], 'w').map(s => [s.heading, s.text]), [['桐人', '黑衣剑士。']], '以他为标题的小节整节收下');
+  const fandomText = (who: string) => `${who} is a character of Sword Art Online, a player trapped in the death game. `.repeat(3), log: string[] = [];
+  const fetcher = fakeFetch([
+    [/api\.bgm\.tv\/v0\/subjects\/7\/characters/, [{id: 11, name: 'キリト', relation: '主角', type: 1}, {id: 12, name: 'アスナ', relation: '主角', type: 1}]],
+    [/api\.bgm\.tv\/v0\/subjects\/7$/, {summary: '少年被困在死亡游戏里。'}],
+    [/api\.bgm\.tv\/v0\/characters\/11/, {name: 'キリト', summary: '黑衣剑士，独行玩家。', infobox: [{key: '简体中文名', value: '桐人'}, {key: '别名', value: [{v: '桐谷和人'}, {v: 'Kirito'}]}, {key: '性别', value: '男'}, {key: '引用来源', value: 'wiki'}]}],
+    [/api\.bgm\.tv\/v0\/characters\/12/, {name: 'アスナ', summary: '血盟骑士团副团长。', infobox: [{key: '简体中文名', value: '亚丝娜'}]}],
+    [/zh\.wikipedia\.org\/w\/api\.php\?action=query&list=search/, {query: {search: [{title: '桐人'}]}}],
+    [/zh\.wikipedia\.org\/w\/api\.php\?action=query&prop=extracts/, (url: string) => decodeURIComponent(url).includes('titles=桐人')
+      ? {query: {pages: {'2': {title: '桐人', extract: '桐人是《刀剑神域》的主角。\n== 能力 ==\n二刀流与极快的反应。\n== 评价 ==\n人气很高。'}}}} : {query: {pages: {'1': {title: '刀剑神域', extract: WIKI}}}}],
+    [/swordartonline\.fandom\.com\/api\.php\?action=query/, (url: string) => ({query: {search: [{title: /srsearch=Kirito/.test(url) ? 'Kirito' : 'Sword Art Online'}]}})],
+    [/swordartonline\.fandom\.com\/api\.php\?action=parse/, (url: string) => ({parse: {text: {'*': '<p>' + fandomText(/page=Kirito/.test(url) ? 'Kirito' : 'The series') + '</p>'}}})],
+  ], log);
+  const sao = work('bangumi:7', '刀剑神域', {english: 'Sword Art Online', wiki: {zh: '刀剑神域'}}), memo = new Map<string, unknown>(), steps: string[] = [];
+  const cd = await buildCharacterDossier(sao, {name: '桐人', role: '主角'}, {net: createNet(fetcher, {useProxy: false}), memo}, s => steps.push(s)), p = cd.profile;
+  assert.deepEqual(p.names, ['桐人', 'キリト', '桐谷和人', 'Kirito'], '书页上的中文名靠资料库里的别名对上'); assert.equal(p.description, '黑衣剑士，独行玩家。'); assert.deepEqual(p.facts, ['简体中文名：桐人', '别名：桐谷和人 / Kirito', '性别：男']);
+  assert.deepEqual(p.sources, ['Bangumi', '中文维基百科', '中文维基百科「桐人」', 'Fandom']); assert.deepEqual(p.passages.map(s => s.heading), ['主要人物', '故事简介', '桐人', '能力', 'Kirito']);
+  assert.equal(log.filter(u => /characters\/1[12]$/.test(u)).length, 3, '名单上的原名对得上：只多取这一位的详情');
+  assert.equal(hasCharacterMaterial(cd), true); assert.ok(steps.includes('正在查找「桐人」的角色资料'));
+  const text = characterDossierText(cd);
+  for (const part of ['〔这位角色〕桐人（又作：キリト / 桐谷和人 / Kirito）【主角】', '· 性别：男', '资料库里的介绍：黑衣剑士，独行玩家。', '【主要人物·中文维基百科】桐人（キリト）', '【能力·中文维基百科「桐人」】二刀流与极快的反应。',
+    '【Kirito·Fandom（swordartonline）】Kirito is a character', '〔作品资料〕\n作品：《刀剑神域》', '简介：少年被困在死亡游戏里。']) assert.ok(text.includes(part), part);
+  assert.ok(text.indexOf('〔这位角色〕') < text.indexOf('〔作品资料〕')); assert.ok(characterDossierText(cd, 3000).length <= 3200, '有长度上限');
+  // 同一部作品的下一位角色：作品资料不重查。
+  const before = log.length, asuna = await buildCharacterDossier(sao, {name: '亚丝娜'}, {net: createNet(fetcher, {useProxy: false}), memo, fandom: false});
+  assert.ok(!log.slice(before).some(u => /subjects\/7$/.test(u)), '同一部作品的资料不重查'); assert.equal(asuna.profile.description, '血盟骑士团副团长。'); assert.equal(asuna.profile.role, '主角');
+  // 资料库里的名字与书页上的对不上（只有日文名与英文名）：把同作的角色资料交给模型自己辨认。
+  const ani = fakeFetch([
+    [/graphql\.anilist\.co/, (_u: string, init?: RequestInit) => String(init?.body).includes('alternative')
+      ? {data: {Media: {characters: {edges: [{role: 'MAIN', node: {name: {full: 'Kirito', native: 'キリト', alternative: ['Kazuto']}, description: 'The Black Swordsman.', gender: 'Male', age: '16'}}]}}}}
+      : {data: {Media: {description: 'A death game.', characters: {edges: [{role: 'MAIN', node: {name: {full: 'Kirito', native: 'キリト'}, description: 'Hero.'}}]}}}}],
+    [/wikipedia/, {query: {search: [], pages: {}}}],
+  ]);
+  const loose = await buildCharacterDossier(work('anilist:9', 'Sword Art Online'), {name: '桐人'}, {net: createNet(ani, {useProxy: false}), fandom: false});
+  assert.equal(loose.profile.description, ''); assert.deepEqual(loose.profile.others.map(o => [o.names, o.role, o.facts]), [[['キリト', 'Kirito', 'Kazuto'], '主角', ['性别：Male', '年龄：16']]]);
+  assert.match(characterDossierText(loose), /请自行辨认哪一条是他/); assert.match(characterDossierText(loose), /キリト \/ Kirito \/ Kazuto【主角】（性别：Male；年龄：16）：The Black Swordsman\./);
+  // 什么都查不到。
+  const none = await buildCharacterDossier(work('openlibrary:/works/OL1W', '无名之书', {media: 'book'}), {name: '某人'}, {net: createNet(fakeFetch([]), {useProxy: false}), fandom: false});
+  assert.equal(hasCharacterMaterial(none), false); assert.match(characterDossierText(none), /没有查到专门讲这位角色的资料/);
+});
+
+test('角色条目生成（服务层）：开着角色池并抽到角色书页时在后台写条目并启用；写不成不影响抽卡、可以重试；回收书页时关闭条目（不删）；同一张卡的别的聊天再抽到时复用；查不到资料就不写', async () => {
+  const wb = fakeWorldbooks(), lib = () => readTemplateLibrary({templates: [FATED, MINE]});
+  const charactersOf = (o: {cards: GachaCard[]}) => o.cards.filter(c => c.kind === 'character').map(c => c.name);
+  /** 一个聊天：自己的保底、背包与记录；世界书跟着角色卡、小池缓存跟着设备，可以与别的聊天共用。rate 是唯一角色的出货率。 */
+  function chat(o: {device?: () => unknown; fetch?: FetchLike; books?: ReturnType<typeof fakeWorldbooks>; rate?: number} = {}) {
+    const f = fakePort({...(o.device ? {readDevice: o.device} : {}), ...(o.fetch ? {fetch: o.fetch} : {})}, 1e8), bag = new Map<string, BagEntry>(), prompts: string[] = [], rate = o.rate ?? .2;
+    let broken = false;
+    const pay = f.port.commit!, think = f.port.llm!;
+    f.port.commit = async req => {
+      const w = await pay(req), added: string[] = [];
+      if (req.bag) for (const c of req.cards) {
+        const e = gachaBagEntry(c, req.pool, req.scale); added.push(e.name);
+        bag.set(e.name, {name: e.name, quality: String(e.item.品质), kind: c.kind, type: String(e.item.类型), count: (bag.get(e.name)?.count ?? 0) + 1, price: recyclePrice(e.item.品质), work: req.pool.work.title, star: c.star});
+      }
+      return {...w, added};
+    };
+    f.port.bag = () => [...bag.values()];
+    f.port.recycle = async picks => {
+      let gained = 0, removed = 0;
+      for (const pick of picks) {const e = bag.get(pick.name)!; gained += e.price * pick.count; removed += pick.count; if (pick.count >= e.count) bag.delete(pick.name); else bag.set(pick.name, {...e, count: e.count - pick.count});}
+      return {fp: f.fp + gained, gained, removed};
+    };
+    f.port.llm = async (system, user, opt) => {
+      if (opt.purpose !== 'entry') return think(system, user, opt);
+      prompts.push(user);
+      if (broken) throw Error('模型接口 HTTP 500');
+      return entryReply(/姓名：([^（\n]+)/.exec(user)![1]!);
+    };
+    f.port.specs = async names => names.map(name => ({name, content: name + '的规则'}));
+    f.port.entries = worldbookEntryPort((o.books ?? wb).helper, lib);
+    const g = createGacha(f.port, {rng: seededRng(61), rules: {...DEFAULT_RULES, rates: {1: 1 - rate, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: rate}}}), events: {character: string; ok: boolean; text: string}[] = [];
+    g.onEntry(e => events.push(e));
+    /** 十连，直到抽到角色为止。 */
+    const pull = async (key: string) => {for (let i = 0; i < 12; i++) {const out = await g.draw(key, 10); if (charactersOf(out).length) return out;} throw Error('没抽到角色');};
+    return {f, g, bag, prompts, events, pull, breakModel(v: boolean) {broken = v;}};
+  }
+  const on = (g: ReturnType<typeof chat>['g'], extra: Partial<GachaSettings> = {}) => g.saveSettings({...g.settings(), characterPool: true, characterEntry: {...g.settings().characterEntry, enabled: true}, ...extra});
+  const a = chat(), g = a.g, book = () => wb.books.get('阿斯塔利亚人物志') ?? [];
+  assert.equal(g.canWriteEntries(), true); assert.equal(g.entriesOn(), false, '默认关闭');
+  assert.deepEqual(g.entryTemplates(), {defaultId: 'reader-default-fated-character', templates: [{id: 'reader-default-fated-character', name: '常规命定角色生成', book: '阿斯塔利亚人物志'}, {id: 'mine', name: '我的模板', book: '自定义人物志'}]});
+  g.saveSettings({...g.settings(), characterPool: true});
+  await g.cast('acg-fantasy');
+  const w = g.spread()!.works[0]!, pool = await g.compile(w), title = pool.work.title;
+  // 没打开这项功能：抽到角色书页也不问模型、不碰世界书。
+  const first = await a.pull(w.key), early = charactersOf(first); await g.entryIdle();
+  assert.equal(first.entries, undefined); assert.equal(a.prompts.length, 0); assert.equal(wb.calls.length, 0); assert.deepEqual(g.entryStatus(pool), []);
+  on(g);
+  assert.equal(g.entriesOn(), true); assert.deepEqual(g.entryStatus(pool).map(s => [s.character, s.state]), early.map(n => [n, 'none']), '之前抽到的书页还没有条目');
+  // 打开之后：抽卡不等条目写完；写完时每位角色一个条目，已启用。
+  const second = await a.pull(w.key), fresh = charactersOf(second);
+  assert.deepEqual(second.entries, fresh, '抽卡结果里说明哪些角色开始写条目'); assert.ok(second.record.bagged);
+  assert.ok(g.entryStatus(pool).some(s => s.state === 'queued' || s.state === 'running'), '抽卡不等条目写完');
+  await g.entryIdle();
+  assert.deepEqual(book().map(e => [e.name, e.enabled]), fresh.map(n => [n, true]));
+  assert.deepEqual(wb.calls.filter(c => !c.startsWith('add')), ['create 阿斯塔利亚人物志', 'bind'], '世界书只新建、挂载一次'); assert.deepEqual(wb.bound, {primary: '主世界书', additional: ['阿斯塔利亚人物志']});
+  const row = book()[0] as unknown as WbRow, key = '角色·' + fresh[0]!;
+  assert.deepEqual(row.strategy.keys, [fresh[0], fresh[0] + '的书页']); assert.match(row.content, /生命层级: 第三层级/); assert.deepEqual(row.extra[ENTRY_EXTRA_KEY], {v: 1, key: w.key + '#' + fresh[0], work: title, character: fresh[0]});
+  assert.equal(a.prompts.length, fresh.length, '每位角色问一次模型');
+  for (const part of ['【格式模板】\n基本信息:', '姓名：' + fresh[0], `〔这位角色〕${fresh[0]}`, '〔作品资料〕', '简介：简介', '【当前世界观参考】\n【生命层级与社会阶级】\n生命层级与社会阶级的规则\n\n【登神长阶】']) assert.ok(a.prompts[0]!.includes(part), part);
+  assert.deepEqual(a.f.durable.entries![key], {book: '阿斯塔利亚人物志', name: fresh[0]!, uid: 100, marker: w.key + '#' + fresh[0], character: fresh[0]!, work: title, workKey: w.key, at: a.f.durable.entries![key]!.at, held: true, enabled: true}, '书页与条目的对应记在聊天里');
+  assert.deepEqual(a.events.map(e => [e.character, e.ok]), fresh.map(n => [n, true])); assert.match(a.events[0]!.text, /的角色条目已写进世界书《阿斯塔利亚人物志》并启用。$/);
+  assert.deepEqual(g.entryStatus(pool).map(s => [s.character, s.state]), [...early.map(n => [n, 'none']), ...fresh.map(n => [n, 'on'])]);
+  // 之前抽到的书页可以补写；正在写的不重复排。
+  assert.deepEqual(g.generateEntry(w.key, '角色·' + early[0]!), {ok: true}); assert.deepEqual(g.generateEntry(w.key, '角色·' + early[0]!), {ok: false, reason: '这位角色的条目正在写'});
+  await g.entryIdle();
+  assert.equal(book().at(-1)!.name, early[0]); assert.equal(g.generateEntry('nope', key).ok, false);
+  // 模型出错：抽卡照常完成、书页照样进背包，只是没有条目；修好后可以重试。
+  a.breakModel(true);
+  const third = await a.pull(w.key), failed = charactersOf(third); await g.entryIdle();
+  assert.equal(third.cards.length, 10); assert.ok(third.record.bagged); assert.ok(failed.every(n => a.bag.has('角色·' + n)));
+  assert.ok(!book().some(e => failed.includes(String(e.name)))); assert.deepEqual(a.events.slice(-failed.length).map(e => [e.character, e.ok]), failed.map(n => [n, false]));
+  assert.match(a.events.at(-1)!.text, /的角色条目没能生成：模型接口 HTTP 500$/);
+  const bad = g.entryStatus(pool).find(s => s.character === failed[0])!;
+  assert.deepEqual([bad.state, bad.note], ['failed', '模型接口 HTTP 500']);
+  a.breakModel(false); assert.equal(g.generateEntry(w.key, bad.key).ok, true); await g.entryIdle();
+  assert.equal(g.entryStatus(pool).find(s => s.character === failed[0])!.state, 'on');
+  // 回收：条目关闭，但还在世界书里；别的条目不动。
+  const size = book().length, done = await g.recycle([{name: key, quality: '唯一', count: 1}]);
+  assert.equal(done.closed, 1); assert.equal(done.warning, undefined); assert.equal(book().length, size, '只关不删');
+  assert.deepEqual(book().map(e => e.enabled), book().map(e => e.name !== fresh[0]));
+  assert.deepEqual([a.f.durable.entries![key]!.held, a.f.durable.entries![key]!.enabled], [false, false]); assert.ok(!g.entryStatus(pool).some(s => s.character === fresh[0]), '回收掉的书页不再列出');
+  // 回收没有条目的东西：不碰世界书。
+  const quiet = wb.calls.length, item = [...a.bag.values()].find(e => e.kind === 'item')!;
+  assert.equal((await g.recycle([{name: item.name, quality: item.quality, count: item.count}])).closed, undefined); assert.equal(wb.calls.length, quiet);
+  // 条目还没写完书页就被回收了：写完也不落进世界书。
+  const late = await a.pull(w.key), victim = charactersOf(late).at(-1)!;
+  await g.recycle([{name: '角色·' + victim, quality: '唯一', count: 1}]); await g.entryIdle();
+  assert.ok(!book().some(e => e.name === victim)); assert.match(a.events.find(e => e.character === victim)!.text, /书页已经回收，条目没有写入/);
+  // 同一张角色卡的另一个聊天：世界书里已经有这位角色的条目，再抽到时不问模型，关着的重新启用。
+  const existing = new Set(book().map(e => String(e.name))), b = chat({device: () => a.f.device, rate: .5});
+  on(b.g);
+  const drawn: string[] = [];
+  for (let i = 0; i < 20 && !b.bag.has(key); i++) drawn.push(...charactersOf(await b.g.draw(w.key, 10)));
+  await b.g.entryIdle();
+  assert.ok(b.bag.has(key)); assert.equal(new Set(book().map(e => e.name)).size, book().length, '没有重复的条目');
+  assert.equal(b.prompts.length, drawn.filter(n => !existing.has(n)).length, '已经有条目的角色不再问模型');
+  assert.equal(book().find(e => e.name === fresh[0])!.enabled, true); assert.match(b.events.find(e => e.character === fresh[0])!.text, /已重新启用。$/);
+  assert.deepEqual([b.f.durable.entries![key]!.uid, b.f.durable.entries![key]!.held, b.f.durable.entries![key]!.enabled], [100, true, true]);
+  // 选了自定义模板：照它的输出设置写（另一本世界书、蓝灯、不带世界观参考）；抽到的东西不进背包时不写条目。
+  const other = fakeWorldbooks(), d = chat({device: () => a.f.device, books: other, rate: .5});
+  on(d.g, {autoBag: false, characterEntry: {enabled: true, templateId: 'mine', references: []}});
+  assert.equal((await d.pull(w.key)).entries, undefined); await d.g.entryIdle(); assert.equal(d.prompts.length, 0);
+  on(d.g, {autoBag: true, characterEntry: {enabled: true, templateId: 'mine', references: []}});
+  const custom = charactersOf(await d.pull(w.key)); await d.g.entryIdle();
+  const mineRow = other.books.get('自定义人物志')![0] as unknown as WbRow;
+  assert.equal(other.books.get('自定义人物志')!.length, custom.length); assert.deepEqual([mineRow.strategy.type, mineRow.strategy.keys, mineRow.position.type, mineRow.position.depth], ['constant', [], 'at_depth', 2]);
+  assert.ok(d.prompts[0]!.includes('照我的格式写。') && !d.prompts[0]!.includes('【当前世界观参考】'));
+  // 资料库里什么都查不到：不问模型，也不写条目；抽卡照常。
+  const empty = fakeWorldbooks(), c = chat({device: () => a.f.device, fetch: async () => new Response('{}', {status: 404}), books: empty, rate: .5});
+  on(c.g);
+  const lost = await c.pull(w.key); await c.g.entryIdle();
+  assert.equal(lost.cards.length, 10); assert.equal(c.prompts.length, 0); assert.deepEqual(empty.calls, []); assert.match(c.events[0]!.text, /资料库里没有查到这部作品与这位角色的资料/);
+});
+
+test('读者端口：角色条目生成——模板取自模板系统的模板库（读不到时读它存在本机的那一份）；入包的名字回传给服务层；条目经酒馆助手写进世界书；聊天切换后旧的生成不落盘', async () => {
+  const r = fakeReader(), wb = fakeWorldbooks();
+  assert.equal(readerGachaPort(readerHost(r)).entries, undefined, '酒馆助手不能写世界书时没有这一项');
+  const port = readerGachaPort(readerHost(r, {helper: {...r.helper, ...wb.helper}, templates: {loadLibrary: () => ({yuanTemplateId: 'mine', templates: [FATED, MINE]})}}));
+  assert.deepEqual(port.entries!.templates().templates.map(t => t.id), ['reader-default-fated-character', 'mine']); assert.equal(port.entries!.templates().defaultId, 'reader-default-fated-character');
+  // 没有传模板系统：用同一个窗口里的 ReaderTemplateSystem；也没有时读它存在本机的模板库。
+  const root = globalThis as {ReaderTemplateSystem?: unknown};
+  root.ReaderTemplateSystem = {loadLibrary: () => ({yuanTemplateId: 'mine', templates: [MINE]})};
+  try {assert.equal(readerTemplateLibrary({}).defaultId, 'mine');} finally {delete root.ReaderTemplateSystem;}
+  const storage = memoryStorage(); storage.setItem(TEMPLATE_LIBRARY_KEY, JSON.stringify({yuanTemplateId: 'x', templates: [FATED]}));
+  assert.deepEqual(readerTemplateLibrary({storage}).templates.map(t => t.name), ['常规命定角色生成']); assert.deepEqual(readerTemplateLibrary({}).templates, []);
+  // 入包：重名时背包里实际用的名字回传给服务层（条目按这个名字记账）。
+  (r.data.stat_data as {主角: {背包: Obj}}).主角.背包 = {'角色·桐人': {品质: '唯一', 类型: '角色书页', 数量: 1, 标签: [BAG_TAG], 效果: {身份: '别的作品里的同名角色'}}};
+  const res = await port.commit!({cost: 0, cards: [KIRITO], pool: SAO_POOL, bag: true, scale: DESTINED_SCALE, spark: true});
+  assert.deepEqual(res.added, ['角色·桐人（《刀剑神域》）']); assert.equal(res.fp, 3000);
+  // 世界书读写经酒馆助手；聊天切换后不落盘。
+  const ref = await port.entries!.write('阿斯塔利亚人物志', {name: '桐人', enabled: true, content: '正文'});
+  assert.deepEqual(ref, {book: '阿斯塔利亚人物志', name: '桐人', uid: 100}); assert.equal(await port.entries!.setEnabled(ref, false), true); assert.equal(wb.books.get('阿斯塔利亚人物志')![0]!.enabled, false);
+  assert.equal(await port.entries!.find('阿斯塔利亚人物志', 'bangumi:7#桐人'), undefined);
+  r.switchChat();
+  await assert.rejects(port.entries!.write('阿斯塔利亚人物志', {name: '亚丝娜', content: '正文'}), /聊天已切换/); await assert.rejects(port.entries!.setEnabled(ref, true), /聊天已切换/);
+  assert.equal(wb.books.get('阿斯塔利亚人物志')!.length, 1);
 });

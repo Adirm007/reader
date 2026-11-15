@@ -4,21 +4,26 @@
  *  - 扣命运点数与放进主角背包：ReaderTransactions 固定当前聊天、最新楼层与候选，在同一次变量提交里完成，与读者其他付费操作互斥；
  *    书海的旅程进行中不扣点、不入包、不回收（那段时间的命运点数与背包由书海结算）；
  *  - 世界观物品生成细则：经酒馆助手读当前角色卡、聊天与全局世界书里名称包含设置里条目名的条目（只读，不改世界书）；
+ *  - 角色条目生成（默认关闭）：生成模板取自读者模板系统的模板库（window.ReaderTemplateSystem，与抽卡在同一个控制器窗口；读不到时读它存在本机的模板库），
+ *    条目经酒馆助手写进模板指定的世界书并启用，回收书页时关闭；条目与书页的对应记在聊天变量 dream_gacha.entries；
  *  - 模型：读者传入的 generate（读者“独立API”里的「命运抽卡」路由，未单独设置时跟随默认方案或酒馆插头）。
  *  这个文件由 gacha/build.mjs 打包成 source/reader-gacha.js，读者控制器里以 window.ReaderGacha 使用。 */
-import {CAST_COST,DRAW_COST,TEN_COST,createGacha,deviceStore,SETTINGS_KEY,type CommitRequest,type GachaDurable,type GachaPort,type GachaService,type LlmOptions,type Wallet} from '../gacha/session';
+import {CAST_COST,DRAW_COST,TEN_COST,createGacha,deviceStore,SETTINGS_KEY,type CommitRequest,type CommitResult,type GachaDurable,type GachaPort,type GachaService,type LlmOptions,type Wallet} from '../gacha/session';
 import {applyGachaDraw,applyRecycle,listGachaBag,type RecyclePick} from '../gacha/bag';
-import {readSpecEntries,type WorldbookHelper} from '../gacha/spec';
+import {readSpecEntries} from '../gacha/spec';
+import {canWriteWorldbook,readTemplateLibrary,worldbookEntryPort,type TemplateLibrary,type WorldbookWriter} from '../gacha/entry';
 import type {FetchLike} from '../gacha/net';
 import {mountGachaPanel,type GachaArt} from '../ui/gacha-panel';
 
 type Obj = Record<string, unknown>;
 const rec = (v: unknown): Obj => v && typeof v === 'object' && !Array.isArray(v) ? v as Obj : {};
 const message = (e: unknown) => String((e as Error)?.message ?? e);
-export const READER_GACHA_VERSION = '1.2.0';
+export const READER_GACHA_VERSION = '1.3.0';
 export const DURABLE_KEY = 'dream_gacha';
 /** 一次模型请求最多等多久（编纂小池分几次请求，每次最多这么久）。 */
 export const GACHA_TIMEOUT_MS = 300000;
+/** 读者模板系统（source/template-system.js）存模板库的本机键；模板系统不在场时直接读它。 */
+export const TEMPLATE_LIBRARY_KEY = 'reader_generic_template_library_v1';
 export const BOOKSEA_BUSY = '书海的旅程还没结束：这段时间的命运点数与背包由书海结算。回到书间结算后再换大池、抽卡或回收。';
 
 /** ReaderTransactions 的这一部分（source/reader-transactions.js）。 */
@@ -32,7 +37,9 @@ export type ReaderTx = {
   run<T>(key: string, action: (token: ReaderToken) => Promise<T>): Promise<T>;
 };
 export type StContext = {characterId?: unknown; chatId?: unknown; getCurrentChatId?: () => unknown; chat?: {extra?: unknown}[]; chatMetadata?: {variables?: Obj}; saveMetadata?: () => unknown};
-export type HelperLike = {getVariables?: (o: Obj) => unknown; getLastMessageId?: () => number} & WorldbookHelper;
+export type HelperLike = {getVariables?: (o: Obj) => unknown; getLastMessageId?: () => number} & WorldbookWriter;
+/** 读者模板系统的这一部分（window.ReaderTemplateSystem）：loadLibrary 返回 {yuanTemplateId, templates}，模板库还空着时会先放进自带的默认模板。 */
+export type TemplateSystemLike = {loadLibrary?: () => unknown};
 export type ReaderGachaHost = {
   /** 面板挂在哪个文档（读者传入登记过的酒馆主文档，停止读者时随之清理）。 */
   document: Document;
@@ -51,6 +58,10 @@ export type ReaderGachaHost = {
   isAlive?: () => boolean;
   /** 酒馆站点（跨域资料库被拦时经 /proxy/ 重试）。 */
   proxyBase?: string;
+  /** 模板系统（角色条目生成的生成模板从它的模板库里取）；不传时用同一个窗口里的 window.ReaderTemplateSystem。 */
+  templates?: TemplateSystemLike;
+  /** 面板没开着时怎么提示（角色条目写完了 / 没写成）；不传时用酒馆页面的 toastr。 */
+  notify?: (text: string, bad: boolean) => void;
   zIndex?: number;
 };
 
@@ -78,6 +89,16 @@ export function bookseaActive(c: StContext, helper?: HelperLike): boolean {
   } catch {return false;}
 }
 
+/** 角色条目生成用的模板库：优先问模板系统（它会补上默认模板），读不到时直接读它存在本机的那一份。 */
+export function readerTemplateLibrary(host: Pick<ReaderGachaHost, 'templates' | 'storage'>): TemplateLibrary {
+  let raw: unknown;
+  try {
+    const root = (typeof window !== 'undefined' ? window : globalThis) as unknown as {ReaderTemplateSystem?: TemplateSystemLike};
+    raw = (host.templates ?? root.ReaderTemplateSystem)?.loadLibrary?.();
+  } catch {raw = undefined;}
+  if (!raw) {try {const saved = host.storage?.getItem(TEMPLATE_LIBRARY_KEY); raw = saved ? JSON.parse(saved) : undefined;} catch {raw = undefined;}}
+  return readTemplateLibrary(raw);
+}
 export function readerGachaPort(host: ReaderGachaHost): GachaPort {
   const pinned = chatIdentity(host.context()), device = deviceStore(host.storage, pinned), T = host.transactions;
   const assert = () => {
@@ -104,7 +125,7 @@ export function readerGachaPort(host: ReaderGachaHost): GachaPort {
       if (!blocked && busy()) blocked = BOOKSEA_BUSY;
       return blocked ? {fp, blocked} : {fp};
     },
-    async commit(req: CommitRequest): Promise<Wallet> {
+    async commit(req: CommitRequest): Promise<CommitResult> {
       assert();
       const writes = req.cost > 0 || (req.bag && req.cards.length > 0);
       if (!writes) return port.wallet();
@@ -113,9 +134,9 @@ export function readerGachaPort(host: ReaderGachaHost): GachaPort {
         assert();
         const done = await T.transact(token, token.id + (req.spark ? ':gacha-spark' : ':gacha'), data => {
           const r = applyGachaDraw(data, req, (d, cost) => T.charge(d, cost), d => {try {return T.fp(d);} catch {return null;}});
-          return {fp: r.fp, count: r.added.length};
+          return {fp: r.fp, added: r.added};
         });
-        return {fp: done && typeof done.fp === 'number' ? done.fp : null};
+        return {fp: done && typeof done.fp === 'number' ? done.fp : null, ...(done && Array.isArray(done.added) && done.added.length ? {added: done.added} : {})};
       });
     },
     async commitCast(req: {cost: number; theme: string}): Promise<Wallet> {
@@ -147,6 +168,8 @@ export function readerGachaPort(host: ReaderGachaHost): GachaPort {
     fetch: host.fetch,
     ...(host.proxyBase ? {proxyBase: host.proxyBase} : {}),
   };
+  // 角色条目生成：酒馆助手能写世界书时才有这一项。读写世界书前后都确认还在原来的聊天。
+  if (canWriteWorldbook(host.helper)) port.entries = worldbookEntryPort(host.helper, () => readerTemplateLibrary(host), assert);
   if (host.generate) {
     const generate = host.generate;
     port.llm = async (system: string, user: string, options: LlmOptions) => {
@@ -189,6 +212,15 @@ export type ReaderGachaApi = {
 export function createReaderGacha(): ReaderGachaApi {
   let current: {key: string; doc: Document; gacha: GachaService; panel: ReturnType<typeof mountGachaPanel>; host: ReaderGachaHost} | undefined;
   const dispose = () => {const c = current; current = undefined; try {c?.panel.dispose();} catch {/* 面板已随读者清理 */}};
+  /** 面板没开着时（玩家回去聊天了）角色条目写完的提示：宿主给了就用宿主的，否则用酒馆页面的 toastr。 */
+  const notify = (text: string, bad: boolean) => {
+    try {
+      const h = current?.host;
+      if (h?.notify) {h.notify(text, bad); return;}
+      const toastr = (h?.document.defaultView as unknown as {toastr?: Record<string, ((message: string, title?: string) => void) | undefined>} | null | undefined)?.toastr;
+      toastr?.[bad ? 'warning' : 'success']?.(text, '命运抽卡');
+    } catch {/* 提示失败不影响生成 */}
+  };
   return {
     version: READER_GACHA_VERSION,
     open(host) {
@@ -199,7 +231,7 @@ export function createReaderGacha(): ReaderGachaApi {
       try {for (const old of Array.from(host.document.querySelectorAll('[data-dream-overlay="gacha"]'))) if (old !== current?.panel.element) old.remove();} catch {/* 没有页面（测试） */}
       if (!current) {
         const gacha = createGacha(readerGachaPort(host));
-        const panel = mountGachaPanel(host.document, gacha, {title: '命运抽卡', art: () => current?.host.art?.(), theme: () => current?.host.theme?.(), zIndex: host.zIndex ?? 2147483647, onChange: () => {try {current?.host.onChange?.();} catch {/* 大厅刷新失败不影响抽卡 */}}});
+        const panel = mountGachaPanel(host.document, gacha, {title: '命运抽卡', art: () => current?.host.art?.(), theme: () => current?.host.theme?.(), zIndex: host.zIndex ?? 2147483647, onChange: () => {try {current?.host.onChange?.();} catch {/* 大厅刷新失败不影响抽卡 */}}, notify});
         current = {key, doc: host.document, gacha, panel, host};
       } else current.host = host;
       current.panel.show();

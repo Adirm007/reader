@@ -6,7 +6,8 @@ import {normTitle,type WorkCard} from './sources';
 export type DossierCharacter = {name: string; original?: string; role: string; description?: string};
 export type DossierSection = {heading: string; text: string; source: string};
 export type Dossier = {work: WorkCard; synopsis: string; characters: DossierCharacter[]; sections: DossierSection[]; facts: string[]; sources: string[]; notes: string[]};
-export type DossierCtx = {net: Net; signal?: AbortSignal; fandom?: boolean};
+/** memo：会话里的缓存（角色条目生成时留着作品资料，同一部作品不重查）。 */
+export type DossierCtx = {net: Net; signal?: AbortSignal; fandom?: boolean; memo?: Map<string, unknown>};
 
 const rec = (v: unknown): Record<string, unknown> => v && typeof v === 'object' && !Array.isArray(v) ? v as Record<string, unknown> : {};
 const arr = (v: unknown): unknown[] => Array.isArray(v) ? v : [];
@@ -153,7 +154,7 @@ async function fromFandom(work: WorkCard, d: Dossier, ctx: DossierCtx) {
         const page = arr(rec(found.query).search).map(x => str(rec(x).title, 120)).find(t => !!t && !/^(main page|首页|メインページ)$/i.test(t) && !/^(category|file|user|template|分类|文件|用户|模板)\s*:/i.test(t)); if (!page) continue;
         const parsed = rec(await ctx.net.json(`${api}?action=parse&page=${encodeURIComponent(page)}&prop=text&section=0&disabletoc=1&format=json&origin=*`, opt(ctx, 8000)));
         const text = plainText(rec(rec(parsed.parse).text)['*'], 1600).replace(/\n{2,}/g, '\n');
-        if (text.length > 120 && fandomRelevant(english, page, text)) {d.sections.push({heading: page, text, source: `Fandom（${slug}）`}); d.sources.push('Fandom'); return;}
+        if (text.length > 120 && fandomRelevant(english, page, text)) {d.sections.push({heading: page, text, source: `Fandom（${slug}）`}); d.sources.push('Fandom'); return slug;}
       }
     } catch {/* 下一个候选站点 */}
   }
@@ -172,25 +173,33 @@ async function fromWikipedia(work: WorkCard, d: Dossier, ctx: DossierCtx) {
   if (picked.intro && !d.synopsis) d.synopsis = picked.intro;
   else if (picked.intro) d.notes.push(`维基导言：${picked.intro}`);
   d.sections.push(...picked.sections);
-  d.sources.push(lang === 'zh' ? '中文维基百科' : '英文维基百科');
+  const source = lang === 'zh' ? '中文维基百科' : '英文维基百科';
+  d.sources.push(source);
+  return {text: page.text, lang, source};
 }
 const ENRICH: Partial<Record<WorkCard['source'], (w: WorkCard, d: Dossier, ctx: DossierCtx) => Promise<void>>> = {bangumi: fromBangumi, anilist: fromAniList, vndb: fromVndb, jikan: fromJikan, openlibrary: fromOpenLibrary};
-/** 汇总一部作品的资料。每一步失败都只是少一份资料；最后至少有卡片上的标题与简介。 */
-export async function buildDossier(work: WorkCard, ctx: DossierCtx, onStep?: (label: string) => void): Promise<Dossier> {
+/** 汇总时顺手留下的东西：整篇维基条目（找某位角色的段落用）与确认过的 Fandom 站点。 */
+type Gathered = {dossier: Dossier; wiki?: {text: string; lang: 'zh' | 'en'; source: string}; fandom?: string};
+async function gather(work: WorkCard, ctx: DossierCtx, onStep?: (label: string) => void): Promise<Gathered> {
   const d: Dossier = {work, synopsis: work.summary ? plainText(work.summary, 2400) : '', characters: [], sections: [], facts: [], sources: [], notes: []};
   const step = (label: string) => {try {onStep?.(label);} catch {/* 只是进度提示 */}};
   const own = ENRICH[work.source];
   if (own) {step('正在翻阅原始条目'); try {await own(work, d, ctx);} catch (e) {d.notes.push('原始条目没能读取：' + String((e as Error)?.message ?? e).slice(0, 60));}}
   if (ctx.signal?.aborted) throw Error('已取消');
-  step('正在查阅维基百科'); try {await fromWikipedia(work, d, ctx);} catch {/* 没有维基条目也可以 */}
-  if (ctx.fandom !== false) {step('正在查找 Fandom 设定页'); try {await fromFandom(work, d, ctx);} catch {/* 没有 Fandom 站点很常见 */}}
+  let wiki: Gathered['wiki'], fandom: string | undefined;
+  step('正在查阅维基百科'); try {wiki = await fromWikipedia(work, d, ctx);} catch {/* 没有维基条目也可以 */}
+  if (ctx.fandom !== false) {step('正在查找 Fandom 设定页'); try {fandom = await fromFandom(work, d, ctx);} catch {/* 没有 Fandom 站点很常见 */}}
   if (ctx.signal?.aborted) throw Error('已取消');
   const seen = new Set<string>();
   d.characters = d.characters.filter(c => {const k = normTitle(c.name); if (!k || seen.has(k)) return false; seen.add(k); return true;}).sort((a, b) => roleRank(a.role) - roleRank(b.role)).slice(0, 12);
   if (work.creators?.length) d.facts.unshift('作者 / 制作：' + work.creators.join('、'));
   if (work.year) d.facts.unshift('年份：' + work.year);
   d.facts = [...new Set(d.facts)].slice(0, 12);
-  return d;
+  return {dossier: d, ...(wiki ? {wiki} : {}), ...(fandom ? {fandom} : {})};
+}
+/** 汇总一部作品的资料。每一步失败都只是少一份资料；最后至少有卡片上的标题与简介。 */
+export async function buildDossier(work: WorkCard, ctx: DossierCtx, onStep?: (label: string) => void): Promise<Dossier> {
+  return (await gather(work, ctx, onStep)).dossier;
 }
 /** 交给模型的资料文本（有长度上限）。 */
 export function dossierText(d: Dossier, max = 9000): string {
@@ -204,4 +213,170 @@ export function dossierText(d: Dossier, max = 9000): string {
   for (const n of d.notes) lines.push('（' + n + '）');
   const text = lines.join('\n');
   return text.length > max ? text.slice(0, max) + '…' : text;
+}
+
+/* ---------- 角色的详细资料（角色条目生成用） ---------- */
+/** 一位角色在资料库里的记录：names 是它的各种写法（原名、中文名、别名）。 */
+export type CharacterNote = {names: string[]; role?: string; description: string; facts: string[]; source: string};
+export type CharacterQuery = {name: string; role?: string; description?: string};
+/** others：资料库里有这部作品的角色资料、但没能自动对上名字时，留给模型自己辨认的几条。 */
+export type CharacterProfile = {name: string; names: string[]; role?: string; description: string; facts: string[]; passages: DossierSection[]; others: CharacterNote[]; sources: string[]};
+export type CharacterDossier = {dossier: Dossier; profile: CharacterProfile};
+/** 查角色详细资料时最多看资料库里的前多少位角色。 */
+export const CHARACTER_CANDIDATES = 12;
+const uniq = (items: readonly (string | undefined)[]) => [...new Set(items.map(x => (x ?? '').trim()).filter(Boolean))];
+/** 两组名字里有没有指同一个人的：去掉空白与标点后相同，或一个包含另一个（中日文至少两个字，拉丁字母至少四个）。 */
+export function sameCharacter(a: readonly string[], b: readonly string[]): boolean {
+  const A = a.map(normTitle).filter(Boolean), B = b.map(normTitle).filter(Boolean), long = (s: string) => /[぀-ヿ㐀-鿿]/.test(s) ? s.length >= 2 : s.length >= 4;
+  return A.some(x => B.some(y => x === y || (long(x.length <= y.length ? x : y) && (x.includes(y) || y.includes(x)))));
+}
+const NAME_ROW = /^(简体中文名|中文名|别名|本名|真名|原名|全名|姓名|英文名|日文名|罗马字|罗马音|假名|纯假名|平假名|片假名|昵称)$/;
+function bangumiNote(c: Record<string, unknown>, det: Record<string, unknown>): CharacterNote {
+  const names = [str(c.name, 60), str(det.name, 60)], facts: string[] = [];
+  for (const row of arr(det.infobox).map(rec).slice(0, 24)) {
+    const key = str(row.key, 12), values = (Array.isArray(row.value) ? row.value.map(x => str(rec(x).v, 60)) : [str(row.value, 160)]).filter((v): v is string => !!v).slice(0, 6);
+    if (!key || !values.length) continue;
+    if (NAME_ROW.test(key)) names.push(...values);
+    if (!/引用|链接|网址|来源/.test(key)) facts.push(`${key}：${values.join(' / ')}`);
+  }
+  return {names: uniq(names), role: str(c.relation, 8) ?? '登场', description: plainText(det.summary ?? c.summary, 3000), facts: facts.slice(0, 18), source: 'Bangumi'};
+}
+async function notesFromBangumi(work: WorkCard, known: readonly string[], ctx: DossierCtx): Promise<CharacterNote[]> {
+  const detail = async (c: Record<string, unknown>) => {try {return rec(await ctx.net.json(`https://api.bgm.tv/v0/characters/${encodeURIComponent(String(c.id))}`, opt(ctx, 12000)));} catch {return {};}};
+  const list = arr(await ctx.net.json(`https://api.bgm.tv/v0/subjects/${encodeURIComponent(work.sourceId)}/characters`, opt(ctx, 15000))).map(rec)
+    .filter(c => Number(c.type) === 1 || c.type === undefined).sort((a, b) => roleRank(String(a.relation)) - roleRank(String(b.relation))).slice(0, CHARACTER_CANDIDATES);
+  // 名单上的原名就对得上时只取这一位的详情；对不上（书页上写的是中文名）才逐个取详情，从里面的中文名与别名里找。
+  const direct = list.find(c => sameCharacter(known, [str(c.name, 60) ?? '']));
+  if (direct) return [bangumiNote(direct, await detail(direct))];
+  const details = await mapLimit(list, 3, detail);
+  return list.map((c, i) => bangumiNote(c, details[i] ?? {}));
+}
+async function notesFromAniList(work: WorkCard, _known: readonly string[], ctx: DossierCtx): Promise<CharacterNote[]> {
+  const query = 'query($id:Int){Media(id:$id){characters(sort:[ROLE,RELEVANCE],perPage:25){edges{role node{name{full native alternative} description(asHtml:false) gender age}}}}}';
+  const b = rec(await ctx.net.json('https://graphql.anilist.co', {method: 'POST', headers: {'Content-Type': 'application/json', Accept: 'application/json'}, body: JSON.stringify({query, variables: {id: Number(work.sourceId)}}), ...opt(ctx, 20000)}));
+  return arr(rec(rec(rec(b.data).Media).characters).edges).map(rec).map(e => {
+    const node = rec(e.node), n = rec(node.name), gender = str(node.gender, 20), age = str(node.age, 20);
+    return {names: uniq([str(n.native, 60), str(n.full, 60), ...arr(n.alternative).map(x => str(x, 60))]), role: e.role === 'MAIN' ? '主角' : e.role === 'SUPPORTING' ? '配角' : '登场', description: plainText(node.description, 3000), facts: [gender ? `性别：${gender}` : '', age ? `年龄：${age}` : ''].filter(Boolean), source: 'AniList'};
+  }).filter(c => c.names.length);
+}
+async function notesFromVndb(work: WorkCard, _known: readonly string[], ctx: DossierCtx): Promise<CharacterNote[]> {
+  const b = rec(await ctx.net.json('https://api.vndb.org/kana/character', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({filters: ['vn', '=', ['id', '=', work.sourceId]], fields: 'name, original, aliases, description, age, height, vns.role, vns.id, traits.name, traits.group_name, traits.spoiler', results: 25}), ...opt(ctx, 15000)}));
+  const rank = (c: Record<string, unknown>) => {const i = ['main', 'primary', 'side', 'appears'].indexOf(String(arr(c.vns).map(rec).find(v => v.id === work.sourceId)?.role ?? '')); return i < 0 ? 9 : i;};
+  return arr(b.results).map(rec).sort((x, y) => rank(x) - rank(y)).map(c => {
+    const groups = new Map<string, string[]>(), age = Number(c.age), height = Number(c.height), r = rank(c);
+    for (const t of arr(c.traits).map(rec)) {const g = str(t.group_name, 20), n = str(t.name, 40); if (g && n && !(Number(t.spoiler) > 0)) groups.set(g, [...(groups.get(g) ?? []), n]);}
+    const facts = [age > 0 ? `年龄：${age}` : '', height > 0 ? `身高：${height}cm` : '', ...[...groups].map(([g, list]) => `${g}：${list.slice(0, 10).join('、')}`)].filter(Boolean);
+    return {names: uniq([str(c.original, 60), str(c.name, 60), ...arr(c.aliases).map(x => str(x, 60))]), role: r === 0 ? '主角' : r === 1 ? '主要角色' : r === 2 ? '配角' : '登场', description: plainText(c.description, 3000), facts: facts.slice(0, 16), source: 'VNDB'};
+  }).filter(c => c.names.length);
+}
+const NOTES: Partial<Record<WorkCard['source'], (w: WorkCard, known: readonly string[], ctx: DossierCtx) => Promise<CharacterNote[]>>> = {bangumi: notesFromBangumi, anilist: notesFromAniList, vndb: notesFromVndb};
+
+/** 从整篇维基条目里找出讲这位角色的文字：以他为标题的小节整节收下；其余章节里收提到他的段落（人物章节优先；
+ *  名字单独成行时连同后面几行说明一起收）。 */
+export function characterPassages(text: string, names: readonly string[], source: string, budget = 2400): DossierSection[] {
+  const keys = names.map(n => n.trim().toLowerCase()).filter(n => n.length >= 2), out: DossierSection[] = [];
+  if (!keys.length) return out;
+  const has = (s: string) => {const low = s.toLowerCase(); return keys.some(k => low.includes(k));};
+  const sections = wikiSections(text).sections.filter(s => s.text && !SKIP.test(s.heading));
+  let left = budget;
+  for (const s of sections) {
+    if (left <= 80 || !has(s.heading)) continue;
+    const t = s.text.slice(0, Math.min(left, 1600)); out.push({heading: s.heading, text: t, source}); left -= t.length;
+  }
+  for (const s of [...sections].sort((a, b) => Number(CAST.test(b.heading)) - Number(CAST.test(a.heading)))) {
+    if (left <= 80) break;
+    if (has(s.heading)) continue;
+    const lines = s.text.split('\n').map(x => x.trim()), picked: string[] = [];
+    for (let i = 0; i < lines.length && left > 80; i++) {
+      const line = lines[i]!;
+      if (!line || !has(line)) continue;
+      let block = line;
+      if (line.length < 60) while (i + 1 < lines.length && lines[i + 1] && block.length < 700 && block.split('\n').length < 5) block += '\n' + lines[++i]!;
+      block = block.slice(0, Math.min(700, left)); picked.push(block); left -= block.length;
+    }
+    if (picked.length) out.push({heading: s.heading, text: picked.join('\n'), source});
+  }
+  return out;
+}
+/** 这位角色自己的维基条目（有名的角色才有）：条目里要提到这部作品，免得收进同名的别人；消歧义页不收。 */
+async function characterWikiPage(work: WorkCard, p: CharacterProfile, ctx: DossierCtx, lang: 'zh' | 'en'): Promise<void> {
+  const cjk = p.names.find(n => CJK.test(n)), latin = p.names.find(n => !/[^ -~]/.test(n) && /[a-z]/i.test(n)), query = lang === 'zh' ? cjk ?? latin : latin;
+  if (!query) return;
+  const title = await wikiFindTitle(lang, query, ctx);
+  if (!title) return;
+  const works = uniq([work.title, work.original, work.english, work.wiki?.zh, work.wiki?.en]).map(normTitle).filter(t => t.length >= 2);
+  if (works.includes(normTitle(title))) return;
+  const page = await wikiText(lang, title, ctx);
+  if (!page || /可以指|可能是指|may refer to/i.test(page.text.slice(0, 200))) return;
+  const head = normTitle(page.text.slice(0, 8000));
+  if (!works.some(t => head.includes(t))) return;
+  const {intro, sections} = wikiSections(page.text), source = `${lang === 'zh' ? '中文' : '英文'}维基百科「${page.title}」`;
+  let left = 2000;
+  if (intro) {const t = intro.slice(0, 900); p.passages.push({heading: page.title, text: t, source}); left -= t.length;}
+  for (const s of sections) {
+    if (left <= 80) break;
+    if (!s.text || SKIP.test(s.heading)) continue;
+    const t = s.text.slice(0, Math.min(left, 700)); p.passages.push({heading: s.heading, text: t, source}); left -= t.length;
+  }
+  p.sources.push(source);
+}
+/** 作品的 Fandom 站点（汇总作品资料时已经确认过是讲这部作品的）里这位角色的页面导言。 */
+async function characterFandom(slug: string, d: Dossier, p: CharacterProfile, ctx: DossierCtx): Promise<void> {
+  const api = `https://${slug}.fandom.com/api.php`, source = `Fandom（${slug}）`;
+  for (const q of p.names.filter(n => !/[^ -~]/.test(n) && /[a-z]/i.test(n)).slice(0, 2)) {
+    const found = rec(await ctx.net.json(`${api}?action=query&list=search&srsearch=${encodeURIComponent(q)}&srlimit=3&format=json&origin=*`, opt(ctx, 8000)));
+    const page = arr(rec(found.query).search).map(x => str(rec(x).title, 120)).find(t => !!t && sameCharacter([q], [t]));
+    if (!page || d.sections.some(s => s.heading === page && s.source === source)) continue;
+    const parsed = rec(await ctx.net.json(`${api}?action=parse&page=${encodeURIComponent(page)}&prop=text&section=0&disabletoc=1&format=json&origin=*`, opt(ctx, 8000)));
+    const text = plainText(rec(rec(parsed.parse).text)['*'], 2000).replace(/\n{2,}/g, '\n');
+    if (text.length > 120) {p.passages.push({heading: page, text, source}); p.sources.push('Fandom'); return;}
+  }
+}
+/** 汇总一位角色的详细资料：作品资料（同 buildDossier）＋资料库里这位角色的条目＋维基里讲他的段落与他自己的条目＋Fandom 页面。
+ *  每一步失败都只是少一份资料。ctx.memo 里留着作品资料，同一部作品的下一位角色不用重查。 */
+export async function buildCharacterDossier(work: WorkCard, who: CharacterQuery, ctx: DossierCtx, onStep?: (label: string) => void): Promise<CharacterDossier> {
+  const step = (label: string) => {try {onStep?.(label);} catch {/* 只是进度提示 */}};
+  const memoKey = 'dossier:' + work.key;
+  let g = ctx.memo?.get(memoKey) as Gathered | undefined;
+  if (!g) {g = await gather(work, ctx, onStep); ctx.memo?.set(memoKey, g);}
+  const d = g.dossier, base = d.characters.find(c => sameCharacter([who.name], [c.name, ...(c.original ? [c.original] : [])])), role = who.role ?? base?.role;
+  const p: CharacterProfile = {name: who.name, names: uniq([who.name, base?.name, base?.original]), ...(role ? {role} : {}), description: '', facts: [], passages: [], others: [], sources: []};
+  step(`正在查找「${who.name}」的角色资料`);
+  const own = NOTES[work.source];
+  let notes: CharacterNote[] = [];
+  if (own) {try {notes = await own(work, p.names, ctx);} catch {/* 资料库里查不到角色也可以 */}}
+  if (ctx.signal?.aborted) throw Error('已取消');
+  const hit = notes.find(n => sameCharacter(p.names, n.names));
+  if (hit) {p.description = hit.description; p.facts = hit.facts; p.names = uniq([...p.names, ...hit.names]).slice(0, 8); if (!p.role && hit.role) p.role = hit.role; p.sources.push(hit.source);}
+  else {
+    if (base?.description) p.description = base.description;
+    p.others = notes.filter(n => n.description).slice(0, 8).map(n => ({...n, names: n.names.slice(0, 3), description: n.description.slice(0, 500), facts: n.facts.slice(0, 6)}));
+  }
+  if (g.wiki) {const found = characterPassages(g.wiki.text, p.names, g.wiki.source); if (found.length) {p.passages.push(...found); p.sources.push(g.wiki.source);}}
+  try {await characterWikiPage(work, p, ctx, g.wiki?.lang ?? (CJK.test(work.title) ? 'zh' : 'en'));} catch {/* 没有自己的条目很常见 */}
+  if (ctx.signal?.aborted) throw Error('已取消');
+  if (ctx.fandom !== false && g.fandom) {try {await characterFandom(g.fandom, d, p, ctx);} catch {/* 没有页面也可以 */}}
+  if (ctx.signal?.aborted) throw Error('已取消');
+  p.sources = uniq(p.sources);
+  return {dossier: d, profile: p};
+}
+/** 有没有任何可以依据的资料（作品的或这位角色的）。一点都没有时不生成条目。 */
+export function hasCharacterMaterial(cd: CharacterDossier): boolean {
+  const p = cd.profile, d = cd.dossier;
+  return !!(p.description || p.passages.length || p.others.length || d.synopsis || d.sections.length || d.characters.length);
+}
+/** 交给模型的角色资料文本：先是这位角色的，再是作品的（有长度上限）。 */
+export function characterDossierText(cd: CharacterDossier, max = 12000): string {
+  const p = cd.profile, lines: string[] = [], alias = p.names.filter(n => n !== p.name);
+  lines.push(`〔这位角色〕${p.name}${alias.length ? `（又作：${alias.join(' / ')}）` : ''}${p.role ? `【${p.role}】` : ''}`);
+  for (const f of p.facts) lines.push('· ' + f);
+  if (p.description) lines.push('资料库里的介绍：' + p.description);
+  for (const s of p.passages) lines.push(`【${s.heading}·${s.source}】${s.text}`);
+  if (p.others.length) {
+    lines.push('（资料库没能自动对上这位角色的名字。下面是同一部作品里几位角色的资料，请自行辨认哪一条是他；都不是就不要套用。）');
+    for (const o of p.others) lines.push(`· ${o.names.join(' / ')}【${o.role ?? '登场'}】${o.facts.length ? `（${o.facts.join('；')}）` : ''}：${o.description}`);
+  }
+  if (!p.description && !p.passages.length && !p.others.length) lines.push('（资料库里没有查到专门讲这位角色的资料，请依据下面的作品资料与你确实了解的原作内容。）');
+  const own = lines.join('\n'), cap = Math.max(1000, max - 2500), mine = own.length > cap ? own.slice(0, cap) + '…' : own;
+  return mine + '\n\n〔作品资料〕\n' + dossierText(cd.dossier, Math.max(2000, max - mine.length - 12));
 }

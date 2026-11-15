@@ -5,13 +5,14 @@
 import {GACHA_STYLE} from './gacha-style';
 import {CARD_BACK_SVG,KIND_EMBLEM,RUNE_RING_SVG,TOME_COVER_SVG,SIGIL_URI} from './gacha-art';
 import {gameDom} from './game-dom';
-import {SPREAD_SIZE,type GachaService,type GachaSettings,type DrawOutcome} from '../gacha/session';
+import {SPREAD_SIZE,type GachaService,type GachaSettings,type DrawOutcome,type EntryStatus} from '../gacha/session';
 import {MEDIA_LABEL,SOURCES,SOURCE_BY_ID,type WorkCard,type SourceReport} from '../gacha/sources';
 import {themeSources,type Direction,type GachaTheme} from '../gacha/themes';
 import {ratesText,TIERS,qualityOf,starOfQuality,type Star} from '../gacha/rarity';
 import {RECYCLE_DIVISOR,RECYCLE_QUALITIES,recyclePrice,type BagEntry,type RecyclePick} from '../gacha/bag';
 import {KIND_LABEL,POOL_MAX,POOL_MIN,poolList,type GachaCard,type CardKind,type SmallPool} from '../gacha/pool';
 import {DEFAULT_SPEC_ENTRIES} from '../gacha/spec';
+import {DEFAULT_ENTRY_REFERENCES,TEMPLATE_MANAGER_HINT} from '../gacha/entry-defaults';
 
 const STYLE_ID = 'dream-gacha-style';
 const ICON = {
@@ -27,7 +28,9 @@ type View = 'home' | 'spread' | 'pool';
 /** 宿主传入的美术（都可省略）：figure 透明底立绘（首页右侧、撒网时的人影）；backdrop 抽卡舞台的模糊底图；title 首页横幅插画；chibi 小人（idle 平时，cheer 出 5★ 以上）。 */
 export type GachaArt = {figure?: string; backdrop?: string; title?: string; chibi?: {idle?: string; cheer?: string}};
 /** theme：读者大厅当前主题（cafe 咖啡馆 · summer 盛夏 · ink 水墨），面板配色随之切换；认不出时用咖啡馆。 */
-export type GachaPanelOptions = {onChange?: () => void; title?: string; art?: GachaArt | (() => GachaArt | undefined); theme?: string | (() => string | undefined); zIndex?: number};
+export type GachaPanelOptions = {onChange?: () => void; title?: string; art?: GachaArt | (() => GachaArt | undefined); theme?: string | (() => string | undefined); zIndex?: number;
+  /** 面板没开着时角色条目写完（或没写成）的提示交给宿主。 */
+  notify?: (text: string, bad: boolean) => void};
 export const PANEL_THEMES = ['cafe', 'summer', 'ink'] as const;
 export const panelTheme = (v: unknown): typeof PANEL_THEMES[number] => PANEL_THEMES.find(t => t === v) ?? 'cafe';
 /** 只接受图片地址；引号与换行会被转义，不能拼出别的 CSS。 */
@@ -65,6 +68,8 @@ export function mountGachaPanel(doc: Document, gacha: GachaService, options: Gac
   let compileSteps: string[] = [], compileError = '', toastTimer: ReturnType<typeof setTimeout> | undefined, layer: HTMLElement | undefined, layerSheet = false, stageCleanup: (() => void) | undefined;
   const spread0 = gacha.spread(); if (spread0) {direction = spread0.direction; themeId = spread0.themeId;}
   let art: GachaArt = {}, entering = false;
+  /** 小池页里角色条目状态的那一块，以及它对应的小池（没开这项功能时没有）。 */
+  let entryBox: HTMLElement | undefined, entryPool: SmallPool | undefined;
   const setVar = (k: string, v: string) => {if (v) root.style.setProperty(k, v); else root.style.removeProperty(k);};
   /** 每次打开时重新读取宿主的美术与大厅主题（外观、主题可能在两次打开之间换过）。 */
   function applyArt() {
@@ -97,6 +102,21 @@ export function mountGachaPanel(doc: Document, gacha: GachaService, options: Gac
     keepFocus();
   }
   const costText = (n: number) => gacha.mode === 'host' ? (n ? `${fmt(n)} 命运点` : '免费') : '演示不扣点';
+  const entryText = (s: EntryStatus) => s.state === 'queued' ? '排队中' : s.state === 'running' ? `正在写（${s.note ?? '准备资料'}）` : s.state === 'on' ? `条目「${s.entry ?? s.character}」在世界书《${s.book ?? ''}》里，已启用`
+    : s.state === 'off' ? '条目已关闭' : s.state === 'failed' ? `没能生成：${s.note ?? '原因不明'}` : '还没有条目';
+  /** 角色条目生成的状态（小池页右侧）：每张角色书页的条目写到哪一步了；没写成的、还没有条目的、被关掉的可以在这里补。 */
+  function renderEntries() {
+    const box = entryBox, pool = entryPool;
+    if (!box || !pool) return;
+    const parts: HTMLElement[] = [el('p', 'gc-note', gacha.settings().autoBag ? '角色条目生成已打开：抽到的角色书页放进背包后，夜梦会在后台为这位角色写一个世界书条目并启用；回收书页时关闭条目。' : '角色条目生成已打开，但抽到的东西没有放进背包（设置里可改），所以不会写条目。')];
+    for (const s of gacha.entryStatus(pool)) {
+      const row = el('p', 'gc-note' + (s.state === 'failed' ? ' is-bad' : '')), again = s.state === 'failed' ? '重试' : s.state === 'none' ? '生成条目' : s.state === 'off' ? '重新启用' : '';
+      row.append(el('b', '', s.character), doc.createTextNode('：' + entryText(s)));
+      if (again) row.append(doc.createTextNode(' '), button(again, () => {const r = gacha.generateEntry(s.workKey, s.key); if (!r.ok) toast(r.reason ?? '现在不能生成条目', true);}, 'gc-btn is-small'));
+      parts.push(row);
+    }
+    box.replaceChildren(...parts);
+  }
   /** 花命运点数或移出背包的按钮点两次才生效：第一次变成“再点一次确认”，4 秒内再点才执行。 */
   function confirmButton(label: string, note: string, armedNote: string, act: () => void, cls: string, disabled = false, armed = true) {
     const b = button('', () => {
@@ -357,6 +377,8 @@ export function mountGachaPanel(doc: Document, gacha: GachaService, options: Gac
     const reason = ready ?? (!one.ok ? one.reason : !ten.ok ? ten.reason : '');
     if (reason) side.append(el('p', 'gc-note is-bad', reason));
     else if (gacha.mode === 'host') side.append(el('p', 'gc-note', gacha.settings().autoBag ? `抽到的${kindText}会放进主角背包，按命定之诗的品质记入。` : '抽到的结果只记在抽卡记录里（设置里可改为放进背包）。'));
+    entryBox = undefined; entryPool = undefined;
+    if (gacha.entriesOn()) {entryBox = el('div', 'gc-entries'); entryPool = pool; renderEntries(); side.append(entryBox);}
     if (kinds.includes('character') && !pool.characters && !compileAbort) side.append(el('p', 'gc-note', '这个小池编纂时还没有打开角色池，现在抽不到角色。'), button('重新编纂（加上角色池）', () => void compile(w), 'gc-btn is-small'));
     banner.append(bg, left, side);
     blocks.push(tabs, banner);
@@ -469,7 +491,8 @@ export function mountGachaPanel(doc: Document, gacha: GachaService, options: Gac
       stageCleanup?.(); renderPool();
       if (!outcome.record.bagged) return;
       const best = [...outcome.cards].sort((a, b) => b.star - a.star).slice(0, 3).map(c => `${quality(c.star)}「${c.name}」`).join('、');
-      toast(outcome.record.spark ? `大保底兑换的 ${best} 放进了主角背包。` : count > 1 ? `${count} 张放进了主角背包：${best}${count > 3 ? ' 等' : ''}` : `放进了主角背包：${best}`);
+      const writing = outcome.entries?.length ? `；夜梦开始为${outcome.entries.map(n => `「${n}」`).join('、')}写角色条目` : '';
+      toast((outcome.record.spark ? `大保底兑换的 ${best} 放进了主角背包。` : count > 1 ? `${count} 张放进了主角背包：${best}${count > 3 ? ' 等' : ''}` : `放进了主角背包：${best}`) + writing);
     }
     body.append(stage);
     stageCleanup = () => {for (const t of timers) clearTimeout(t); stage.remove(); stageCleanup = undefined; keepFocus();};
@@ -571,7 +594,7 @@ export function mountGachaPanel(doc: Document, gacha: GachaService, options: Gac
       const prices = el('div', 'gc-prices');
       for (const q of RECYCLE_QUALITIES) {const x = el('span'); x.append(doc.createTextNode(q + ' '), el('b', '', fmt(recyclePrice(q)))); prices.append(x);}
       parts.push(el('p', 'gc-note gc-recycle-note', `把用不上的物品、命运与角色书页换回命运点数。回收价是与同一层级的角色缔结命定契约基础价的 1/${RECYCLE_DIVISOR}（每件）：`), prices,
-        el('p', 'gc-note', `只收命运抽卡抽来的东西；回收后从主角背包移除，不能撤销。回收掉的${qualityOf(7)}角色也不会再抽到。`));
+        el('p', 'gc-note', `只收命运抽卡抽来的东西；回收后从主角背包移除，不能撤销。回收掉的${qualityOf(7)}角色也不会再抽到。${gacha.canWriteEntries() && gacha.settings().characterEntry.enabled ? '回收角色书页时，夜梦为它写的世界书条目会被关闭（不删除）。' : ''}`));
       if (blocked) parts.push(el('p', 'gc-note is-bad', blocked));
       if (!entries.length) parts.push(el('p', 'gc-note', '主角背包里还没有命运抽卡抽来的东西。'));
       for (const q of RECYCLE_QUALITIES) {
@@ -593,7 +616,7 @@ export function mountGachaPanel(doc: Document, gacha: GachaService, options: Gac
     }
     async function run(picks: RecyclePick[]) {
       if (busy) return; busy = true; render();
-      try {const r = await gacha.recycle(picks); options.onChange?.(); toast(`回收了 ${r.removed} 件，命运点 +${fmt(r.gained)}${r.fp === null ? '' : `（现有 ${fmt(r.fp)}）`}。`);}
+      try {const r = await gacha.recycle(picks); options.onChange?.(); toast(`回收了 ${r.removed} 件，命运点 +${fmt(r.gained)}${r.fp === null ? '' : `（现有 ${fmt(r.fp)}）`}。${r.closed ? `关闭了 ${r.closed} 个角色条目。` : ''}${r.warning ?? ''}`, !!r.warning);}
       catch (e) {toast(message(e), true);}
       finally {busy = false; if (inner.isConnected) render(); keepFocus();}
     }
@@ -619,6 +642,17 @@ export function mountGachaPanel(doc: Document, gacha: GachaService, options: Gac
     }
     const small = sec('小池');
     check(small, '角色池', `默认关闭。打开后小池在物品、命运之外再加上角色，三者合计 ${POOL_MIN}～${POOL_MAX} 张，各有多少由夜梦按作品决定；抽卡时混在一起抽。角色都是${qualityOf(7)}品质，出货率与${q6()}相同，同一部作品里抽到过的角色不会再出现。${CHARACTER_NOTE}已经编纂过的小池要重新编纂才会有角色。`, draft.characterPool, v => {draft.characterPool = v;});
+    if (gacha.canWriteEntries()) {
+      const ce = draft.characterEntry, lib = gacha.entryTemplates(), fallback = lib.templates.find(t => t.id === lib.defaultId);
+      check(small, '角色条目生成', '默认关闭。要同时开着角色池与「抽到的东西放进主角背包」。抽到角色书页后，夜梦会在后台查这位角色的详细资料，按下面的生成模板写一个世界书条目并启用；回收这张书页时把条目关闭（不删除）。每位角色多问一次模型；没查到资料或模型出错时只是没有条目，不影响抽卡，可以在小池页重试。', ce.enabled, v => {ce.enabled = v;});
+      const trow = el('div', 'gc-row'), tsel = doc.createElement('select'), tlab = el('label', '', '生成模板');
+      for (const [value, label] of [['', fallback ? `默认（${fallback.name}）` : '默认'], ...lib.templates.map(t => [t.id, t.book ? `${t.name} → 《${t.book}》` : t.name])] as [string, string][]) {const o = doc.createElement('option'); o.value = value; o.textContent = label; tsel.append(o);}
+      tsel.value = lib.templates.some(t => t.id === ce.templateId) ? ce.templateId : ''; tsel.id = 'gc-entry-template'; tlab.htmlFor = 'gc-entry-template'; tsel.onchange = () => {ce.templateId = tsel.value;};
+      trow.append(tlab, tsel); small.append(trow);
+      small.append(el('p', 'gc-note' + (lib.templates.length ? '' : ' is-bad'), lib.templates.length ? `${TEMPLATE_MANAGER_HINT}；条目写进哪本世界书、蓝灯还是绿灯、关键词怎么取，都跟模板的输出设置走。` : `没有读到生成模板：${TEMPLATE_MANAGER_HINT}。`));
+      field(small, '世界观参考条目名（用顿号或逗号分隔，可留空）', ce.references.join('、'), v => {ce.references = [...new Set(v.split(/[、,，;；\n]+/).map(x => x.trim()).filter(Boolean))].slice(0, 12);}, 'text', DEFAULT_ENTRY_REFERENCES.join('、'));
+      small.append(el('p', 'gc-note', '写条目时一并读世界书里名称包含这些字样的条目，让夜梦把这位角色原作里的身份与实力折算成这个世界的写法。'));
+    }
     check(small, '世界观物品生成细则', '默认开启。编纂小池的最后一步读世界书里名称包含下面这些字样的条目，按条目里的规则给装备、武器、消耗品、资产等写出类型、标签与效果，抽进背包就能直接用。技能书页、命运与角色书页不写，在正文里使用时由正文模型按规则生成。改了世界书里的规则也会照新的写；读不到条目时物品只写大概。', draft.itemSpec.enabled, v => {draft.itemSpec.enabled = v;});
     field(small, '细则条目名（用顿号或逗号分隔）', draft.itemSpec.entries.join('、'), v => {draft.itemSpec.entries = [...new Set(v.split(/[、,，;；\n]+/).map(x => x.trim()).filter(Boolean))].slice(0, 12);}, 'text', DEFAULT_SPEC_ENTRIES.join('、'));
     const look = sec('作品范围');
@@ -685,7 +719,12 @@ export function mountGachaPanel(doc: Document, gacha: GachaService, options: Gac
     if (e.shiftKey && doc.activeElement === first) {e.preventDefault(); last.focus();}
     else if (!e.shiftKey && doc.activeElement === last) {e.preventDefault(); first.focus();}
   });
-  const off = gacha.subscribe(() => renderHead());
+  const off = gacha.subscribe(() => {if (entryBox?.isConnected) renderEntries(); renderHead();});
+  // 角色条目写完或没写成：面板开着就在面板里提示（抽卡演出进行中不打断，小池页的状态里看得到）；没开着交给宿主提示。
+  const offEntry = gacha.onEntry(e => {
+    if (root.hidden) {try {options.notify?.(e.text, !e.ok);} catch {/* 提示失败不影响生成 */}}
+    else if (!stageCleanup) toast(e.text, !e.ok);
+  });
   return {
     element: root,
     get open() {return !root.hidden;},
@@ -698,6 +737,6 @@ export function mountGachaPanel(doc: Document, gacha: GachaService, options: Gac
       closeButton.focus({preventScroll: true});
     },
     close,
-    dispose() {close(); off(); if (toastTimer) clearTimeout(toastTimer); root.remove();},
+    dispose() {close(); off(); offEntry(); if (toastTimer) clearTimeout(toastTimer); root.remove();},
   };
 }
