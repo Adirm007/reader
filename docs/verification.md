@@ -1,3 +1,11 @@
+# 2026.11.14.1 抽卡角色条目生成
+
+已正式发布 [v2026.11.14.1](https://github.com/Adirm007/reader/releases/tag/v2026.11.14.1)，GitHub 确认 `immutable=true`、`draft=false`，更新清单已收录。源提交 C 为 `4e356b0fc7cead298c6232c1998f0b9cd39b0338`，分发提交 D 为 `484fbd804f91f64d8e2d6890debbf9af697fe88b`。
+
+抽卡新增可选的「角色条目生成」（默认关闭）：抽到的角色书页入包后按「条目模仿」生成模板写该角色的世界书条目并启用，回收书页时关闭条目。抽卡打包产物 1.3.0。用户已在酒馆中开启试用，未发现问题。
+
+抽卡 `tsc --noEmit` 通过，单测 **35/35**；`npm test` **336 通过，0 失败，3 跳过**（缺历史发行标签），其中 Chromium 浏览器测试 39/39 通过。从 C 重新构建常驻模块、兼容外链、固定清单与抽卡包，产物与提交完全一致。
+
 # 2026.11.10.8 前端版本入口仅显示状态文字
 
 已正式发布 [v2026.11.10.8](https://github.com/Adirm007/reader/releases/tag/v2026.11.10.8)，GitHub 确认 `immutable=true`、`draft=false`。源提交 C 为 `926c3102d5369a46294465eb1de2f93d7103d33f`，分发提交 D 为 `b1810593ce09bcd8fdacc50451c0f18fc1557fad`；固定正则附件 28,451 字节，SHA-256 为 `8af41f2e2a0a4e7472b3bb5d0aa6fbd16e5879ced32d4489f2f25f7ccffa7766`。发布证明验证和更新清单已完成，清单提交为 `0fea91e0519426c90eae31774add24d34975faa5`。
