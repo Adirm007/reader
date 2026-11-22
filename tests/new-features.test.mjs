@@ -150,143 +150,237 @@ test('legacy-reader confirms kuromaku through 3-stage warning on first save only
   assert.match(banRegion, /\\u5df2\\u7981 '\+banList\.length\+' \\u672c/);
 });
 
-test('CoreManager supports heavy workshop cores: True King dynamic payload (V2 & RC16), Eyon 系统核心说明, null核心 toastr isolation, and global worldbooks', async () => {
-  const payloadContent = [
-    '<荆棘冠冕>',
-    '姬月与<user>共同持有{{getvar::系统名}}（{{getvar::系统核心}}）。',
-    '</荆棘冠冕>',
+test('CoreManager generically adapts dynamic payload cores, multi-entry dedicated DLC books, custom shared macros, FP-wipe cores, and global worldbooks with zero third-party hardcoding', async () => {
+  // Ensure core-manager.js does not hardcode specific third-party core names
+  for (const forbidden of ['真王', '荆棘冠冕', 'true_king', '伊雍', '虚嗣王权', '维拉', '银月贤者']) {
+    assert.ok(!coreManagerSrc.includes(forbidden), `core-manager.js must remain generic and not hardcode ${forbidden}`);
+  }
+
+  const objPayloadContent = [
+    '<测试冠冕>',
+    '同伴与<user>共同持有{{getvar::系统名}}（{{getvar::系统核心}}）。',
+    '</测试冠冕>',
     '',
-    '{{setvar::系统名::荆棘冠冕}}',
-    '{{setvar::系统核心名::冠冕之灵}}',
-    '{{setvar::系统核心::姬月&叶莲娜}}',
-    '{{setvar::fp定义::弥赛亚之力}}',
-    '{{setvar::复活机制::<复活机制>姬月守护{{user}}</复活机制>}}',
+    '{{setvar::系统名::测试冠冕}}',
+    '{{setvar::系统核心名::冠冕灵}}',
+    '{{setvar::系统核心::甲&乙}}',
+    '{{setvar::fp定义::测试能量}}',
+    '{{setvar::复活机制::<复活机制>重生{{user}}</复活机制>}}',
   ].join('\n');
   const origPayload = {
     schemaVersion: 2,
     status: 'ready',
-    producer: 'true-king-composition-v2',
+    producer: 'generic-dynamic-composer',
     checksum: 'sha256-test',
-    content: payloadContent,
+    content: objPayloadContent,
   };
   const origSnapshot = JSON.stringify(origPayload);
 
-  const tkRc16Entry = {
-    comment: '[DLC][命定核心][真王核心v2]真王核心组合载荷',
+  const dynObjEntry = {
+    comment: '[DLC][命定核心]动态组合核心载荷',
     disable: false,
     content: `<%_ {
-const _tkv2Payload = getvar('true_king_v2.prompt_payload', { scope: 'local' });
-let _tkv2Content = '';
-const _tkv2HasPayload = _tkv2Payload?.schemaVersion === 2;
-if (_tkv2HasPayload) {
-  if (_tkv2Payload.status !== 'ready') throw new Error('not ready');
-  if (_tkv2Payload.producer !== 'true-king-composition-v2') throw new Error('bad producer');
-  if (typeof _tkv2Payload.content !== 'string' || !_tkv2Payload.content.includes('<荆棘冠冕>') || !_tkv2Payload.content.includes('</荆棘冠冕>')) throw new Error('bad wrap');
-  _tkv2Content = _tkv2Payload.content;
+const _p = getvar('custom_dyn.prompt_payload', { scope: 'local' });
+let _c = '';
+if (_p?.schemaVersion === 2) {
+  if (_p.status !== 'ready') throw new Error('not ready');
+  if (typeof _p.content !== 'string' || !_p.content.includes('<测试冠冕>') || !_p.content.includes('</测试冠冕>')) throw new Error('bad wrap');
+  _c = _p.content;
 }
-_%><%- _tkv2Content %><% } %>`,
+_%><%- _c %><% } %>`,
   };
 
-  const eyonLikeEntry = {
-    comment: '[DLC][命定系统]伊雍核心(夜见哉川)',
+  const dynRawStringEntry = {
+    comment: '[DLC][命定核心]直出载荷核心',
     disable: false,
+    content: `<%- getLocalVar('raw_dyn.prompt_text') || '' %>`,
+  };
+
+  const multiEntryCore = {
+    comment: '命定系统-星月核心',
+    disable: false,
+    world: '独立多条目DLC',
     content: [
-      '<虚嗣王权>',
-      '<%_ { const _x = getChatMessage(-1, "user"); _%>问候:<%- _x %><%_ } _%>',
-      '</虚嗣王权>',
-      '{{setvar::系统名::虚嗣王权}}',
-      '{{setvar::系统核心名::圣卷见证者}}',
-      '{{setvar::系统核心说明::(伊雍历史溯源机制)}}',
-      '{{setvar::系统核心::伊雍}}',
+      '<星月仪>',
+      '<%_ { const _x = getChatMessage(-1, "user"); setLocalVar("StarMoon.state", "ok"); _%>问候:<%- _x %><%_ } _%>',
+      '</星月仪>',
+      '{{setvar::系统名::星月仪}}',
+      '{{setvar::系统核心名::星月贤者}}',
+      '{{setvar::系统核心说明::(多条目DLC机制)}}',
+      '{{setvar::系统核心::星月}}',
       '{{setvar::复活机制::<复活机制>{{user}}复活</复活机制>}}',
     ].join('\n'),
   };
+  const multiCompanionGuide = {
+    comment: '星月-性格与扮演指南',
+    disable: false,
+    world: '独立多条目DLC',
+    key: ['星盘占卜'],
+    content: '指南正文：参考{{getvar::系统名}}',
+  };
+  const multiCompanionRule = {
+    comment: '时之门流程',
+    disable: false,
+    world: '独立多条目DLC',
+    key: ['时之门'],
+    content: '时之门正文',
+  };
+  const protectedAnchor = {
+    comment: '历史锚点记录',
+    disable: false,
+    world: '独立多条目DLC',
+    content: '<!-- history_anchor -->已锚定历史事件',
+  };
 
-  const nullEntry = {
-    comment: '命定系统-null核心(byH)',
+  const fpWipeEntry = {
+    comment: '命定系统-自定义无FP核心',
     disable: false,
     content: [
-      '{{setvar::系统核心::null核心}}',
-      '<%_ { if (getvar("系统核心") === "null核心") { setMessageVar("stat_data.命运点数", 0); toastr.info("吃掉了FP"); } } _%>',
+      '{{setvar::系统核心::无FP测试核}}',
+      '<%_ { if (getvar("系统核心") === "无FP测试核") { setMessageVar("stat_data.命运点数", 0); toastr.info("清空FP"); } } _%>',
     ].join('\n'),
   };
 
   const stCtx = {
     chat: [{ is_user: true, mes: '普通对话' }],
-    chatMetadata: { variables: { true_king_v2: { prompt_payload: origPayload } } },
+    chatMetadata: {
+      variables: {
+        custom_dyn: { prompt_payload: origPayload },
+        raw_dyn: { prompt_text: '<直出>{{getvar::系统名}}</直出>{{setvar::系统名::直出系统}}{{setvar::系统核心::直出核}}' },
+      },
+    },
     saveMetadata() {},
   };
   const { win } = loadModule(coreManagerSrc, {
     SillyTavern: { getContext: () => stCtx },
     TavernHelper: {
-      getCharWorldbookNames: async () => ({ primary: '命定之诗', additional: [] }),
+      getCharWorldbookNames: async () => ({ primary: '命定之诗', additional: ['独立多条目DLC'] }),
       getChatWorldbookName: async () => '',
-      getGlobalWorldbookNames: async () => ['全局真王', '全局伊雍'],
+      getGlobalWorldbookNames: async () => ['全局动态核A', '全局动态核B'],
       getWorldbook: async (name) => {
         if (name === '命定之诗') return [{ name: '读者核心', enabled: true, content: '/* DREAM_WORLDBOOK reader-core */\n<% setLocalVar("系统核心", "九十九夜梦"); %>' }];
-        if (name === '全局真王') return [tkRc16Entry];
-        if (name === '全局伊雍') return [eyonLikeEntry];
+        if (name === '独立多条目DLC') return [multiEntryCore, multiCompanionGuide, multiCompanionRule, protectedAnchor];
+        if (name === '全局动态核A') return [dynObjEntry];
+        if (name === '全局动态核B') return [dynRawStringEntry];
         return [];
       },
     },
   });
   const cm = win.ReaderCoreManager;
 
-  // 1. scanEnabledCores discovers Global Worldbooks too
+  // 1. scanEnabledCores discovers primary, additional, global books + dedicated multi-entry companion entries (protecting history anchors)
   const scanned = await cm.scanEnabledCores(win);
-  assert.deepEqual(Array.from(scanned, (c) => c.key), ['九十九夜梦', '真王核心', '伊雍']);
-  assert.equal(scanned[1].isDynamicPayload, true);
-  assert.equal(scanned[2].sharedMap['系统核心说明'], '(伊雍历史溯源机制)');
+  assert.deepEqual(Array.from(scanned, (c) => c.key), [
+    '九十九夜梦',
+    '星月',
+    'payload:custom_dyn.prompt_payload',
+    'payload:raw_dyn.prompt_text',
+  ]);
+  const starMoon = scanned[1];
+  assert.equal(starMoon.dedicatedBook, '独立多条目DLC');
+  assert.deepEqual(Array.from(starMoon.companionEntries), ['星月-性格与扮演指南', '时之门流程']);
+  assert.ok(starMoon.defaultWakeKeywords.includes('星盘占卜') && starMoon.defaultWakeKeywords.includes('时之门'));
+  assert.equal(scanned[2].isDynamicPayload, true);
+  assert.ok(scanned[2].defaultWakeKeywords.includes('甲') && scanned[2].defaultWakeKeywords.includes('乙'));
+  assert.equal(scanned[3].isDynamicPayload, true);
 
-  // 2. True King secondary-scoped renders via real EJS without TDZ, strips shared macros, keeps payload unmutated
-  const tkCopy = { ...tkRc16Entry };
-  const tkRes = cm.transformWorldbookEntry(tkCopy, { enabled: true, primary: '九十九夜梦', activeCores: ['九十九夜梦', '真王核心'], cores: {} }, '');
-  assert.equal(tkRes.mode, 'secondary-scoped');
-  const tkOut = await ejs.render(tkCopy.content.replace(/\{\{user\}\}|<user>/gi, 'Alice "Hero"'), {
-    getvar: (k) => (k === 'true_king_v2.prompt_payload' ? origPayload : ''),
-    getLocalVar: () => '',
-    setLocalVar: () => '',
-    setvar: () => '',
-  }, { async: true });
-  assert.match(tkOut, /<荆棘冠冕>/);
-  assert.match(tkOut, /共同持有荆棘冠冕（姬月&叶莲娜）/);
-  assert.doesNotMatch(tkOut, /\{\{setvar::系统核心::/);
-  assert.equal(JSON.stringify(origPayload), origSnapshot, 'original true_king_v2.prompt_payload must never be mutated');
-
-  // 3. True King primary-silent keeps live shared setvars and drops body
-  const tkSilent = { ...tkRc16Entry };
-  cm.transformWorldbookEntry(tkSilent, {
+  // 2. Dynamic object payload secondary-scoped renders cleanly via real EJS, strips shared setvars, keeps original object unmutated
+  const dynCopy = { ...dynObjEntry };
+  const dynRes = cm.transformWorldbookEntry(dynCopy, {
     enabled: true,
-    primary: '真王核心',
-    activeCores: ['真王核心', '九十九夜梦'],
-    cores: { 真王核心: { silent: true, wakeKeywords: ['姬月'] } },
-  }, '普通对话');
-  const tkSilentOut = await ejs.render(tkSilent.content, {
-    getvar: (k) => (k === 'true_king_v2.prompt_payload' ? origPayload : ''),
-  }, { async: true });
-  assert.match(tkSilentOut, /\{\{setvar::系统核心::姬月&叶莲娜\}\}/);
-  assert.match(tkSilentOut, /荆棘冠冕当前处于静默观察状态/);
-  assert.doesNotMatch(tkSilentOut, /共同持有/);
-
-  // 4. Eyon secondary-scoped strips 系统核心说明 and renders cleanly via real EJS even after <user> quote substitution
-  const eyonCopy = { ...eyonLikeEntry };
-  cm.transformWorldbookEntry(eyonCopy, { enabled: true, primary: '九十九夜梦', activeCores: ['九十九夜梦', '伊雍'], cores: {} }, '');
-  assert.doesNotMatch(eyonCopy.content, /\{\{setvar::系统核心说明::/);
-  const eyonOut = await ejs.render(eyonCopy.content.replace(/\{\{user\}\}|<user>/gi, 'Alice "Q"'), {
-    getChatMessage: () => '你好',
-    getvar: () => '',
+    primary: '九十九夜梦',
+    activeCores: ['九十九夜梦', 'payload:custom_dyn.prompt_payload'],
+    cores: {},
+  }, '', win);
+  assert.equal(dynRes.mode, 'secondary-scoped');
+  const dynOut = await ejs.render(dynCopy.content.replace(/\{\{user\}\}|<user>/gi, 'Alice "Hero"'), {
+    getvar: (k) => (k === 'custom_dyn.prompt_payload' ? origPayload : ''),
     getLocalVar: () => '',
     setLocalVar: () => '',
     setvar: () => '',
   }, { async: true });
-  assert.match(eyonOut, /问候:你好/);
+  assert.match(dynOut, /<测试冠冕>/);
+  assert.match(dynOut, /共同持有测试冠冕（甲&乙）/);
+  assert.doesNotMatch(dynOut, /\{\{setvar::系统核心::/);
+  assert.equal(JSON.stringify(origPayload), origSnapshot, 'original dynamic payload variable must never be mutated');
 
-  // 5. null核心 secondary blocks BOTH FP wipe and bogus toastr.info
-  const nullCopy = { ...nullEntry };
-  cm.transformWorldbookEntry(nullCopy, { enabled: true, primary: '九十九夜梦', activeCores: ['九十九夜梦', 'null核心'], cores: {} }, '');
+  // 3. Dynamic raw-string payload secondary-scoped renders cleanly via getLocalVar
+  const rawCopy = { ...dynRawStringEntry };
+  cm.transformWorldbookEntry(rawCopy, {
+    enabled: true,
+    primary: '九十九夜梦',
+    activeCores: ['九十九夜梦', 'payload:raw_dyn.prompt_text'],
+    cores: {},
+  }, '', win);
+  const rawOut = await ejs.render(rawCopy.content, {
+    getvar: () => '',
+    getLocalVar: (k) => (k === 'raw_dyn.prompt_text' ? stCtx.chatMetadata.variables.raw_dyn.prompt_text : ''),
+    setLocalVar: () => '',
+    setvar: () => '',
+  }, { async: true });
+  assert.equal(rawOut.trim(), '<直出>直出系统</直出>');
+
+  // 4. Dynamic payload primary-silent keeps live shared setvars and drops body
+  const dynSilent = { ...dynObjEntry };
+  cm.transformWorldbookEntry(dynSilent, {
+    enabled: true,
+    primary: 'payload:custom_dyn.prompt_payload',
+    activeCores: ['payload:custom_dyn.prompt_payload', '九十九夜梦'],
+    cores: { 'payload:custom_dyn.prompt_payload': { silent: true, wakeKeywords: ['甲'] } },
+  }, '普通对话', win);
+  const dynSilentOut = await ejs.render(dynSilent.content, {
+    getvar: (k) => (k === 'custom_dyn.prompt_payload' ? origPayload : ''),
+  }, { async: true });
+  assert.match(dynSilentOut, /\{\{setvar::系统核心::甲&乙\}\}/);
+  assert.match(dynSilentOut, /测试冠冕当前处于静默观察状态/);
+  assert.doesNotMatch(dynSilentOut, /共同持有/);
+
+  // 5. Multi-entry dedicated DLC core silent mode silences companion entries too, while keeping history anchors; waking restores & scopes them
+  stCtx.chatMetadata.variables.dream_core_manager = JSON.stringify({
+    enabled: true,
+    primary: '九十九夜梦',
+    activeCores: ['九十九夜梦', '星月'],
+    cores: {
+      星月: {
+        name: '星月',
+        silent: true,
+        wakeKeywords: Array.from(starMoon.defaultWakeKeywords),
+        dedicatedBook: '独立多条目DLC',
+        companionEntries: Array.from(starMoon.companionEntries),
+      },
+    },
+  });
+  const silentLore = [multiEntryCore, multiCompanionGuide, multiCompanionRule, protectedAnchor].map((e) => ({ ...e }));
+  cm.processLoadedWorldInfo({ characterLore: silentLore }, win);
+  assert.equal(silentLore[0].disable, true);
+  assert.equal(silentLore[1].disable, true, 'companion guide silenced');
+  assert.equal(silentLore[2].disable, true, 'companion rule silenced');
+  assert.equal(silentLore[3].disable, false, 'history anchor protected');
+
+  stCtx.chat[0].mes = '开启星盘占卜';
+  const wokenLore = [multiEntryCore, multiCompanionGuide, multiCompanionRule, protectedAnchor].map((e) => ({ ...e }));
+  cm.processLoadedWorldInfo({ characterLore: wokenLore }, win);
+  assert.equal(wokenLore[0].disable, false);
+  assert.doesNotMatch(wokenLore[0].content, /\{\{setvar::系统核心说明::/);
+  assert.equal(wokenLore[1].disable, false);
+  assert.match(wokenLore[1].content, /参考星月仪/, 'companion entry gets secondary core ownMacros scoped');
+  const localBag = {};
+  const mainOut = await ejs.render(wokenLore[0].content.replace(/\{\{user\}\}|<user>/gi, 'Alice "Q"'), {
+    getChatMessage: () => '开启星盘占卜',
+    getvar: () => '',
+    getLocalVar: (k) => localBag[k] || '',
+    setLocalVar: (k, v) => { localBag[k] = v; },
+    setvar: () => '',
+  }, { async: true });
+  assert.match(mainOut, /问候:开启星盘占卜/);
+  assert.equal(localBag['StarMoon.state'], 'ok', 'non-shared core state writes pass through');
+
+  // 6. Generic FP-zeroing core secondary blocks BOTH FP wipe and bogus toastr.info
+  const fpCopy = { ...fpWipeEntry };
+  cm.transformWorldbookEntry(fpCopy, { enabled: true, primary: '九十九夜梦', activeCores: ['九十九夜梦', '无FP测试核'], cores: {} }, '', win);
   let fpWiped = false;
   let toastFired = false;
-  await ejs.render(nullCopy.content, {
+  await ejs.render(fpCopy.content, {
     getvar: () => '九十九夜梦',
     getLocalVar: () => '',
     setLocalVar: () => '',
