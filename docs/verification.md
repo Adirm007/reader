@@ -1,3 +1,11 @@
+# 2026.11.22.3 多核心陈旧配置回退、唤醒词安全匹配与编译对齐
+
+已正式发布 [v2026.11.22.3](https://github.com/Adirm007/reader/releases/tag/v2026.11.22.3)，GitHub 确认 `immutable=true`、`draft=false`，发布证明与 `fixed-updates` 更新清单已完成。源提交 C 为 `7dc143973e273ce231463038d96abbaaeba5bc82`，分发提交 D 为 `fa9aa6fbf0906abb87a71a4891b94409817afbc5`；固定正则附件 28,451 字节，SHA-256 为 `0738e00e38a4808db9ff73197ca4dc2e07cf820a48cdecb2ac9cf4fea6650b88`。
+
+根据第三方对抗审查修复：核心管理器仅接管 `activeCores` 内核心并在主核未启用时整体放行退回单核，卡内主核不再写入 `primaryMacros` 快照；读者世界书唤醒词匹配移除 `matchChatMessages` 正则编译，改用大小写不敏感纯文本子串包含，避免含 `:)`、`C++`、`*`、`(` 等正则元字符的唤醒词炸掉整条合并消息；三处统一 `wakeKeywords: []` 表示留空不自动唤起（配套触发词不过滤通用短词，由用户自行增删）；修复黑幕人格拼接附加性格时 `$&`/`$'` 被 `String.replace` 当替换模式的问题；对齐附加设定预览编译器与世界书内联编译器（去尾分号、`<%=` 原样输出、空白吞噬、`getMessageVar` 补全）；保留主核静默条目头部 `@@` 装饰器、在次核 EJS `getvar` 中补做 `substituteParams`、泛化历史锚点保护正则并隐藏 UI 中的内部键前缀。
+
+`npm test` **356/356 通过，0 失败、0 跳过**；未做真实酒馆实机游玩。
+
 # 2026.11.22.2 核心管理按写法类型泛用适配
 
 已正式发布 [v2026.11.22.2](https://github.com/Adirm007/reader/releases/tag/v2026.11.22.2)，GitHub 确认 `immutable=true`、`draft=false`，发布证明与 `fixed-updates` 更新清单已完成。源提交 C 为 `0d7cd049cd621148d17b8c6d7bec07c106040b5c`，分发提交 D 为 `d9b7f5b46fa5683f1a58fd39514245b21a2e2202`；固定正则附件 28,451 字节，SHA-256 为 `7d7c3eaee511f86c7d754107bd457b8bc0ef17678642de2a6b1e06bfc480fd0c`。
