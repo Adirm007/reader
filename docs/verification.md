@@ -1,3 +1,11 @@
+# 2026.11.22.2 核心管理按写法类型泛用适配
+
+已正式发布 [v2026.11.22.2](https://github.com/Adirm007/reader/releases/tag/v2026.11.22.2)，GitHub 确认 `immutable=true`、`draft=false`，发布证明与 `fixed-updates` 更新清单已完成。源提交 C 为 `0d7cd049cd621148d17b8c6d7bec07c106040b5c`，分发提交 D 为 `d9b7f5b46fa5683f1a58fd39514245b21a2e2202`；固定正则附件 28,451 字节，SHA-256 为 `7d7c3eaee511f86c7d754107bd457b8bc0ef17678642de2a6b1e06bfc480fd0c`。
+
+移除所有对具体第三方核心名的硬编码，改为按写法类型泛用适配：静态 `{{setvar}}`、混合 EJS、`setLocalVar/setvar` 纯 EJS、动态聊天变量载荷（`payload:<varKey>`，支持字符串及含 `content/prompt/text/body/output` 字段的对象，仅做只读克隆隔离而不改原聊天变量）、独立多条目单核 DLC 世界书（静默时联动静默配套条目并保护历史锚点条目，自动从配套条目的选择性关键词及 EJS 协作词派生默认唤起词），以及按 `setMessageVar('stat_data.命运点数', 0)` 泛用识别并隔离次核清空 FP 与弹窗。
+
+`npm test` **352/352 通过，0 失败、0 跳过**；以真实维拉（13 条目）、伊雍、真王核心（V2 / RC16）及合成未知核心完成真实 EJS 渲染验证；未做真实酒馆实机游玩。
+
 # 2026.11.22.1 多核心管理、黑幕人格重构、分类附加设定与无限禁书
 
 已正式发布 [v2026.11.22.1](https://github.com/Adirm007/reader/releases/tag/v2026.11.22.1)，GitHub 确认 `immutable=true`、`draft=false`，发布证明与 `fixed-updates` 更新清单已完成。源提交 C 为 `8046947cf083d0b1d511972131dc0882d5a3eb91`，分发提交 D 为 `1b5cf0809790e6be08958e43a619b2825b24a6d8`；固定正则附件 28,451 字节，SHA-256 为 `92cf84367b339711927bd605277eabca0bcc8b61427934b4af98e60a214dd6e3`。
