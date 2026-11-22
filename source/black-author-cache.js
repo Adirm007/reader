@@ -19,9 +19,10 @@
     if (variables[key] === serialized) return;
     try {
       var previous = JSON.parse(variables[key]);
+      var requiredFields = ['definition', 'persona', 'execution', 'curse', 'publicRecord', 'revival', 'systemName', 'fpDefinition', 'revealStyle', 'learning', 'cursedDefinition', 'cursedPersona', 'cursedRevealScene', 'confessedDefinition', 'confessedPersona', 'confessedRevival', 'revivalUnseal'];
       if (previous && previous.schema === profile.schema && previous.name === profile.name &&
           Number(previous.revision) > profile.revision &&
-          ['definition', 'persona', 'execution', 'curse', 'publicRecord', 'revival', 'systemName', 'fpDefinition', 'revealStyle', 'learning'].every(function (field) {
+          requiredFields.every(function (field) {
             return typeof previous[field] === 'string' && previous[field].length > 0;
           })) return;
     } catch (_) {}

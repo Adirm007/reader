@@ -59,10 +59,28 @@ function state() {
   return { runningVersion, pendingVersion: selected && newer(selected.metadata.version, runningVersion || BUNDLED.version) ? selected.metadata.version : null };
 }
 
+function readCoreManager(variables) {
+  try {
+    const raw = variables?.dream_core_manager;
+    if (!raw) return null;
+    const obj = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    return obj && typeof obj === 'object' && obj.enabled === true ? obj : null;
+  } catch { return null; }
+}
+
+function readerEnabledByManager(variables) {
+  const cm = readCoreManager(variables);
+  if (!cm) return false;
+  if (cm.primary === '九十九夜梦') return true;
+  return Array.isArray(cm.activeCores) && cm.activeCores.includes('九十九夜梦');
+}
+
 function context() {
   const ctx = host().SillyTavern?.getContext?.();
-  const core = ctx?.chatMetadata?.variables?.系统核心;
-  return JSON.stringify([ctx?.characterId, ctx?.getCurrentChatId?.() ?? ctx?.chatId, core]);
+  const vars = ctx?.chatMetadata?.variables;
+  const core = vars?.系统核心;
+  const managed = readerEnabledByManager(vars) ? 'managed' : '';
+  return JSON.stringify([ctx?.characterId, ctx?.getCurrentChatId?.() ?? ctx?.chatId, core, managed]);
 }
 
 function current(token, identity) {
@@ -71,9 +89,16 @@ function current(token, identity) {
 
 function canStart(token) {
   const win = host(), ctx = win.SillyTavern?.getContext?.();
-  let core = ctx?.chatMetadata?.variables?.系统核心;
-  try { core = win.TavernHelper?.getVariables?.({ type: 'chat' })?.系统核心 ?? core; } catch {}
-  return current(token) && (!core || core === '九十九夜梦');
+  let vars = ctx?.chatMetadata?.variables;
+  let core = vars?.系统核心;
+  try {
+    const thVars = win.TavernHelper?.getVariables?.({ type: 'chat' });
+    if (thVars && typeof thVars === 'object') {
+      vars = Object.assign({}, vars || {}, thVars);
+      core = thVars.系统核心 ?? core;
+    }
+  } catch {}
+  return current(token) && (!core || core === '九十九夜梦' || readerEnabledByManager(vars));
 }
 
 function stopAttempt(attempt) {

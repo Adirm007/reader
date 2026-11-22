@@ -191,6 +191,7 @@
       try { if (typeof readerMusic !== 'undefined' && readerMusic) readerMusic.dispose(); } catch (_) {}
       try { audio.pause(); audio.removeAttribute('src'); audio.load(); } catch (_) {}
       try { window.ReaderTransactions?.dispose?.(); } catch (_) {}
+      try { window.ReaderCoreManager?.uninstallWorldInfoHook?.(); } catch (_) {}
       window.__readerCleanup();
     }
   };

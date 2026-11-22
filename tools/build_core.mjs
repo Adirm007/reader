@@ -11,12 +11,13 @@ const hash = text => createHash('sha256').update(text).digest('hex');
 
 export async function build({ write = false, version } = {}) {
   version ||= JSON.parse(await read('release-manifest.json')).version;
-  const [runtimeSource, prelude, adapter, legacySource, css, body, letterSource, letterBody, cache, profile, transactions, booksea, templates, bookseaAlbum, gacha, ui, uiSwitch, letterStyle, legacyLetterBody] = await Promise.all([
+  const [runtimeSource, prelude, adapter, legacySource, css, body, letterSource, letterBody, cache, profile, transactions, booksea, templates, bookseaAlbum, coreManager, extraSettings, gacha, ui, uiSwitch, letterStyle, legacyLetterBody] = await Promise.all([
     read('source/core-runtime.mjs'), read('source/controller-prelude.js'), read('source/controller-adapter.js'),
     read('source/legacy-reader.js'), read('source/legacy-reader.css'), read('source/legacy-body.html'),
     read('source/letter.js'), read('source/letter-body.html'), read('source/black-author-cache.js'), read('source/black-author.prompt.json'),
     optional('source/reader-transactions.js'), optional('source/booksea-host.js'), optional('source/template-system.js'),
     read('source/booksea-album.js'),
+    optional('source/core-manager.js'), optional('source/extra-settings.js'),
     // 大厅「命运抽卡」（window.ReaderGacha）：在 gacha/ 里 npm run build 生成，大厅入口离不开它。
     read('source/reader-gacha.js'),
     // 新表现层（window.ReaderUI）：在 ui/ 里 npm run build 生成；切换点 reader-ui-switch.js 必须在适配层之后。
@@ -32,7 +33,7 @@ export async function build({ write = false, version } = {}) {
   const legacy = legacySource.replace(bootstrap, '\n');
   const initialization = cache.replace('__DREAM_AUTHOR_PROFILE__', JSON.stringify(JSON.parse(profile)).replace(/</g, '\\u003c'));
   const releaseTools = await Promise.all(['fixed-release-client.js','fixed-runtime.js','regex-update-guard.js','release-updates.js','standalone-bootstrap.js','script-installer.js','fixed-migration.js','update-center.js'].map(name => read('source/' + name)));
-  const controller = [prelude, transactions, gacha, ui, booksea, bookseaAlbum, initialization, legacy, templates, ...releaseTools, adapter, uiSwitch].join('\n;\n');
+  const controller = [prelude, transactions, gacha, ui, booksea, bookseaAlbum, initialization, coreManager, extraSettings, legacy, templates, ...releaseTools, adapter, uiSwitch].join('\n;\n');
   new Script(controller, { filename: 'reader-controller.js' });
   const letterCss = letterStyle ? letterStyle.trim() : css + '\n.menu-board{display:none!important}.reader-letter-compact .cafe-v20-responsive{display:none!important}.reader-letter-compact .outer-collapse:not([open]){display:block}.reader-letter-compact .flower-btn{display:block}';
   if (/\$(?:\d|<)|\{\{|<\/style/i.test(letterCss)) throw new Error('Letter style contains a replacement token, a macro or a style terminator');

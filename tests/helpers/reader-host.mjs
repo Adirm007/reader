@@ -38,17 +38,18 @@ export function createReaderHost({
   statData = {},
   global = {},
   initial = {},
+  userMessage = '继续当前剧情。',
   fetch: fetchImpl = async () => { throw new Error('Unexpected network request in reader-core test'); },
 } = {}) {
   const localVariables = {
-    dream_persona: 'kuromaku', dream_seed: 3,
+    dream_persona: 'kuromaku',
     dream_black_author_prompt: JSON.stringify(JSON.parse(profile)), ...clone(local),
   };
   const globalVariables = clone(global);
   const initialVariables = clone(initial);
   const chat = [
     { is_user: false, mes: '', swipe_id: 0, variables: [{ stat_data: clone(statData) }] },
-    { is_user: true, mes: '继续当前剧情。', swipe_id: 0 },
+    { is_user: true, mes: userMessage, swipe_id: 0 },
   ];
   const writes = [];
   const requests = [];
@@ -123,6 +124,12 @@ export function createReaderHost({
     requests,
     get cache() { return cache; },
     setLocal(path, value) { writePath(localVariables, path, clone(value)); },
+    setUserMessage(text) {
+      for (let i = chat.length - 1; i >= 0; i--) {
+        if (chat[i].is_user) { chat[i].mes = text; return; }
+      }
+      chat.push({ is_user: true, mes: text, swipe_id: 0 });
+    },
     setStatData(data, { message = selectedMessage, swipe = 0 } = {}) {
       while (chat.length <= message) chat.push({ is_user: false, mes: '', swipe_id: 0, variables: [] });
       chat[message].variables ??= [];
@@ -166,10 +173,20 @@ export function createReaderHost({
   return host;
 }
 
-export function makeStatData({ relations = {}, progress = 0, heroStatuses = {} } = {}) {
+export function makeStatData({
+  relations = {},
+  progress = 0,
+  killedOnce,
+  ending,
+  location = '测试城镇的旅店',
+  heroStatuses = {},
+} = {}) {
+  const event = { 进度: progress };
+  if (killedOnce !== undefined) event.黑幕已点杀 = killedOnce;
+  if (ending !== undefined) event.黑幕结局 = ending;
   return {
-    事件: { 进度: progress },
-    世界: { 地点: '测试城镇的旅店', 时间: '测试日' },
+    事件: event,
+    世界: { 地点: location, 时间: '测试日' },
     主角: { 状态效果: clone(heroStatuses) },
     关系列表: clone(relations),
   };

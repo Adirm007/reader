@@ -100,16 +100,27 @@ test('a revived or restored character is reconsidered from current MVU values', 
   assert.ok(restoredPrompt.includes(target));
 });
 
-test('progress below the seed does not start the curse', async () => {
-  const host = createReaderHost({ local: { dream_seed: 3 }, statData: makeStatData({ progress: 2, relations: { [target]: makeRelation({ favor: 30 }) } }) });
+test('progress below 9 does not start the curse even after a kill', async () => {
+  const host = createReaderHost({ statData: makeStatData({ progress: 8, killedOnce: true, relations: { [target]: makeRelation({ favor: 30 }) } }) });
   hasGirl(await host.render());
 });
 
-for (const progress of [3, 4]) {
-  test(`curse progress ${progress} permanently selects the author even without targets`, async () => {
-    const host = createReaderHost({ local: { dream_seed: 3 }, statData: makeStatData({ progress }) });
-    hasAuthor(await host.render());
-    hasAuthor(await host.render());
+test('progress 9 without at least one prior kill does not start the curse', async () => {
+  const host = createReaderHost({ statData: makeStatData({ progress: 9, killedOnce: false, relations: { [target]: makeRelation({ favor: 30 }) } }) });
+  hasGirl(await host.render());
+});
+
+for (const progress of [9, 10]) {
+  test(`curse progress ${progress} with prior kill permanently selects the third-form author even without targets`, async () => {
+    const host = createReaderHost({ statData: makeStatData({ progress, killedOnce: true }) });
+    const prompt1 = await host.render();
+    hasAuthor(prompt1);
+    assert.match(prompt1, /纸牌/, 'cursed persistent form uses the third persona');
+    assert.match(prompt1, /你于我是唯一/);
+    assert.doesNotMatch(prompt1, /纸牌与仪式匕首/, 'one-time CG does not trigger until user actively seeks her');
+    assert.equal(host.cache.stat_data.主角.状态效果.祝福.效果.includes('+45%'), true);
+    const prompt2 = await host.render();
+    hasAuthor(prompt2);
   });
 }
 
@@ -121,19 +132,108 @@ test('the curse lowers only the favor threshold to 30', async () => {
     诅咒崩溃同伴: makeRelation({ favor: 30, statuses: { 精神崩溃: { 层数: 1 } } }),
     九十九夜梦: makeRelation({ favor: 100, hp: 100 }),
   };
-  const prompt = await createReaderHost({ statData: makeStatData({ progress: 3, relations }) }).render();
+  const prompt = await createReaderHost({ statData: makeStatData({ progress: 9, killedOnce: true, relations }) }).render();
   hasAuthor(prompt);
   assert.ok(prompt.includes('诅咒合格同伴'));
   for (const name of ['诅咒未达标同伴', '诅咒死亡同伴', '诅咒崩溃同伴']) assert.ok(!prompt.includes(name), name);
 });
 
 test('after all curse targets finish, the author remains but the old target is omitted', async () => {
-  const host = createReaderHost({ statData: makeStatData({ progress: 3, relations: { [target]: makeRelation({ favor: 30 }) } }) });
+  const host = createReaderHost({ statData: makeStatData({ progress: 9, killedOnce: true, relations: { [target]: makeRelation({ favor: 30 }) } }) });
   assert.ok((await host.render()).includes(target));
-  host.setStatData(makeStatData({ progress: 3, relations: { [target]: makeRelation({ favor: 30, hp: 0 }) } }));
+  host.setStatData(makeStatData({ progress: 9, killedOnce: true, relations: { [target]: makeRelation({ favor: 30, hp: 0 }) } }));
   const prompt = await host.render();
   hasAuthor(prompt);
   assert.ok(!prompt.includes(target));
+});
+
+test('execution prompt specifies single +1 progress per kill turn and pre-initializes 黑幕已点杀', async () => {
+  const host = createReaderHost({
+    statData: makeStatData({
+      relations: {
+        同伴甲: makeRelation(),
+        同伴乙: makeRelation({ favor: 90, hp: 10 }),
+      },
+    }),
+  });
+  const prompt = await host.render();
+  hasAuthor(prompt);
+  assert.match(prompt, /无论本轮名单中有 1 人还是多人.*仅执行一次进度推进/);
+  assert.match(prompt, /\/事件\/黑幕已点杀/);
+  assert.equal(host.cache.stat_data.事件.黑幕已点杀, false);
+});
+
+test('one-time CG triggers only when cursed and user actively seeks her or visits the cafe', async () => {
+  const host = createReaderHost({
+    userMessage: '我在城里逛了一圈，准备去铁匠铺。',
+    statData: makeStatData({ progress: 9, killedOnce: true }),
+  });
+  const normalCursed = await host.render();
+  hasAuthor(normalCursed);
+  assert.doesNotMatch(normalCursed, /纸牌与仪式匕首/);
+
+  host.setUserMessage('夜梦，出来见我，我要找你当面对质。');
+  const foundByKeyword = await host.render();
+  hasAuthor(foundByKeyword);
+  assert.match(foundByKeyword, /纸牌与仪式匕首/);
+  assert.match(foundByKeyword, /我已经笑够了，让我们散场吧/);
+  assert.equal(host.cache.stat_data.事件.黑幕结局, '');
+
+  const cafeHost = createReaderHost({
+    userMessage: '推开门坐了下来。',
+    statData: makeStatData({ progress: 9, killedOnce: true, location: '不明次元·某咖啡馆' }),
+  });
+  const foundByCafe = await cafeHost.render();
+  assert.match(foundByCafe, /纸牌与仪式匕首/);
+});
+
+test('ending=killed permanently reverts to pure 哀怜的少女, removes 祝福, and injects revival unseal only on demand', async () => {
+  const host = createReaderHost({
+    userMessage: '继续前进吧。',
+    statData: makeStatData({
+      progress: 9,
+      killedOnce: true,
+      ending: 'killed',
+      relations: { [target]: makeRelation({ favor: 100, hp: 50 }) },
+      heroStatuses: {
+        祝福: { 类型: '特殊', 效果: '造成的最终伤害+45%', 层数: 1, 剩余时间: '永久', 来源: '少女的祝福' },
+        保留状态: { 类型: '增益', 层数: 1 },
+      },
+    }),
+  });
+  const prompt = await host.render();
+  hasGirl(prompt);
+  assert.doesNotMatch(prompt, /纸牌与仪式匕首|复活解禁|\/事件\/进度/);
+  assert.ok(!prompt.includes(target));
+  assert.equal(host.cache.stat_data.主角.状态效果.祝福, undefined, '祝福 must be removed on killed ending');
+  assert.ok(host.cache.stat_data.主角.状态效果.保留状态, 'other hero statuses must be preserved');
+
+  host.setUserMessage('我想想办法复活之前死去的同伴。');
+  const revivalPrompt = await host.render();
+  hasGirl(revivalPrompt);
+  assert.match(revivalPrompt, /【复活解禁】/);
+});
+
+test('ending=confessed keeps third-stage confessed persona and 祝福 with zero malice/curse tokens, revival unseal only on demand', async () => {
+  const host = createReaderHost({
+    userMessage: '今天去旅馆休息一下。',
+    statData: makeStatData({
+      progress: 9,
+      killedOnce: true,
+      ending: 'confessed',
+      relations: { [target]: makeRelation({ favor: 100, hp: 50 }) },
+    }),
+  });
+  const prompt = await host.render();
+  hasAuthor(prompt);
+  assert.match(prompt, /卸下假面|守在唯一读者席上的共犯与挚爱/);
+  assert.doesNotMatch(prompt, /【无形恶意】|【自然死亡】|【诅咒尽头】|【黑之作家：本轮执行】|纸牌与仪式匕首|复活解禁|\/事件\/进度/);
+  assert.ok(!prompt.includes(target), 'confessed ending must never generate kill targets');
+  assert.equal(host.cache.stat_data.主角.状态效果.祝福.效果.includes('+45%'), true, '祝福 must remain on confessed ending');
+
+  host.setUserMessage('我们去把死去的同伴复活吧。');
+  const revivalPrompt = await host.render();
+  assert.match(revivalPrompt, /【复活解禁】/);
 });
 
 for (const persona of ['reader', 'shoujo', 'genki', 'weirdo']) {
@@ -181,8 +281,8 @@ test('the selected swipe controls persona selection without a chat-wide active f
 });
 
 test('returning to a message before the curse restores that message’s normal selection', async () => {
-  const host = createReaderHost({ statData: makeStatData({ progress: 2 }) });
-  host.setStatData(makeStatData({ progress: 3 }), { message: 2 });
+  const host = createReaderHost({ statData: makeStatData({ progress: 8, killedOnce: true }) });
+  host.setStatData(makeStatData({ progress: 9, killedOnce: true }), { message: 2 });
   host.selectMessage(2);
   hasAuthor(await host.render());
   host.selectMessage(0);
@@ -226,7 +326,99 @@ for (const [theme, place] of [['cafe', '咖啡馆'], ['summer', '海滨咖啡馆
 }
 
 test('the idle curse keeps the persona without a fabricated execution or public target plan', async () => {
-  const prompt = await createReaderHost({ statData: makeStatData({ progress: 3 }) }).render();
+  const prompt = await createReaderHost({ statData: makeStatData({ progress: 9, killedOnce: true }) }).render();
   hasAuthor(prompt);
   assert.doesNotMatch(prompt, /【黑之作家：本轮执行】|【黑之作家：本轮公开创作记录】/);
+});
+
+test('multi-core secondary mode prevents global macro writes while preserving local tags, silent mode and custom wake words', async () => {
+  const host = createReaderHost({
+    local: {
+      dream_persona: 'reader',
+      系统名: '莉莉丝系统',
+      系统核心: '莉莉丝',
+      dream_core_manager: JSON.stringify({
+        enabled: true,
+        primary: '莉莉丝',
+        activeCores: ['莉莉丝', '九十九夜梦'],
+        cores: {
+          九十九夜梦: { silent: true, wakeKeywords: ['暗号唤醒'] },
+        },
+      }),
+    },
+    userMessage: '今天继续冒险，不提暗号。',
+    statData: makeStatData(),
+  });
+  const silentPrompt = await host.render();
+  assert.equal(host.local.系统名, '莉莉丝系统', 'secondary Reader must not overwrite primary 系统名');
+  assert.equal(host.local.系统核心, '莉莉丝', 'secondary Reader must not overwrite primary 系统核心');
+  assert.match(silentPrompt, /<读者>/, 'secondary Reader uses its own local tag rather than primary core name');
+  assert.match(silentPrompt, /静默/, 'per-core silent flag takes effect');
+
+  host.setUserMessage('我要用暗号唤醒读者。');
+  const wokenPrompt = await host.render();
+  assert.doesNotMatch(wokenPrompt, /静默状态，非必要不主动发送信件/);
+  assert.match(wokenPrompt, /<读者>/);
+});
+
+test('dream_extra_settings blends mechanism/appearance/personality directly into native prompt fields across all personas', async () => {
+  const items = [
+    { id: '1', name: '口癖', kind: 'personality', enabled: true, applyWhenSilent: false, content: '句尾偶尔轻声加一句“别翻页太快哦”。' },
+    { id: '2', name: '进度联动', kind: 'mechanism', enabled: true, applyWhenSilent: true, content: '当前测试进度=<%= stat_data.事件.进度 %>' },
+    { id: '3', name: '', kind: 'appearance', enabled: true, applyWhenSilent: false, content: '鼻梁架着细框金丝眼镜' },
+    { id: '4', name: '禁用项', kind: 'mechanism', enabled: false, applyWhenSilent: true, content: 'SHOULD_NOT_APPEAR' },
+    { id: '5', name: '语法坏项', kind: 'mechanism', enabled: true, applyWhenSilent: false, content: '<% throw new Error("boom"); %>' },
+  ];
+  for (const persona of ['reader', 'shoujo', 'genki', 'weirdo', 'kuromaku']) {
+    const host = createReaderHost({
+      local: { dream_persona: persona, dream_extra_settings: JSON.stringify(items) },
+      statData: makeStatData({ progress: 5 }),
+    });
+    const prompt = await host.render();
+    assert.doesNotMatch(prompt, /【附加设定】|性格补充|外貌补充|附加机制/, `must blend natively without extra/supplement labels (${persona})`);
+    const chapterIdx = prompt.indexOf('【章节起始】');
+    const mechIdx = prompt.indexOf('【进度联动】: 当前测试进度=5');
+    const contractIdx = prompt.indexOf('【命定契约】');
+    assert.ok(chapterIdx >= 0 && mechIdx > chapterIdx && mechIdx < contractIdx, `mechanism placed right after 【章节起始】 (${persona})`);
+    assert.match(prompt, /性格:[^\r\n]*；口癖：句尾偶尔轻声加一句“别翻页太快哦”。/, `personality blended directly onto 性格: line (${persona})`);
+    assert.match(prompt, /此刻形象:[^\r\n]*；鼻梁架着细框金丝眼镜/, `appearance blended directly onto 此刻形象: line (${persona})`);
+    assert.ok(!prompt.includes('SHOULD_NOT_APPEAR'), `disabled item omitted for ${persona}`);
+    assert.doesNotMatch(prompt, /<%|%>/, `broken EJS must not leak for ${persona}`);
+  }
+
+  // Also verify cursed kuromaku (third persona from black-author.prompt.json) blends personality natively
+  const cursedHost = createReaderHost({
+    local: { dream_persona: 'kuromaku', dream_extra_settings: JSON.stringify(items) },
+    statData: makeStatData({ progress: 9, killedOnce: true }),
+  });
+  const cursedPrompt = await cursedHost.render();
+  assert.match(cursedPrompt, /性格:[^\r\n]*；口癖：句尾偶尔轻声加一句“别翻页太快哦”。/);
+  assert.match(cursedPrompt, /此刻形象:[^\r\n]*；鼻梁架着细框金丝眼镜/);
+
+  const silentHost = createReaderHost({
+    local: { dream_persona: 'reader', dream_silent_mode: 'on', dream_extra_settings: JSON.stringify(items) },
+    statData: makeStatData({ progress: 7 }),
+  });
+  const silentPrompt = await silentHost.render();
+  assert.doesNotMatch(silentPrompt, /【附加设定】|性格补充|外貌补充/);
+  assert.match(silentPrompt, /【进度联动】: 当前测试进度=7/, 'applyWhenSilent item renders in silent mode');
+  assert.ok(!silentPrompt.includes('别翻页太快哦'), 'non-silent personality stays out of silent mode');
+  assert.ok(!silentPrompt.includes('金丝眼镜'), 'non-silent appearance stays out of silent mode');
+});
+
+test('unlimited dream_banlist renders all 15 banned books in [书目展示]', async () => {
+  const banlist = Array.from({ length: 15 }, (_, i) => `禁书${i + 1}`);
+  const host = createReaderHost({
+    local: {
+      dream_persona: 'reader',
+      dream_banlist: JSON.stringify(banlist),
+    },
+    userMessage: '我想看看定调书架',
+    statData: makeStatData({ location: '不明次元·某咖啡馆' }),
+  });
+  const prompt = await host.render();
+  assert.match(prompt, /\[书目展示\]/);
+  for (const title of banlist) {
+    assert.ok(prompt.includes(title), `banlist must include ${title}`);
+  }
 });

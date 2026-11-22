@@ -44,7 +44,8 @@ function persona(t: Theme, s: LobbyState, w: Record<string, string>): string {
   const photos = s.appearances.map((a, i) => `<button type="button" class="q-photo${a.id === s.appearance.id ? ' cur' : ''}"${act('appearance', { id: a.id })} style="--i:${i}">`
     + `<span class="q-pic"><img alt="" data-u4-img="${t}/avatar/${esc(a.id)}"></span><b class="q-nm">${esc(a.name)}</b></button>`).join('');
   return sec('who', w, `<div class="q-picks">${picks}</div>`
-      + row(act('useraddress'), w.address || '称呼', '她怎么叫你；所有人格通用，空着就是原来的叫法', `<span class="sv2" id="dlb-user-address">${esc(s.address || '默认')}</span>`, 'q-addr'))
+      + row(act('useraddress'), w.address || '称呼', '她怎么叫你；所有人格通用，空着就是原来的叫法', `<span class="sv2" id="dlb-user-address">${esc(s.address || '默认')}</span>`, 'q-addr')
+      + row(act('extrasetting'), '附加设定', '当前聊天持久化追加机制、外貌、性格三类设定（支持 EJS），按类并入对应提示词并跨人格生效', `<span class="sv2" id="dlb-extra-setting">${esc(s.extraSetting || '未设置')}</span>`))
     + sec('look', w, `<div class="q-photos">${photos}</div><p class="q-note">换了打扮，大厅、信封和各处的她会一起换。</p>`);
 }
 
@@ -70,7 +71,8 @@ function template(w: Record<string, string>): string {
 
 function eggs(t: Theme, s: LobbyState, f: Fragments, w: Record<string, string>): string {
   const e = s.eggs, o = e.open || {};
-  const sea = `<button type="button" class="q-door"${act('eggbooksea')}><b class="q-nm">进入普罗泰利西翁</b><small class="q-ds">书海迷宫。眼下的对话会留着；输入框里有草稿的话先存好。</small><span class="sv2">进入</span></button>`;
+  const sea = `<button type="button" class="q-door"${act('eggbooksea')}><b class="q-nm">进入普罗泰利西翁</b><small class="q-ds">书海迷宫。眼下的对话会留着；输入框里有草稿的话先存好。</small><span class="sv2">进入</span></button>`
+    + (e.hasAgent ? `<button type="button" class="q-door" style="margin-top:10px"${act('eggagent')}><b class="q-nm">夜梦助手</b><small class="q-ds">打开 reader-II 附加的夜梦 Agent 助手（与书海、读者并存）</small><span class="sv2">打开</span></button>` : '');
   const toggles = `<button type="button" class="q-sw q-mode${e.display === '悬浮' ? ' on' : ''}"${act('eggdisplay')}><span class="q-no">01</span><b class="q-nm">显示模式</b>`
       + `<small class="q-ds">默认：信嵌在聊天里。悬浮：收进屏幕右下角的信封。</small><span class="sv2" id="dlb-egg-dm">${esc(e.display)}</span><i class="q-knob" aria-hidden="true"></i></button>`
     + sw('eggunseal', 2, '自动拆信', '新信到了直接拆开，露出信纸', e.unseal, 'ON', 'OFF')
@@ -95,6 +97,7 @@ function eggs(t: Theme, s: LobbyState, f: Fragments, w: Record<string, string>):
     + row(act('eggpmgr'), '人格管理', '创作、保存、导入，或带走属于你的她')
     + row(act('eggdlc'), '额外人格库', '作者在线发布的人格，启用后收进你的人格库')
     + row(act('eggapi'), '独立 API', '几套方案一键切换；不设就走酒馆的连接', `<span class="sv2" id="dlb-egg-api">${esc(e.api)}</span>`)
+    + row(act('eggcoremgr'), '核心管理', '多核心同开时指定主核心、隔离次核心宏设置，并按核心配置静默与临时唤起词', `<span class="sv2" id="dlb-egg-coremgr">${esc(e.coreMgr || '未启用')}</span>`)
     + row(act('eggwb'), '检查更新', '分别检查正则、脚本和世界书')
     + row(act('egggallery'), '相册', '作者发布的图，可以下载原图');
   const tools = fold('eggdisc', '', w.discs || '唱片管理', '换专辑、播放顺序、增删歌曲', !!o.disc, o.disc ? '已展开' : '展开', '', !o.disc)

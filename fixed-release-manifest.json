@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "name": "dream-reader-render-fixed",
-  "version": "2026.11.15.1",
+  "version": "2026.11.22.1",
   "license": "LICENSE",
   "files": {
     "reader.css": {
@@ -15,19 +15,19 @@
       "sha256": "8197775e596d03a57b7488289efff07e8992398643ef4dff6cddc089d2942d5d"
     },
     "reader.js": {
-      "path": "dist/reader.184d3a37a6f9.js",
-      "bytes": 1320109,
-      "sha256": "184d3a37a6f9f3a5b8a39f503304e055d3acb6f8a06a4b06a2f35d9fb551b79a"
+      "path": "dist/reader.6fdb26a176cb.js",
+      "bytes": 1408950,
+      "sha256": "6fdb26a176cbaf4ecf32451d83e3000a25a91dec893bb66ec8792329f07d1134"
     },
     "reader-runtime.js": {
       "path": "dist/reader-runtime.js",
-      "bytes": 1619455,
-      "sha256": "c0d4eb1e7a50a108d6222c43f00bd1c3b8eb6e69e105d02bde2dfb116492e275"
+      "bytes": 1711094,
+      "sha256": "d6ac004e1b5df1dccd5bab2fa72ca546c2f8da81998c1803b759cdb65dc1f6f8"
     },
     "reader-letter.json": {
       "path": "regex/读者对话渲染-脚本版.json",
       "bytes": 169258,
-      "sha256": "983b3177f5543b170e7fd42052c5580435cddedc47b6b1a199d006ddf8a47409"
+      "sha256": "ffb2d81dcef644b2c8bd05c49db426c86575f24b2b66f523243ac57711105307"
     }
   },
   "installMode": "script",
@@ -902,10 +902,20 @@
       "bytes": 2057083,
       "sha256": "c5c23a1a624c2e742ed8250ebf55174151f6353e3fdc09ecd6fce248a84bf0e3"
     },
+    "gallery/index.json": {
+      "path": "gallery/index.json",
+      "bytes": 7373,
+      "sha256": "71c9468765ebb422934b92550adac5a9503b0badd708fddbde297d033d854777"
+    },
     "gallery/INKWELL ASCENT.png": {
       "path": "gallery/INKWELL ASCENT.png",
       "bytes": 1663627,
       "sha256": "95438a4d27e08288d11d33d97a96ac0ab4aa98bdaee4ac12a901b715a3894d61"
+    },
+    "gallery/joker.png": {
+      "path": "gallery/joker.png",
+      "bytes": 1662244,
+      "sha256": "a1b96db50eaf5c96459ad866b317ea2056d0a3ce2583ac0d01684911f244ee9f"
     },
     "gallery/KEY TURN.png": {
       "path": "gallery/KEY TURN.png",
@@ -916,6 +926,11 @@
       "path": "gallery/KOI GATE.png",
       "bytes": 1651660,
       "sha256": "cd78a5e719b47209e9640d8df7ac46cdf4a69eb9830667fa8b07edd4ab97426c"
+    },
+    "gallery/links.txt": {
+      "path": "gallery/links.txt",
+      "bytes": 208,
+      "sha256": "3ac52658a8d7847e2d6129004aec183ec1d98fc1951eb61b4d46ad9f542d77d5"
     },
     "gallery/LOOP.png": {
       "path": "gallery/LOOP.png",
@@ -996,21 +1011,6 @@
       "path": "gallery/T.png",
       "bytes": 1753810,
       "sha256": "9822d2081d539b87b7322f5f6a304ac3a40ba8053b7d4f58766cf357dd05b2f4"
-    },
-    "gallery/index.json": {
-      "path": "gallery/index.json",
-      "bytes": 7373,
-      "sha256": "71c9468765ebb422934b92550adac5a9503b0badd708fddbde297d033d854777"
-    },
-    "gallery/joker.png": {
-      "path": "gallery/joker.png",
-      "bytes": 1662244,
-      "sha256": "a1b96db50eaf5c96459ad866b317ea2056d0a3ce2583ac0d01684911f244ee9f"
-    },
-    "gallery/links.txt": {
-      "path": "gallery/links.txt",
-      "bytes": 208,
-      "sha256": "3ac52658a8d7847e2d6129004aec183ec1d98fc1951eb61b4d46ad9f542d77d5"
     },
     "gallery/♠J.png": {
       "path": "gallery/♠J.png",
@@ -1502,25 +1502,20 @@
       "bytes": 1766003,
       "sha256": "9021ef7df30a8024d871e4bfec78a7d5321db3db0725452b52ad003161fecd87"
     },
-    "personas/README.md": {
-      "path": "personas/README.md",
-      "bytes": 1279,
-      "sha256": "db1eb1b239b1cce25edf720b5fb9ca0f10d0eabaf631d65d7e0962f326b60b70"
-    },
     "personas/index.json": {
       "path": "personas/index.json",
       "bytes": 513,
       "sha256": "e3c7dfad02919881f2c31fe435655af2db3092114b24ba30b09c58474247bc65"
     },
+    "personas/README.md": {
+      "path": "personas/README.md",
+      "bytes": 1279,
+      "sha256": "db1eb1b239b1cce25edf720b5fb9ca0f10d0eabaf631d65d7e0962f326b60b70"
+    },
     "personas/缀诗的少女.json": {
       "path": "personas/缀诗的少女.json",
       "bytes": 5946,
       "sha256": "46d3568dac97f4a86629a75aa726b8c93136e1ec0e3da1c76399c5b106ce142c"
-    },
-    "worldbook/README.md": {
-      "path": "worldbook/README.md",
-      "bytes": 1544,
-      "sha256": "590bff840d9de2f6299b0b4195e425e3f8b2d6facff740e28371e58f9ad4c7a3"
     },
     "worldbook/entries.json": {
       "path": "worldbook/entries.json",
@@ -1530,17 +1525,22 @@
     "worldbook/manifest.json": {
       "path": "worldbook/manifest.json",
       "bytes": 3512,
-      "sha256": "b4fcbd638cf8fa75c6d31e0d69276bca7d6bf98d43c335d8d422ef85faf61abc"
+      "sha256": "08700463afacb635723bfe449d5d7c447f1a7b6a26fad231debcf4976be44fa5"
     },
     "worldbook/notes.txt": {
       "path": "worldbook/notes.txt",
       "bytes": 2036,
       "sha256": "37781ed1d6e30e31826e0aa4e98afe956e6f7d1cf3187f4f3ca3f1e9deb5a809"
     },
+    "worldbook/README.md": {
+      "path": "worldbook/README.md",
+      "bytes": 1544,
+      "sha256": "590bff840d9de2f6299b0b4195e425e3f8b2d6facff740e28371e58f9ad4c7a3"
+    },
     "worldbook/读者核心本体.txt": {
       "path": "worldbook/读者核心本体.txt",
-      "bytes": 319085,
-      "sha256": "710d1e8199d0a327279a1e6c116d64252a63268b6ce2142a61787c9a2e07796a"
+      "bytes": 338668,
+      "sha256": "5542926f67191079bdeff3830c950cf46a15446bcefc40ede7478a3ae89430fe"
     },
     "vendor/reader-art/cafe-default.bac5af7884aa.png": {
       "path": "vendor/reader-art/cafe-default.bac5af7884aa.png",

@@ -14,6 +14,8 @@ export interface LobbyState {
   appearance: { id: string; label: string };
   /** User address; empty means the default form of address. */
   address: string;
+  /** Extra settings summary label. */
+  extraSetting?: string;
   /** Bookshelf: -2 loading, -1 not created, 0 empty, N books. */
   books: number;
   juke: { playing: boolean; title: string; no: string; album: string; mode: string };
@@ -29,7 +31,7 @@ export interface LobbyState {
 
 export interface EggState {
   display: string; unseal: boolean; silent: boolean; beautify: boolean; letterLimit: boolean; hideFloat: boolean; legacyUi: boolean;
-  yuan: boolean; yuanStream: boolean; yuanPref: string; api: string;
+  yuan: boolean; yuanStream: boolean; yuanPref: string; api: string; coreMgr?: string; hasAgent?: boolean;
   /** Which folds are open (legacy dlbEggOpen). */
   open: { theme?: boolean; yuan?: boolean; disc?: boolean; font?: boolean; fsz?: boolean };
 }

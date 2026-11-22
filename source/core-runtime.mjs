@@ -109,8 +109,8 @@ export function start(options = {}) {
   const win = hostWindow(), doc = win.document;
   // The card's auto-regex starts reader without an owner. An installed reader script takes precedence.
   if (!options.scriptOwner && win.ReaderCore?.scriptOwner && win.ReaderCore.isAlive !== false) return win.ReaderCore;
-  win.ReaderCore?.stop?.();
-  const legacyNodes = ['dfb','dfo','dfc','dream-hb','dream-p-toast','dlb-overlay','dlb-style','cp-overlay','cp-style','cpl-overlay','cpl-style','dgl-overlay','dgl-style-v2','chess-overlay','chess-styles','bs-overlay','bs-detail-ov','bs-styles','dream-addon-style-v3','dream-ink-native-v1','dream-theme-fix','reader-template-system-overlay','reader-template-system-style'].map(id => doc.getElementById(id)).filter(Boolean);
+  if (win.ReaderCore && win.ReaderCore.__reader_core_api !== true) win.ReaderCore.stop?.();
+  const legacyNodes = ['dfb','dfo','dfc','dream-hb','dream-p-toast','dlb-overlay','dlb-style','cp-overlay','cp-style','cpl-overlay','cpl-style','dgl-overlay','dgl-style-v2','chess-overlay','chess-styles','bs-overlay','bs-detail-ov','bs-styles','dream-addon-style-v3','dream-ink-native-v1','dream-theme-fix','reader-template-system-overlay','reader-template-system-style','dream-core-mgr-overlay','dream-core-mgr-style','dream-extra-settings-overlay','dream-extra-settings-style','dream-kuro-warn-ov','dream-kuro-warn-style'].map(id => doc.getElementById(id)).filter(Boolean);
   doc.getElementById(FRAME_ID)?.remove();
   doc.getElementById(OLD_BUTTON_ID)?.remove();
   const state = { stopped: false, generation: 0, key: chatKey(win), frame: null, ready: null, stops: [], letters: new Set(), legacyFrames: new Map(), cancelReady: null, legacyRetired: false };

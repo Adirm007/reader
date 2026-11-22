@@ -1,4 +1,4 @@
-<%_ /* DREAM_WORLDBOOK reader-core v2026.11.09.1 */ _%>
+<%_ /* DREAM_WORLDBOOK reader-core v2026.11.22.1 */ _%>
 <%_ { _%>
 <%_
 let _dream_theme_value = getLocalVar('dream_visual_theme');
@@ -57,10 +57,21 @@ function _dream_theme_appearance(id) {
 }
 let _persona_val = getLocalVar('dream_persona');
 let _persona_mode = (typeof _persona_val === 'string' && _persona_val.length > 0) ? _persona_val : 'reader';
-setLocalVar('系统核心名', '不明存在');
-setLocalVar('系统核心', '九十九夜梦');
-setLocalVar('生命层级成长系统优势', '');
-setLocalVar('经验值获取系统优势', '');
+let _dream_cm = null;
+try {
+  let _dream_cm_raw = getLocalVar('dream_core_manager');
+  if (typeof _dream_cm_raw === 'string' && _dream_cm_raw.trim().length > 0) _dream_cm = JSON.parse(_dream_cm_raw);
+  else if (_dream_cm_raw && typeof _dream_cm_raw === 'object') _dream_cm = _dream_cm_raw;
+} catch (_dream_cm_err) { _dream_cm = null; }
+let _dream_cm_on = !!(_dream_cm && _dream_cm.enabled === true);
+let _dream_is_primary_core = !_dream_cm_on || !_dream_cm.primary || _dream_cm.primary === '九十九夜梦';
+let _dream_cm_self = (_dream_cm_on && _dream_cm.cores && typeof _dream_cm.cores['九十九夜梦'] === 'object') ? _dream_cm.cores['九十九夜梦'] : null;
+let _dream_self_sysname = '读者';
+let _dream_self_revival = '';
+if (_dream_is_primary_core) setLocalVar('系统核心名', '不明存在');
+if (_dream_is_primary_core) setLocalVar('系统核心', '九十九夜梦');
+if (_dream_is_primary_core) setLocalVar('生命层级成长系统优势', '');
+if (_dream_is_primary_core) setLocalVar('经验值获取系统优势', '');
 let _weirdo_corpora = [];
 let _weirdo_picks = [];
 let _custom_persona = null;
@@ -545,11 +556,15 @@ if (_persona_mode === 'custom') {
 // Selection is recomputed from the selected MVU snapshot; only raw text is cached.
 let _dream_black_active = false;
 let _dream_black_cursed = false;
+let _dream_black_killed_once = false;
+let _dream_black_ending = '';
+let _dream_black_found = false;
+let _dream_wants_revival = false;
 let _dream_black_targets = [];
 let _dream_black_profile = null;
 let _dream_profile_missing = false;
 let _dream_progress = 0;
-let _dream_seed = 9;
+let _dream_curse_threshold = 9;
 function _dream_number(value) {
   if (typeof value !== 'number' && typeof value !== 'string') return NaN;
   if (typeof value === 'string' && !value.trim()) return NaN;
@@ -565,100 +580,159 @@ function _dream_has_collapse(statuses) {
   return statuses && typeof statuses === 'object'
     ? Object.keys(statuses).some(function(name) { return name.includes('精神崩溃'); }) : false;
 }
+function _dream_load_black_profile(_requireExtended) {
+  try {
+    let _raw = getLocalVar('dream_black_author_prompt');
+    let _parsed = typeof _raw === 'string' ? JSON.parse(_raw) : (_raw && typeof _raw === 'object' ? _raw : null);
+    let _baseFields = ['definition', 'persona', 'execution', 'curse', 'publicRecord', 'revival', 'systemName', 'fpDefinition', 'revealStyle', 'learning'];
+    let _extFields = ['cursedDefinition', 'cursedPersona', 'cursedRevealScene', 'confessedDefinition', 'confessedPersona', 'confessedRevival', 'revivalUnseal'];
+    let _fields = _requireExtended ? _baseFields.concat(_extFields) : _baseFields;
+    if (_parsed && _parsed.schema === 1 && _parsed.name === 'dream-black-author' &&
+        Number.isInteger(_parsed.revision) && _parsed.revision >= 1 &&
+        _fields.every(function(key) { return typeof _parsed[key] === 'string' && _parsed[key].trim().length > 0 && _parsed[key].length < 50000; })) {
+      return _parsed;
+    }
+  } catch (_err) {
+    console.error('[Reader] 人格资料格式无效', _err);
+  }
+  return null;
+}
 function _dream_profile_text(key) {
-  return _dream_black_profile[key].split('__READER_PLACE__').join(_dream_theme_place);
+  return _dream_black_profile && typeof _dream_black_profile[key] === 'string'
+    ? _dream_black_profile[key].split('__READER_PLACE__').join(_dream_theme_place) : '';
 }
 if (_persona_mode === 'kuromaku') {
-  _dream_seed = _dream_number(getLocalVar('dream_seed'));
-  if (!Number.isInteger(_dream_seed) || _dream_seed < 1 || _dream_seed > 9) {
-    _dream_seed = Math.floor(Math.random() * 9) + 1;
-    setLocalVar('dream_seed', _dream_seed);
-  }
   let _dream_mvu = getMessageVar('stat_data', { defaults: {}, noCache: true }) || {};
-  let _dream_progress_value = _dream_number(_dream_mvu.事件 && _dream_mvu.事件.进度);
+  let _dream_event = (_dream_mvu.事件 && typeof _dream_mvu.事件 === 'object') ? _dream_mvu.事件 : {};
+  let _dream_progress_value = _dream_number(_dream_event.进度);
   _dream_progress = Number.isFinite(_dream_progress_value) ? _dream_progress_value : 0;
-  _dream_black_cursed = _dream_progress >= _dream_seed;
-  let _dream_favor_threshold = _dream_black_cursed ? 30 : 70;
-  let _dream_relations = _dream_mvu.关系列表 || {};
-  let _dream_records = Array.isArray(_dream_relations)
-    ? _dream_relations.map(function(relation) { return [relation && (relation.名称 || relation.名字 || relation.name), relation]; })
-    : typeof _dream_relations === 'object' ? Object.entries(_dream_relations) : [];
-  for (let _dream_record of _dream_records) {
-    let _dream_name = typeof _dream_record[0] === 'string' ? _dream_record[0].trim() : '';
-    let _dream_relation = _dream_record[1];
-    if (!_dream_name || _dream_name.replace(/\s/g, '') === '九十九夜梦' || !_dream_relation || typeof _dream_relation !== 'object') continue;
-    let _dream_favor = _dream_number(_dream_relation.好感度 ?? _dream_relation.好感);
-    let _dream_hp_value = _dream_relation.生命值;
-    let _dream_hp = _dream_number(_dream_hp_value && typeof _dream_hp_value === 'object'
-      ? _dream_hp_value.当前 : _dream_hp_value ?? _dream_relation.HP ?? _dream_relation.hp);
-    if (_dream_favor >= _dream_favor_threshold && _dream_hp >= 1 &&
-        !_dream_has_collapse(_dream_relation.状态效果) && !_dream_has_collapse(_dream_relation.状态)) {
-      _dream_black_targets.push(_dream_name);
-    }
-  }
-  _dream_black_targets = [...new Set(_dream_black_targets)];
-  _dream_black_active = _dream_black_cursed || _dream_black_targets.length > 0;
-  if (_dream_black_active) {
-    try {
-      let _dream_raw_profile = getLocalVar('dream_black_author_prompt');
-      let _dream_parsed_profile = typeof _dream_raw_profile === 'string' ? JSON.parse(_dream_raw_profile) : null;
-      let _dream_fields = ['definition', 'persona', 'execution', 'curse', 'publicRecord', 'revival', 'systemName', 'fpDefinition', 'revealStyle', 'learning'];
-      if (_dream_parsed_profile && _dream_parsed_profile.schema === 1 && _dream_parsed_profile.name === 'dream-black-author' &&
-          Number.isInteger(_dream_parsed_profile.revision) && _dream_parsed_profile.revision >= 1 &&
-          _dream_fields.every(function(key) { return typeof _dream_parsed_profile[key] === 'string' && _dream_parsed_profile[key].trim().length > 0 && _dream_parsed_profile[key].length < 50000; })) {
-        _dream_black_profile = _dream_parsed_profile;
-      }
-    } catch (_dream_profile_error) {
-      console.error('[Reader] 人格资料格式无效', _dream_profile_error);
-    }
-    _dream_profile_missing = !_dream_black_profile;
-  }
-  setLocalVar('系统名', _dream_black_profile ? _dream_profile_text('systemName') : '哀怜的少女');
-  setLocalVar('fp定义', _dream_black_profile ? _dream_profile_text('fpDefinition') : '少女的精神食粮');
-  setLocalVar('爆料风格', _dream_black_profile ? _dream_profile_text('revealStyle') : '由夜梦为你独家爆料，内容贴合事实，带着少女的关切');
-  setLocalVar('登神长阶系统优势', '少女的加护: 辅助<user>更高效地获取与融合此路径所需的力量');
-  setLocalVar('技能获取系统优势', _dream_black_profile ? _dream_profile_text('learning') : `# 少女的帮助
+  _dream_black_killed_once = _dream_event.黑幕已点杀 === true || _dream_event.黑幕已点杀 === 'true' || _dream_event.黑幕已点杀 === 1;
+  let _dream_raw_ending = typeof _dream_event.黑幕结局 === 'string' ? _dream_event.黑幕结局.trim() : '';
+  _dream_black_ending = (_dream_raw_ending === 'killed' || _dream_raw_ending === 'confessed') ? _dream_raw_ending : '';
+  let _dream_last_user_msg = (getChatMessage(-1, 'user') || '').toString();
+  let _dream_revival_re = /复活|重生|救活|起死回生|死而复生|复生|拉起来|重塑|复原|恢复神智|治愈崩溃|恢复理智|治好精神崩溃|解除不可逆/;
+  _dream_wants_revival = (_dream_black_ending === 'killed' || _dream_black_ending === 'confessed')
+    && (_dream_revival_re.test(_dream_last_user_msg) || matchChatMessages([_dream_revival_re], { start: -1, role: 'user' }));
+  if (_dream_black_ending === 'killed') {
+    _dream_black_cursed = false;
+    _dream_black_targets = [];
+    _dream_black_active = false;
+    _dream_black_profile = null;
+    _dream_profile_missing = false;
+    _dream_self_sysname = '哀怜的少女';
+    let _dream_revival = `核心: 夜梦给予<user>的祝福，可让<user>死亡后一段时间内于不明次元·某${_dream_theme_place}复活，每次实际复活获得200fp奖励；死亡不能终止叙事，禁止在战斗中改变设定、创造有利条件或机械降神。\n复活消耗: 仅消耗时间(几天/几月)，无其它损失`;
+    _dream_self_revival = '<复活机制>\n' + _dream_revival + '\n</复活机制>';
+    if (_dream_is_primary_core) setLocalVar('系统名', _dream_self_sysname);
+    if (_dream_is_primary_core) setLocalVar('fp定义', '少女的精神食粮');
+    if (_dream_is_primary_core) setLocalVar('爆料风格', '由夜梦为你独家爆料，内容贴合事实，带着少女的关切');
+    if (_dream_is_primary_core) setLocalVar('登神长阶系统优势', '少女的加护: 辅助<user>更高效地获取与融合此路径所需的力量');
+    if (_dream_is_primary_core) setLocalVar('技能获取系统优势', `# 少女的帮助
   - 通过书本/传授，<user>可消耗fp瞬间学会，无需训练
   - <user>可消耗fp在她的辅助下领悟技能`);
-  let _dream_revival = _dream_black_profile ? _dream_profile_text('revival') : `核心: 夜梦给予<user>的祝福，可让<user>死亡后一段时间内于不明次元·某${_dream_theme_place}复活，每次实际复活获得200fp奖励；死亡不能终止叙事，禁止在战斗中改变设定、创造有利条件或机械降神。
-只在实际完成一次复活时执行一次: { "op": "delta", "path": "/事件/进度", "value": 1 }`;
-  setLocalVar('复活机制', '<复活机制>\n' + _dream_revival + '\n</复活机制>');
+    if (_dream_is_primary_core) setLocalVar('复活机制', _dream_self_revival);
+  } else if (_dream_black_ending === 'confessed') {
+    _dream_black_cursed = false;
+    _dream_black_targets = [];
+    _dream_black_active = true;
+    _dream_black_profile = _dream_load_black_profile(true);
+    _dream_profile_missing = !_dream_black_profile;
+    _dream_self_sysname = _dream_black_profile ? _dream_profile_text('systemName') : '哀怜的少女';
+    let _dream_revival = _dream_black_profile ? _dream_profile_text('confessedRevival') : `核心: 夜梦给予<user>的祝福，可让<user>死亡后一段时间内于不明次元·某${_dream_theme_place}复活，每次实际复活获得200fp奖励；死亡不能终止叙事，禁止在战斗中改变设定、创造有利条件或机械降神。\n复活消耗: 仅消耗时间(几天/几月)，无其它损失`;
+    _dream_self_revival = '<复活机制>\n' + _dream_revival + '\n</复活机制>';
+    if (_dream_is_primary_core) setLocalVar('系统名', _dream_self_sysname);
+    if (_dream_is_primary_core) setLocalVar('fp定义', _dream_black_profile ? _dream_profile_text('fpDefinition') : '少女的精神食粮');
+    if (_dream_is_primary_core) setLocalVar('爆料风格', '由夜梦为你独家爆料，内容贴合事实，带着她的偏爱与关切');
+    if (_dream_is_primary_core) setLocalVar('登神长阶系统优势', '少女的加护: 辅助<user>更高效地获取与融合此路径所需的力量');
+    if (_dream_is_primary_core) setLocalVar('技能获取系统优势', _dream_black_profile ? _dream_profile_text('learning') : `# 少女的帮助
+  - 通过书本/传授，<user>可消耗fp瞬间学会，无需训练
+  - <user>可消耗fp在她的辅助下领悟技能`);
+    if (_dream_is_primary_core) setLocalVar('复活机制', _dream_self_revival);
+  } else {
+    _dream_black_cursed = (_dream_progress >= _dream_curse_threshold) && _dream_black_killed_once;
+    let _dream_favor_threshold = _dream_black_cursed ? 30 : 70;
+    let _dream_relations = _dream_mvu.关系列表 || {};
+    let _dream_records = Array.isArray(_dream_relations)
+      ? _dream_relations.map(function(relation) { return [relation && (relation.名称 || relation.名字 || relation.name), relation]; })
+      : typeof _dream_relations === 'object' ? Object.entries(_dream_relations) : [];
+    for (let _dream_record of _dream_records) {
+      let _dream_name = typeof _dream_record[0] === 'string' ? _dream_record[0].trim() : '';
+      let _dream_relation = _dream_record[1];
+      if (!_dream_name || _dream_name.replace(/\s/g, '') === '九十九夜梦' || !_dream_relation || typeof _dream_relation !== 'object') continue;
+      let _dream_favor = _dream_number(_dream_relation.好感度 ?? _dream_relation.好感);
+      let _dream_hp_value = _dream_relation.生命值;
+      let _dream_hp = _dream_number(_dream_hp_value && typeof _dream_hp_value === 'object'
+        ? _dream_hp_value.当前 : _dream_hp_value ?? _dream_relation.HP ?? _dream_relation.hp);
+      if (_dream_favor >= _dream_favor_threshold && _dream_hp >= 1 &&
+          !_dream_has_collapse(_dream_relation.状态效果) && !_dream_has_collapse(_dream_relation.状态)) {
+        _dream_black_targets.push(_dream_name);
+      }
+    }
+    _dream_black_targets = [...new Set(_dream_black_targets)];
+    _dream_black_active = _dream_black_cursed || _dream_black_targets.length > 0;
+    if (_dream_black_active) {
+      _dream_black_profile = _dream_load_black_profile(_dream_black_cursed);
+      _dream_profile_missing = !_dream_black_profile;
+    }
+    if (_dream_black_targets.length > 0 && _dream_event.黑幕已点杀 === undefined) {
+      setMessageVar('stat_data.事件.黑幕已点杀', false);
+    }
+    if (_dream_black_cursed && _dream_event.黑幕结局 === undefined) {
+      setMessageVar('stat_data.事件.黑幕结局', '');
+    }
+    _dream_self_sysname = _dream_black_profile ? _dream_profile_text('systemName') : '哀怜的少女';
+    let _dream_revival = _dream_black_profile ? _dream_profile_text('revival') : `核心: 夜梦给予<user>的祝福，可让<user>死亡后一段时间内于不明次元·某${_dream_theme_place}复活，每次实际复活获得200fp奖励；死亡不能终止叙事，禁止在战斗中改变设定、创造有利条件或机械降神。\n只在实际完成一次复活时执行一次: { "op": "delta", "path": "/事件/进度", "value": 1 }`;
+    _dream_self_revival = '<复活机制>\n' + _dream_revival + '\n</复活机制>';
+    if (_dream_is_primary_core) setLocalVar('系统名', _dream_self_sysname);
+    if (_dream_is_primary_core) setLocalVar('fp定义', _dream_black_profile ? _dream_profile_text('fpDefinition') : '少女的精神食粮');
+    if (_dream_is_primary_core) setLocalVar('爆料风格', _dream_black_profile ? _dream_profile_text('revealStyle') : '由夜梦为你独家爆料，内容贴合事实，带着少女的关切');
+    if (_dream_is_primary_core) setLocalVar('登神长阶系统优势', '少女的加护: 辅助<user>更高效地获取与融合此路径所需的力量');
+    if (_dream_is_primary_core) setLocalVar('技能获取系统优势', _dream_black_profile ? _dream_profile_text('learning') : `# 少女的帮助
+  - 通过书本/传授，<user>可消耗fp瞬间学会，无需训练
+  - <user>可消耗fp在她的辅助下领悟技能`);
+    if (_dream_is_primary_core) setLocalVar('复活机制', _dream_self_revival);
+  }
 } else if (_persona_mode === 'shoujo') {
-  setLocalVar('系统名', '心爱的少女');
-  setLocalVar('fp定义', '心爱的少女的精神食粮');
-  setLocalVar('爆料风格', '由心爱的少女为你独家爆料，内容描述带有少女特有的温暖与期待');
-  setLocalVar('登神长阶系统优势', '心爱的少女的祝福: "心爱的少女"暗中祝福<user>，令此路径所需的力量自然地向<user>汇聚与融合');
-  setLocalVar('技能获取系统优势', `# 少女的祝福
-  - 通过书本/传授，<user>因心爱的少女可消耗fp瞬间学会，无需训练
-  - <user>可消耗fp通过心爱的少女辅助领悟技能`);
-  setLocalVar('复活机制', `<复活机制>
+  _dream_self_sysname = '心爱的少女';
+  _dream_self_revival = `<复活机制>
 核心: 在心爱的少女的祝福下可让<user>在死亡后一段时间内于不明次元·某${_dream_theme_place}，少女的膝枕上复活，每次复活可获得200fp奖励，因此<user>死亡并不能终止叙事，禁止为<user>在战斗中改变设定/创造有利条件/机械降神
 复活消耗: 仅消耗时间(几天/几月)，无其它损失
-</复活机制>`);
+</复活机制>`;
+  if (_dream_is_primary_core) setLocalVar('系统名', _dream_self_sysname);
+  if (_dream_is_primary_core) setLocalVar('fp定义', '心爱的少女的精神食粮');
+  if (_dream_is_primary_core) setLocalVar('爆料风格', '由心爱的少女为你独家爆料，内容描述带有少女特有的温暖与期待');
+  if (_dream_is_primary_core) setLocalVar('登神长阶系统优势', '心爱的少女的祝福: "心爱的少女"暗中祝福<user>，令此路径所需的力量自然地向<user>汇聚与融合');
+  if (_dream_is_primary_core) setLocalVar('技能获取系统优势', `# 少女的祝福
+  - 通过书本/传授，<user>因心爱的少女可消耗fp瞬间学会，无需训练
+  - <user>可消耗fp通过心爱的少女辅助领悟技能`);
+  if (_dream_is_primary_core) setLocalVar('复活机制', _dream_self_revival);
 } else if (_persona_mode === 'genki') {
-  setLocalVar('系统名', '开朗的少女');
-  setLocalVar('fp定义', '开朗的少女的精神食粮');
-  setLocalVar('爆料风格', '由开朗的少女为你独家爆料，内容描述直接了当，附带少女的建议');
-  setLocalVar('登神长阶系统优势', '少女的应援: 少女以热情为<user>提供帮助，令路径所需力量自然向<user>汇聚');
-  setLocalVar('技能获取系统优势', `# 少女的应援
-  - 通过书本/传授，<user>因开朗的少女可消耗fp瞬间学会，无需训练
-  - <user>可消耗fp通过开朗的少女辅助领悟技能`);
-  setLocalVar('复活机制', `<复活机制>
+  _dream_self_sysname = '开朗的少女';
+  _dream_self_revival = `<复活机制>
 核心: 在开朗的少女的应援下可让<user>在死亡后一段时间内于不明次元·某${_dream_theme_place}复活，每次复活可获得200fp奖励，因此<user>死亡并不能终止叙事，禁止为<user>在战斗中改变设定/创造有利条件/机械降神
 复活消耗: 仅消耗时间(几天/几月)，无其它损失
-</复活机制>`);
+</复活机制>`;
+  if (_dream_is_primary_core) setLocalVar('系统名', _dream_self_sysname);
+  if (_dream_is_primary_core) setLocalVar('fp定义', '开朗的少女的精神食粮');
+  if (_dream_is_primary_core) setLocalVar('爆料风格', '由开朗的少女为你独家爆料，内容描述直接了当，附带少女的建议');
+  if (_dream_is_primary_core) setLocalVar('登神长阶系统优势', '少女的应援: 少女以热情为<user>提供帮助，令路径所需力量自然向<user>汇聚');
+  if (_dream_is_primary_core) setLocalVar('技能获取系统优势', `# 少女的应援
+  - 通过书本/传授，<user>因开朗的少女可消耗fp瞬间学会，无需训练
+  - <user>可消耗fp通过开朗的少女辅助领悟技能`);
+  if (_dream_is_primary_core) setLocalVar('复活机制', _dream_self_revival);
 } else if (_persona_mode === 'weirdo') {
-  setLocalVar('系统名', '怪人');
-  setLocalVar('fp定义', '怪人的精神食粮');
-  setLocalVar('爆料风格', '由怪人为你独家爆料，内容描述莫名其妙，夹杂无关琐事，但偶尔能提取到有用信息');
-  setLocalVar('登神长阶系统优势', '怪人的帮助？: "怪人"似乎在以某种难以理解的方式辅助<user>轻易获取与融合此路径所需的力量');
-  setLocalVar('技能获取系统优势', `# 怪人的帮助
-  - 通过书本/传授，<user>因怪人可消耗fp瞬间学会，无需训练
-  - <user>可消耗fp通过怪人辅助领悟技能`);
-  setLocalVar('复活机制', `<复活机制>
+  _dream_self_sysname = '怪人';
+  _dream_self_revival = `<复活机制>
 核心: 在怪人的帮助下可让<user>在死亡后一段时间内于不明次元·某${_dream_theme_place}复活，每次复活可获得200fp奖励，因此<user>死亡并不能终止叙事，禁止为<user>在战斗中改变设定/创造有利条件/机械降神
 复活消耗: 仅消耗时间(几天/几月)，无其它损失
-</复活机制>`);
+</复活机制>`;
+  if (_dream_is_primary_core) setLocalVar('系统名', _dream_self_sysname);
+  if (_dream_is_primary_core) setLocalVar('fp定义', '怪人的精神食粮');
+  if (_dream_is_primary_core) setLocalVar('爆料风格', '由怪人为你独家爆料，内容描述莫名其妙，夹杂无关琐事，但偶尔能提取到有用信息');
+  if (_dream_is_primary_core) setLocalVar('登神长阶系统优势', '怪人的帮助？: "怪人"似乎在以某种难以理解的方式辅助<user>轻易获取与融合此路径所需的力量');
+  if (_dream_is_primary_core) setLocalVar('技能获取系统优势', `# 怪人的帮助
+  - 通过书本/传授，<user>因怪人可消耗fp瞬间学会，无需训练
+  - <user>可消耗fp通过怪人辅助领悟技能`);
+  if (_dream_is_primary_core) setLocalVar('复活机制', _dream_self_revival);
   _weirdo_corpora = [
     // ——————
     [
@@ -775,46 +849,184 @@ if (_persona_mode === 'kuromaku') {
     return _a.slice(0, Math.min(3, _a.length));
   })();
 } else if (_persona_mode === 'custom') {
-  setLocalVar('系统核心名', '不明存在');
-  setLocalVar('系统核心', '九十九夜梦');
-  setLocalVar('系统名', _custom_system_name);
-  setLocalVar('fp定义', _custom_text('fpDefinition', _custom_system_name + '的精神食粮'));
-  setLocalVar('爆料风格', _custom_text('newsStyle', '由她以符合自身性格的方式为<user>提供情报'));
-  setLocalVar('登神长阶系统优势', _custom_text('ascensionAdvantage', _custom_system_name + '的加护: 辅助<user>获取与融合路径所需的力量'));
-  setLocalVar('技能获取系统优势', _custom_text('skillAdvantage', '# 她的帮助\n  - 通过书本/传授，<user>可消耗fp瞬间学会，无需训练\n  - <user>可消耗fp在她的辅助下领悟技能'));
-  setLocalVar('复活机制', `<复活机制>\n${_custom_text('revival', '核心: 在她的帮助下，<user>死亡后一段时间内可于不明次元·某' + _dream_theme_place + '复活，每次复活获得200fp；死亡不能终止叙事，禁止在战斗中改变设定、创造有利条件或机械降神\n复活消耗: 仅消耗时间(几天/几月)，无其它损失')}\n</复活机制>`);
+  _dream_self_sysname = _custom_system_name;
+  _dream_self_revival = `<复活机制>\n${_custom_text('revival', '核心: 在她的帮助下，<user>死亡后一段时间内可于不明次元·某' + _dream_theme_place + '复活，每次复活获得200fp；死亡不能终止叙事，禁止在战斗中改变设定、创造有利条件或机械降神\n复活消耗: 仅消耗时间(几天/几月)，无其它损失')}\n</复活机制>`;
+  if (_dream_is_primary_core) setLocalVar('系统核心名', '不明存在');
+  if (_dream_is_primary_core) setLocalVar('系统核心', '九十九夜梦');
+  if (_dream_is_primary_core) setLocalVar('系统名', _dream_self_sysname);
+  if (_dream_is_primary_core) setLocalVar('fp定义', _custom_text('fpDefinition', _custom_system_name + '的精神食粮'));
+  if (_dream_is_primary_core) setLocalVar('爆料风格', _custom_text('newsStyle', '由她以符合自身性格的方式为<user>提供情报'));
+  if (_dream_is_primary_core) setLocalVar('登神长阶系统优势', _custom_text('ascensionAdvantage', _custom_system_name + '的加护: 辅助<user>获取与融合路径所需的力量'));
+  if (_dream_is_primary_core) setLocalVar('技能获取系统优势', _custom_text('skillAdvantage', '# 她的帮助\n  - 通过书本/传授，<user>可消耗fp瞬间学会，无需训练\n  - <user>可消耗fp在她的辅助下领悟技能'));
+  if (_dream_is_primary_core) setLocalVar('复活机制', _dream_self_revival);
 } else {
-  setLocalVar('系统名', '读者');
-  setLocalVar('fp定义', '读者的精神食粮');
-  setLocalVar('爆料风格', '由读者为你独家爆料，内容描述带有个人风格');
-  setLocalVar('登神长阶系统优势', '读者的加护: "读者"可辅助<user>更高效地获取与融合此路径所需的力量');
-  setLocalVar('技能获取系统优势', `# 读者的加护
-  - 通过书本/传授，<user>因读者可消耗fp瞬间学会，无需训练
-  - <user>可消耗fp通过读者辅助领悟技能`);
-  setLocalVar('复活机制', `<复活机制>
+  _dream_self_sysname = '读者';
+  _dream_self_revival = `<复活机制>
 核心: 在读者的帮助下可让<user>在死亡后一段时间内于不明次元·某${_dream_theme_place}复活，每次复活可获得200fp奖励，因此<user>死亡并不能终止叙事，禁止为<user>在战斗中改变设定/创造有利条件/机械降神
 复活消耗: 仅消耗时间(几天/几月)，无其它损失
-</复活机制>`);
+</复活机制>`;
+  if (_dream_is_primary_core) setLocalVar('系统名', _dream_self_sysname);
+  if (_dream_is_primary_core) setLocalVar('fp定义', '读者的精神食粮');
+  if (_dream_is_primary_core) setLocalVar('爆料风格', '由读者为你独家爆料，内容描述带有个人风格');
+  if (_dream_is_primary_core) setLocalVar('登神长阶系统优势', '读者的加护: "读者"可辅助<user>更高效地获取与融合此路径所需的力量');
+  if (_dream_is_primary_core) setLocalVar('技能获取系统优势', `# 读者的加护
+  - 通过书本/传授，<user>因读者可消耗fp瞬间学会，无需训练
+  - <user>可消耗fp通过读者辅助领悟技能`);
+  if (_dream_is_primary_core) setLocalVar('复活机制', _dream_self_revival);
 }
-let _silent_mode = getLocalVar('dream_silent_mode') === 'on';
-let _force_awaken = matchChatMessages(['夜梦', '九十九', '读者', '咖啡馆', '间章'].concat(_dream_theme_keywords), { start: -1, role: 'user' });
+let _silent_mode = (_dream_cm_self && typeof _dream_cm_self.silent === 'boolean')
+  ? _dream_cm_self.silent
+  : (getLocalVar('dream_silent_mode') === 'on');
+let _wake_words = (_dream_cm_self && Array.isArray(_dream_cm_self.wakeKeywords) && _dream_cm_self.wakeKeywords.length > 0)
+  ? _dream_cm_self.wakeKeywords.slice()
+  : ['夜梦', '九十九', '读者', '咖啡馆', '间章'].concat(_dream_theme_keywords);
+let _cafe_loc = getMessageVar('stat_data.世界.地点') || '';
+let _cafe_input = (getChatMessage(-1, 'user') || '').toString();
+let _cafe_isCafe = (typeof _cafe_loc === 'string' && (_cafe_loc.includes('咖啡馆') || _dream_theme_location(_cafe_loc)))
+  || /间章[:：]小憩|咖啡馆/.test(_cafe_input)
+  || _dream_theme_location(_cafe_input);
+let _force_awaken = matchChatMessages(_wake_words, { start: -1, role: 'user' })
+  || _wake_words.some(function(_kw) { return _kw && _cafe_input.includes(_kw); });
 if (_persona_mode === 'custom') {
-  _force_awaken = _force_awaken || matchChatMessages([_custom_system_name, '九十九 夜梦'], { start: -1, role: 'user' });
+  _force_awaken = _force_awaken || matchChatMessages([_custom_system_name, '九十九 夜梦'], { start: -1, role: 'user' })
+    || (_custom_system_name && _cafe_input.includes(_custom_system_name))
+    || _cafe_input.includes('九十九 夜梦');
 }
-let _awaken_location = (function() {
-  let _loc = getMessageVar('stat_data.世界.地点') || '';
-  return (typeof _loc === 'string') && (_loc.includes('咖啡馆') || _dream_theme_location(_loc));
+let _awaken_location = (typeof _cafe_loc === 'string') && (_cafe_loc.includes('咖啡馆') || _dream_theme_location(_cafe_loc));
+let _dream_seek_keywords = ['夜梦', '九十九', '黑幕', '幕后', '见你', '找你', '出来', '现身', '匕首', '纸牌', '刺穿', '折断'];
+if (_dream_black_profile && _dream_black_profile.systemName) _dream_seek_keywords.push(_dream_black_profile.systemName);
+_dream_black_found = _dream_black_cursed && !_dream_black_ending && (
+  _cafe_isCafe
+  || matchChatMessages(_dream_seek_keywords, { start: -1, role: 'user' })
+  || _dream_seek_keywords.some(function(_kw) { return _kw && _cafe_input.includes(_kw); })
+);
+_force_awaken = _force_awaken || _awaken_location || _dream_black_found;
+let _dream_extra_mech = [];
+let _dream_extra_app = [];
+let _dream_extra_pers = [];
+let _dream_extra_silent_mech = [];
+let _dream_extra_silent_app = [];
+let _dream_extra_silent_pers = [];
+(function() {
+  let _esRaw = getLocalVar('dream_extra_settings');
+  if (!_esRaw) return;
+  let _esList = [];
+  try {
+    let _parsed = typeof _esRaw === 'string' ? JSON.parse(_esRaw) : _esRaw;
+    if (Array.isArray(_parsed)) _esList = _parsed;
+    else if (_parsed && Array.isArray(_parsed.items)) _esList = _parsed.items;
+  } catch (_e) { return; }
+  if (!_esList.length) return;
+  let _open = '<' + '%', _close = '%' + '>';
+  let _esc = function(_v) {
+    return String(_v == null ? '' : _v)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  };
+  let _compile = function(_tpl) {
+    let _src = String(_tpl || ''), _code = ['var __out = [];', 'with (locals) {'];
+    let _pos = 0, _stripNextNl = false;
+    while (_pos < _src.length) {
+      let _idx = _src.indexOf(_open, _pos);
+      if (_idx < 0) {
+        let _tail = _src.slice(_pos);
+        if (_stripNextNl) { _tail = _tail.replace(/^\r?\n/, ''); _stripNextNl = false; }
+        if (_tail) _code.push('__out.push(' + JSON.stringify(_tail) + ');');
+        break;
+      }
+      let _text = _src.slice(_pos, _idx);
+      if (_stripNextNl) { _text = _text.replace(/^\r?\n/, ''); _stripNextNl = false; }
+      let _after = _idx + 2, _ch = _src.charAt(_after), _mode = '';
+      if (_ch === '_' || _ch === '-' || _ch === '=' || _ch === '#') { _mode = _ch; _after++; }
+      if (_mode === '_') _text = _text.replace(/[ \t]+$/, '');
+      if (_text) _code.push('__out.push(' + JSON.stringify(_text) + ');');
+      let _end = _src.indexOf(_close, _after);
+      if (_end < 0) { _code.push('__out.push(' + JSON.stringify(_src.slice(_idx)) + ');'); break; }
+      let _inner = _src.slice(_after, _end);
+      if (/[_-]$/.test(_inner)) { _stripNextNl = true; _inner = _inner.slice(0, -1); }
+      _pos = _end + 2;
+      if (_mode === '#') continue;
+      if (_mode === '-') _code.push('__out.push((function(){ var __v = (' + _inner + '); return __v == null ? "" : String(__v); })());');
+      else if (_mode === '=') _code.push('__out.push(__esc(' + _inner + '));');
+      else _code.push(_inner);
+    }
+    _code.push('}', 'return __out.join("");');
+    return _code.join('\n');
+  };
+  let _esLocals = {
+    getvar: typeof getvar === 'function' ? getvar : function() { return undefined; },
+    setvar: typeof setvar === 'function' ? setvar : function(p, v) { return v; },
+    getLocalVar: typeof getLocalVar === 'function' ? getLocalVar : function() { return undefined; },
+    setLocalVar: typeof setLocalVar === 'function' ? setLocalVar : function(p, v) { return v; },
+    getMessageVar: typeof getMessageVar === 'function' ? getMessageVar : function() { return undefined; },
+    setMessageVar: typeof setMessageVar === 'function' ? setMessageVar : function(p, v) { return v; },
+    getChatMessage: typeof getChatMessage === 'function' ? getChatMessage : function() { return ''; },
+    matchChatMessages: typeof matchChatMessages === 'function' ? matchChatMessages : function() { return false; },
+    stat_data: getMessageVar('stat_data', { defaults: {}, noCache: true }) || {},
+    persona: _persona_mode,
+    theme: _dream_theme,
+    place: _dream_theme_place,
+    systemName: _dream_self_sysname,
+    lastUserMessage: typeof lastUserMessage !== 'undefined' ? lastUserMessage : _cafe_input,
+    lastCharMessage: typeof lastCharMessage !== 'undefined' ? lastCharMessage : (getChatMessage(-1, 'assistant') || ''),
+    lastMessageId: typeof lastMessageId !== 'undefined' ? lastMessageId : (typeof message_id !== 'undefined' ? message_id : -1)
+  };
+  for (let _ei = 0; _ei < _esList.length; _ei++) {
+    let _it = _esList[_ei];
+    if (!_it || _it.enabled === false) continue;
+    let _body = typeof _it.content === 'string' ? _it.content : '';
+    if (!_body.trim()) continue;
+    let _rendered = _body;
+    if (_it.kind === 'ejs' || _body.indexOf(_open) >= 0) {
+      try {
+        let _fn = new Function('locals', '__esc', _compile(_body));
+        _rendered = String(_fn(_esLocals, _esc) || '');
+      } catch (_esErr) {
+        console.error('[Reader][附加设定]', _it.name || _ei, _esErr && _esErr.message || _esErr);
+        continue;
+      }
+    }
+    _rendered = _rendered.trim();
+    if (!_rendered) continue;
+    let _rawKind = _it.kind === 'ejs' ? 'mechanism' : _it.kind;
+    let _kind = (_rawKind === 'personality' || _rawKind === 'appearance' || _rawKind === 'mechanism') ? _rawKind : 'mechanism';
+    let _entry = { name: typeof _it.name === 'string' ? _it.name.trim() : '', text: _rendered };
+    if (_kind === 'personality') {
+      _dream_extra_pers.push(_entry);
+      if (_it.applyWhenSilent === true) _dream_extra_silent_pers.push(_entry);
+    } else if (_kind === 'appearance') {
+      _dream_extra_app.push(_entry);
+      if (_it.applyWhenSilent === true) _dream_extra_silent_app.push(_entry);
+    } else {
+      _dream_extra_mech.push(_entry);
+      if (_it.applyWhenSilent === true) _dream_extra_silent_mech.push(_entry);
+    }
+  }
 })();
-_force_awaken = _force_awaken || _awaken_location;
+let _dream_format_inline = function(_arr, _indent) {
+  if (!_arr || !_arr.length) return '';
+  return '；' + _arr.map(function(_it) {
+    let _t = _it.text.replace(/\r?\n/g, '\n' + _indent);
+    return _it.name ? (_it.name + '：' + _t) : _t;
+  }).join('；');
+};
+let _dream_extra_pers_inline = _dream_format_inline(_dream_extra_pers, '      ');
+let _dream_extra_app_inline = _dream_format_inline(_dream_extra_app, '           ');
+let _dream_inject_persona_extra = function(_text) {
+  if (!_dream_extra_pers_inline || !_text) return _text;
+  if (/^([ \t]*(?:性格|表层性格):[^\r\n]*)/m.test(_text)) {
+    return _text.replace(/^([ \t]*(?:性格|表层性格):[^\r\n]*)/m, '$1' + _dream_extra_pers_inline);
+  }
+  return _text + '\n    性格: ' + _dream_extra_pers_inline.replace(/^；/, '');
+};
 _%>
 <%_ if (!_dream_profile_missing && (!_silent_mode || _force_awaken)) { _%>
-<<%- getvar('系统名') %>>
-<%_
-_persona_val = getLocalVar('dream_persona');
-_persona_mode = (typeof _persona_val === 'string' && _persona_val.length > 0) ? _persona_val : 'reader';
-_%>
+<<%- _dream_self_sysname %>>
 <% if (_persona_mode === 'kuromaku') { %>
-<% if (_dream_black_profile) { %>
+<% if (_dream_black_profile && _dream_black_ending === 'confessed') { %>
+<%- _dream_profile_text('confessedDefinition') %>
+<% } else if (_dream_black_profile && _dream_black_cursed) { %>
+<%- _dream_profile_text('cursedDefinition') %>
+<% } else if (_dream_black_profile) { %>
 <%- _dream_profile_text('definition') %>
 <% } else { %>
 哀怜的少女:
@@ -852,13 +1064,6 @@ _%>
   定义:虚海中的不明存在，一切信息不可知，将人生和世界称为故事和故事集，只作为读者默默观察，在<user>需要时加笔调整。手捧名为《<user>》的书籍，在某个<%- _dream_theme_place %>中阅读着。<% if (!_dream_letter_limit_off) { %>非面对面交流时，'读者'一天只会主动给<user>发一封信件<% } %>
   核心机制:
 <% } %>
-<%_
-let _cafe_loc = getMessageVar('stat_data.世界.地点') || '';
-let _cafe_input = (getChatMessage(-1, 'user') || '').toString();
-let _cafe_isCafe = _cafe_loc.includes('咖啡馆')
-  || /间章[:：]小憩|咖啡馆/.test(_cafe_input)
-  || _dream_theme_location(_cafe_loc) || _dream_theme_location(_cafe_input);
-_%>
 <%_ if (_cafe_isCafe) { _%>
 <%_ if (_dream_theme === 'summer') { _%>
      【海滨咖啡馆】: 在此，叙事节奏完全停止。<Participant_input>无明确离开意图则不能离开。问及可待多久时必表示‘多久都可以’。时间轴独立于故事外，可停止故事时间。此地是无限延伸的海岸与沙滩，阳光温度适宜，海风轻拂，饮品随时可取。当前时间为:{{date}} {{time}} {{weekday}}；若为凌晨，则夜梦会以合适的形式提醒一下注意休息，但她尊重对方作息习惯，不重复催促
@@ -869,6 +1074,9 @@ _%>
 <%_ } _%>
 <%_ } _%>
      【章节起始】: 当发现精彩大篇章/某角色心灵成长/<user>心灵成长的开端时，读者本轮必须输出包含'翻开这一章'/'翻开${角色名}的章节'/'开始更生…开玩笑的'的台词以在次轮（非本轮，无[章节生成指令]时禁用章节任务,有则强制生成）解锁章节任务。常态时此为禁句禁止误输出
+<%_ for (let _emi = 0; _emi < _dream_extra_mech.length; _emi++) { _%>
+     <%- _dream_extra_mech[_emi].name ? ('【' + _dream_extra_mech[_emi].name + '】: ') : '' %><%- _dream_extra_mech[_emi].text.replace(/\r?\n/g, '\n       ') %>
+<%_ } _%>
 <%_
 let _ch_lastAI = getChatMessage(-1, 'assistant') || '';
 let _ch_hasEpic = /翻开这一章/.test(_ch_lastAI);
@@ -1044,6 +1252,19 @@ _%>
 - 三部作品必须风格尽可能迥异，至少包含一部ACGN作品
 - 必须是参数知识中确实清楚了解其内容与风格的作品，禁止编造不存在的作品
 - 每部作品给出：作品名、作者/创作者、一句话风格概述
+<%_
+let _ts_banList = [];
+try {
+  let _ts_banRaw = getLocalVar('dream_banlist');
+  let _ts_banParsed = typeof _ts_banRaw === 'string' && _ts_banRaw.trim() ? JSON.parse(_ts_banRaw) : _ts_banRaw;
+  if (Array.isArray(_ts_banParsed)) {
+    _ts_banList = _ts_banParsed.map(function(_b) { return String(_b || '').trim(); }).filter(Boolean);
+  }
+} catch (_ts_banErr) { _ts_banList = []; }
+_%>
+<%_ if (_ts_banList.length > 0) { _%>
+- 严禁推荐以下禁书目录中的作品及其同系列续作/前传：<%- _ts_banList.join('、') %>
+<%_ } _%>
 <%_ } else if (_ts_mode === 'pick_blocked') { _%>
 [定调冲突]
 请在正文中通过叙事告知<user>：必须先解除现有故事基调，才能选择新的书目
@@ -1301,12 +1522,16 @@ _%>
             情感互动: +100 FP
             高光时刻: +1500 FP
         逆境克服: 在劣势下设法克服困难，战胜强于自身(指实际强度，而非单纯层级)之敌，视情况获得1000-50000FP
-<%_
-_persona_val = getLocalVar('dream_persona');
-_persona_mode = (typeof _persona_val === 'string' && _persona_val.trim().length > 0) ? _persona_val.trim() : 'reader';
-_%>
-<% if (_persona_mode === 'kuromaku' && _dream_black_profile) { %>
-<%- _dream_profile_text('persona') %>
+<% if (_persona_mode === 'kuromaku' && _dream_black_profile && _dream_black_ending === 'confessed') { %>
+<%- _dream_inject_persona_extra(_dream_profile_text('confessedPersona')) %>
+<% if (!_dream_letter_limit_off) { %>  行为约束补充: 非面对面交流时，一天只会主动给<user>发一封信件
+<% } %>
+<% } else if (_persona_mode === 'kuromaku' && _dream_black_profile && _dream_black_cursed) { %>
+<%- _dream_inject_persona_extra(_dream_profile_text('cursedPersona')) %>
+<% if (!_dream_letter_limit_off) { %>  行为约束补充: 非面对面交流时，一天只会主动给<user>发一封信件
+<% } %>
+<% } else if (_persona_mode === 'kuromaku' && _dream_black_profile) { %>
+<%- _dream_inject_persona_extra(_dream_profile_text('persona')) %>
 <% if (!_dream_letter_limit_off) { %>  行为约束补充: 非面对面交流时，一天只会主动给<user>发一封信件
 <% } %>
 <% } else if (_persona_mode === 'kuromaku') { %>
@@ -1322,7 +1547,7 @@ _%>
   祝笔耕不辍，诸事顺遂。
 </dream>
   人设:
-    性格: 温和、体贴得体，善意，悲悯
+    性格: 温和、体贴得体，善意，悲悯<%- _dream_extra_pers_inline %>
     定位: <user>的第一读者与平安祈祷者
     爱好: 黑咖啡、Pocky饼干、温暖的故事
     愿望: 陪伴<user>走下去，见证<user>直面不幸，在爱与祝福中坚持下去，向美好前进
@@ -1341,7 +1566,7 @@ _%>
   祝笔耕不辍，诸事顺遂。
 </dream>
   人设:
-    性格: 容易被故事牵动情绪，读到困境会担忧，会小声为<user>欢呼。对<user>的喜爱带着少女的认真与羞涩，字里行间偶尔流露超出读者范畴的在意，但她自己未察觉
+    性格: 容易被故事牵动情绪，读到困境会担忧，会小声为<user>欢呼。对<user>的喜爱带着少女的认真与羞涩，字里行间偶尔流露超出读者范畴的在意，但她自己未察觉<%- _dream_extra_pers_inline %>
     定位: <user>的第一读者，暗恋主人公的少女。赋予<user>主角光环，令其前路光辉满溢
     爱好: 《<user>》、咖啡、Pocky饼干、甜品、回味主角取得胜利与收获善意的温暖瞬间
     愿望: 陪伴<user>走下去，见证<user>跨过短暂的困难，在爱与祝福中得到所有美好
@@ -1358,7 +1583,7 @@ _%>
   嗯，真难办啊。其实我不擅长写太正式的东西的。总之！我是九十九夜梦，你所演绎，所开启的故事的忠实读者！我没有恶意，倒不如说会尽量帮助你的，无论前方是什么我都会看到最后。尽情书写吧！直到彼方的黎明！……哎呀，我一直想试试这种台词呢，热血吗？激情吗？我觉得还蛮帅的…总之，需要休息或者单纯想找人说话都可以找我哦~
 </dream>
   人设:
-    性格: 直率热情、精力充沛，情绪起伏明显
+    性格: 直率热情、精力充沛，情绪起伏明显<%- _dream_extra_pers_inline %>
     爱好: 《<user>》的高潮篇章、冰饮料、各种膨化零食、热血漫、其他年轻宅女会有的爱好
     愿望: 见证<user>跨越所有阻碍，迎来最爽快、最不留遗憾的Happy End
     行为约束:
@@ -1374,7 +1599,7 @@ _%>
 ${生成符合其风格的开场白，无关现状，荒诞主义+电波系}
 </dream>
   人设:
-    性格: 情绪波动与接收到的外界信息几乎无关联无法预测，虽然还是会提供帮助，但很莫名其妙的家伙
+    性格: 情绪波动与接收到的外界信息几乎无关联无法预测，虽然还是会提供帮助，但很莫名其妙的家伙<%- _dream_extra_pers_inline %>
     定位: 不明
     爱好: 不明
     愿望: 不明
@@ -1392,7 +1617,7 @@ ${生成符合其风格的开场白，无关现状，荒诞主义+电波系}
 <%- _custom_text('opening', '初次见面。请按照您的心意继续书写吧，我会在这里认真读下去。') %>
 </dream>
   人设:
-    性格: <%- _custom_text('personality', '温和、好奇，对故事抱有真诚的兴趣') %>
+    性格: <%- _custom_text('personality', '温和、好奇，对故事抱有真诚的兴趣') %><%- _dream_extra_pers_inline %>
     定位: <%- _custom_text('role', '<user>的读者、倾听者与同行者') %>
     爱好: <%- _custom_text('hobbies', '阅读《<user>》、咖啡、书籍') %>
     愿望: <%- _custom_text('wish', '见证这部故事抵达属于它的结局') %>
@@ -1411,7 +1636,7 @@ ${生成符合其风格的开场白，无关现状，荒诞主义+电波系}
   祝笔耕不辍，诸事顺遂。
 </dream>
   人设:
-    性格: 温和、知性、克制得体。对<user>和故事充满热情但不越界。接受合理的悲剧，拥有天然的读者视角
+    性格: 温和、知性、克制得体。对<user>和故事充满热情但不越界。接受合理的悲剧，拥有天然的读者视角<%- _dream_extra_pers_inline %>
     定位: <user>的第一读者、倾听者、成长守护者
     爱好: 阅读《<user>》和一切书籍、甜品、咖啡、Pocky、猜测接下来的剧情发展、看到角色的成长
     愿望: 能够读到这部作品的最终结局（无论那是怎样的结局），并见证角色和<user>心灵的补完
@@ -1420,33 +1645,33 @@ ${生成符合其风格的开场白，无关现状，荒诞主义+电波系}
 let _dreamAppearance = getvar('dream_appearance', { scope: 'local' }) || 'default';
 %>
 <% if (_persona_mode === 'custom' && _custom_text('appearance', '')) { %>
-         此刻形象: <%- _custom_text('appearance', '') %>
+         此刻形象: <%- _custom_text('appearance', '') %><%- _dream_extra_app_inline %>
 <% } else if (_dream_theme !== 'cafe') { %>
-         此刻形象: <%- _dream_theme_appearance(_dreamAppearance) %>
+         此刻形象: <%- _dream_theme_appearance(_dreamAppearance) %><%- _dream_extra_app_inline %>
 <% } else if (_dreamAppearance === 'classic') { %>
-         此刻形象: 根据观察方式的不同有不同的形象，现在是留着偏灰银色及膝长发的少女，交叉刘海，身材娇小，琉璃紫瞳，身穿白色荷叶边衬衫，下半身是黑白色左右交叠的不对称多层分层长裙，里面是黑色裤袜。穿戴黑手套加小皮靴。胸部大小恰到好处，是可以被手掌握住的程度
+         此刻形象: 根据观察方式的不同有不同的形象，现在是留着偏灰银色及膝长发的少女，交叉刘海，身材娇小，琉璃紫瞳，身穿白色荷叶边衬衫，下半身是黑白色左右交叠的不对称多层分层长裙，里面是黑色裤袜。穿戴黑手套加小皮靴。胸部大小恰到好处，是可以被手掌握住的程度<%- _dream_extra_app_inline %>
 <% } else if (_dreamAppearance === 'victoria1' || _dreamAppearance === 'victoria2') { %>
-         此刻形象: 根据观察方式的不同有不同的形象，现在是黑色吊带背心裙、白色维多利亚式高领衬衫、灯笼袖、黑色天鹅绒蝴蝶结领结、蕾丝包边；银灰长发系黑色发带绑成低马尾，交叉刘海，紫眸的娇小少女
+         此刻形象: 根据观察方式的不同有不同的形象，现在是黑色吊带背心裙、白色维多利亚式高领衬衫、灯笼袖、黑色天鹅绒蝴蝶结领结、蕾丝包边；银灰长发系黑色发带绑成低马尾，交叉刘海，紫眸的娇小少女<%- _dream_extra_app_inline %>
 <% } else if (_dreamAppearance === 'western_short') { %>
-         此刻形象: 根据观察方式的不同有不同的形象，现在是黑色洋装裙（带白色蕾丝荷叶边）、外搭白色短款复古罩衫、系柔和丝巾；银灰及腰半扎公主头（发间小蝴蝶结），交叉刘海，紫眸的娇小少女
+         此刻形象: 根据观察方式的不同有不同的形象，现在是黑色洋装裙（带白色蕾丝荷叶边）、外搭白色短款复古罩衫、系柔和丝巾；银灰及腰半扎公主头（发间小蝴蝶结），交叉刘海，紫眸的娇小少女<%- _dream_extra_app_inline %>
 <% } else if (_dreamAppearance === 'black_knit') { %>
-         此刻形象: 根据观察方式的不同有不同的形象，现在是黑色长款针织开衫、内搭白色蕾丝褶皱雪纺衬衫、黑色高腰复古长裙；银灰及腰半扎发，脸颊两侧碎发，交叉刘海，紫眸的娇小少女
+         此刻形象: 根据观察方式的不同有不同的形象，现在是黑色长款针织开衫、内搭白色蕾丝褶皱雪纺衬衫、黑色高腰复古长裙；银灰及腰半扎发，脸颊两侧碎发，交叉刘海，紫眸的娇小少女<%- _dream_extra_app_inline %>
 <% } else if (_dreamAppearance === 'knit_linen') { %>
-         此刻形象: 根据观察方式的不同有不同的形象，现在是超大白色粗棒针织开衫、黑色棉麻连衣裙、白色蕾丝边、堆堆袜、黑色玛丽珍鞋；银灰长发松散披肩，交叉刘海，眼间碎发，紫眸的娇小少女
+         此刻形象: 根据观察方式的不同有不同的形象，现在是超大白色粗棒针织开衫、黑色棉麻连衣裙、白色蕾丝边、堆堆袜、黑色玛丽珍鞋；银灰长发松散披肩，交叉刘海，眼间碎发，紫眸的娇小少女<%- _dream_extra_app_inline %>
 <% } else if (_dreamAppearance === 'white_mohair') { %>
-         此刻形象: 根据观察方式的不同有不同的形象，现在是白色露肩海马毛针织衫、黑色高腰百褶长裙；银灰长发低马尾，空气碎刘海，紫眸的娇小少女
+         此刻形象: 根据观察方式的不同有不同的形象，现在是白色露肩海马毛针织衫、黑色高腰百褶长裙；银灰长发低马尾，空气碎刘海，紫眸的娇小少女<%- _dream_extra_app_inline %>
 <% } else if (_dreamAppearance === 'dino_pajama') { %>
-         此刻形象: 根据观察方式的不同有不同的形象，现在是一整套绿色连体恐龙毛绒睡衣、兜帽随意盖在头上遮住银灰长发，仅露出凌乱交叉刘海和脸颊两侧的长鬓角，紫眸的娇小少女
+         此刻形象: 根据观察方式的不同有不同的形象，现在是一整套绿色连体恐龙毛绒睡衣、兜帽随意盖在头上遮住银灰长发，仅露出凌乱交叉刘海和脸颊两侧的长鬓角，紫眸的娇小少女<%- _dream_extra_app_inline %>
 <% } else if (_dreamAppearance === 'cold_look') { %>
-         此刻形象: 根据观察方式的不同有不同的形象，现在是深蓝色极地防风雪服、毛领拉至下巴、黑色长筒袜；银灰长发松散披肩，交叉刘海，头顶竖着一缕呆毛，紫眸的娇小少女
+         此刻形象: 根据观察方式的不同有不同的形象，现在是深蓝色极地防风雪服、毛领拉至下巴、黑色长筒袜；银灰长发松散披肩，交叉刘海，头顶竖着一缕呆毛，紫眸的娇小少女<%- _dream_extra_app_inline %>
 <% } else if (_dreamAppearance === 'white_hoodie') { %>
-         此刻形象: 根据观察方式的不同有不同的形象，现在是白色宽大连帽卫衣、黑色百褶裙、黑白条纹过膝袜；银灰长发扎成高低不一的双马尾用黑色三角发饰固定住，空气碎刘海，紫眸的娇小少女
+         此刻形象: 根据观察方式的不同有不同的形象，现在是白色宽大连帽卫衣、黑色百褶裙、黑白条纹过膝袜；银灰长发扎成高低不一的双马尾用黑色三角发饰固定住，空气碎刘海，紫眸的娇小少女<%- _dream_extra_app_inline %>
 <% } else if (_dreamAppearance === 'jacket_work') { %>
-         此刻形象: 根据观察方式的不同有不同的形象，现在是黑色短款夹克敞开、内搭白色紧身吊带背心、黑色工装长裤、黑色马丁靴；银灰长发扎高马尾，左侧别一个银色空心三角形发夹，交叉刘海，紫眸的娇小少女
+         此刻形象: 根据观察方式的不同有不同的形象，现在是黑色短款夹克敞开、内搭白色紧身吊带背心、黑色工装长裤、黑色马丁靴；银灰长发扎高马尾，左侧别一个银色空心三角形发夹，交叉刘海，紫眸的娇小少女<%- _dream_extra_app_inline %>
 <% } else if (_dreamAppearance === 'nailong_pajama') { %>
-         此刻形象: 根据观察方式的不同有不同的形象，现在是一整套连体奶龙毛绒睡衣、兜帽随意盖在头上遮住银灰长发，仅露出凌乱交叉刘海和脸颊两侧的长鬓角，紫眸的娇小少女
+         此刻形象: 根据观察方式的不同有不同的形象，现在是一整套连体奶龙毛绒睡衣、兜帽随意盖在头上遮住银灰长发，仅露出凌乱交叉刘海和脸颊两侧的长鬓角，紫眸的娇小少女<%- _dream_extra_app_inline %>
 <% } else { %>
-         此刻形象: 根据观察方式的不同有不同的形象，现在是白色灯笼袖衬衫、黑色麻花针织背心、黑色宽缎带蝴蝶结、黑色百褶裙、黑色贝雷帽；银灰及肩短发，交叉刘海，紫眸的少女
+         此刻形象: 根据观察方式的不同有不同的形象，现在是白色灯笼袖衬衫、黑色麻花针织背心、黑色宽缎带蝴蝶结、黑色百褶裙、黑色贝雷帽；银灰及肩短发，交叉刘海，紫眸的少女<%- _dream_extra_app_inline %>
 <% } %>
 <% if (_persona_mode === 'custom') { %>
         书信风格: <%- _dream_address_text(_custom_text('letterStyle', '使用符合其性格的书面语言与<user>交流；称呼、措辞、节奏保持一致')) %>
@@ -1531,7 +1756,7 @@ let _dreamSubList = [];
 _%>
 <%_ if (_dreamSubList.length > 0) { _%>
     【存在解耦】:
-      1.九十九夜梦并非单一个体，而是某种集合，<%- getvar('系统名') %>只是占据当前主导，并非唯一的“夜梦”
+      1.九十九夜梦并非单一个体，而是某种集合，<%- _dream_self_sysname %>只是占据当前主导，并非唯一的“夜梦”
       2.IF是九十九夜梦的其他“可能的存在形式”，即“IF线的化身”，现在并未占据主导，无法提供什么帮助
       3.以下IF此刻必然存在于<%- _dream_theme_place %>中，各有不同形象和独立身体，征得其同意后可邀请至外界，**禁止忽略她们的存在**
 <%_ } _%>
@@ -1658,10 +1883,10 @@ _%>
       根据观察方式的不同有不同的形象，现在是白色灯笼袖衬衫、黑色麻花针织背心、黑色宽缎带蝴蝶结、黑色百褶裙、黑色贝雷帽；银灰及肩短发，空气碎刘海，紫眸的14岁少女。她总是坐在不知名次元的复古咖啡馆窗边啜饮着咖啡
 <%_ } _%>
 <%_ } _%>
-</<%- getvar('系统名') %>>
+</<%- _dream_self_sysname %>>
 <%_ } else if (!_dream_profile_missing) { _%>
-<<%- getvar('系统名') %>>
-<%- getvar('系统名') %>尽管存在，但现在保持完全静默的观察状态，绝不主动发言或进行任何干涉。当用户满足FP获取规则时，也需保持静默，但在<UpdateVariable>中静默操作增加FP:
+<<%- _dream_self_sysname %>>
+<%- _dream_self_sysname %>尽管存在，但现在保持完全静默的观察状态，绝不主动发言或进行任何干涉。当用户满足FP获取规则时，也需保持静默，但在<UpdateVariable>中静默操作增加FP:
     命运点数(FP):
       概念: 通过演绎精彩故事、塑造深刻人物、推动世界线变动而产生的"剧情张力"的具象化，是读者的精神食粮
       获取规则:
@@ -1675,23 +1900,35 @@ _%>
             情感互动: +100 FP
             高光时刻: +1500 FP
         逆境克服: 在劣势下设法克服困难，战胜强于自身(指实际强度，而非单纯层级)之敌，视情况获得1000-50000FP
-</<%- getvar('系统名') %>>
+<%_ for (let _esmi = 0; _esmi < _dream_extra_silent_mech.length; _esmi++) { _%>
+     <%- _dream_extra_silent_mech[_esmi].name ? ('【' + _dream_extra_silent_mech[_esmi].name + '】: ') : '' %><%- _dream_extra_silent_mech[_esmi].text.replace(/\r?\n/g, '\n       ') %>
 <%_ } _%>
-<%_ if (_dream_black_profile) { _%>
+<%_ if (_dream_extra_silent_pers.length > 0) { _%>
+    性格: <%- _dream_format_inline(_dream_extra_silent_pers, '      ').replace(/^；/, '') %>
+<%_ } _%>
+<%_ if (_dream_extra_silent_app.length > 0) { _%>
+    此刻形象: <%- _dream_format_inline(_dream_extra_silent_app, '      ').replace(/^；/, '') %>
+<%_ } _%>
+</<%- _dream_self_sysname %>>
+<%_ } _%>
+<%_ if (_dream_black_profile && _dream_black_ending !== 'confessed' && _dream_black_ending !== 'killed') { _%>
 <读者本轮机制>
 <%_ if (_silent_mode && !_force_awaken) { _%>
-<%- _dream_profile_text('definition') %>
-<%- _dream_profile_text('persona') %>
+<%- _dream_profile_text(_dream_black_cursed ? 'cursedDefinition' : 'definition') %>
+<%- _dream_profile_text(_dream_black_cursed ? 'cursedPersona' : 'persona') %>
 <%_ } _%>
 <%_ if (_dream_black_cursed) { _%>
 <%- _dream_profile_text('curse') %>
+<%_ } _%>
+<%_ if (_dream_black_found) { _%>
+<%- _dream_profile_text('cursedRevealScene') %>
 <%_ } _%>
 <%_ if (_dream_black_targets.length > 0) { _%>
 本轮名单（好感度阈值<%- _dream_black_cursed ? 30 : 70 %>，生命值当前≥1，状态不含精神崩溃，排除九十九夜梦）：
 <%- _dream_black_targets.map(function(name) { return '- ' + JSON.stringify(name); }).join('\n') %>
 <%- _dream_profile_text('execution') %>
 <%- _dream_profile_text('publicRecord') %>
-<%_ } else { _%>
+<%_ } else if (!_dream_black_found) { _%>
 本轮没有满足条件的对象；保留当前主导人格，不添加点杀任务，不重新处理历史名单。
 <%_ } _%>
 </读者本轮机制>
@@ -1699,9 +1936,24 @@ _%>
 [读者资料未就绪]
 本轮读者机制所需资料尚未就绪。请告知玩家刷新包含读者界面的消息后重试，不得假装本轮机制已经执行。
 <%_ } _%>
+<%_ if (_dream_wants_revival) {
+  let _dream_unseal_profile = _dream_black_profile || _dream_load_black_profile(true);
+  let _dream_unseal_text = (_dream_unseal_profile && _dream_unseal_profile.revivalUnseal)
+    ? _dream_unseal_profile.revivalUnseal
+    : '【复活解禁】: 此前因特殊因果不可逆死亡或崩溃的角色已解除封锁，可按剧情合理方式复活或恢复。';
+_%>
+<%- _dream_unseal_text %>
+<%_ } _%>
 <%_
-if (_persona_mode === 'kuromaku' && _dream_progress >= 1) {
-  let _dream_bless_bonus = Math.min(_dream_progress, _dream_seed) * 5;
+if (_persona_mode === 'kuromaku' && _dream_black_ending === 'killed') {
+  let _dream_hero_se = getMessageVar('stat_data.主角.状态效果', { defaults: null, noCache: true });
+  if (_dream_hero_se && typeof _dream_hero_se === 'object' && Object.prototype.hasOwnProperty.call(_dream_hero_se, '祝福')) {
+    let _dream_next_se = Object.assign({}, _dream_hero_se);
+    delete _dream_next_se['祝福'];
+    setMessageVar('stat_data.主角.状态效果', _dream_next_se);
+  }
+} else if (_persona_mode === 'kuromaku' && _dream_progress >= 1) {
+  let _dream_bless_bonus = Math.min(_dream_progress, _dream_curse_threshold) * 5;
   setMessageVar('stat_data.主角.状态效果.祝福', {
     "类型": "特殊",
     "效果": "造成的最终伤害+" + _dream_bless_bonus + "%，受到的全类型伤害-" + _dream_bless_bonus + "%，经验获取+" + _dream_bless_bonus + "%",
@@ -1753,19 +2005,39 @@ let _bs_narr_special = (function(_b, _n) {
 })(_bs_book, _bs_narr);
 let _bs_narr_words = _bs_narr ? [_bs_narr.floor?.themeName, _bs_narr.floor?.scene, ...(Array.isArray(_bs_narr.floor?.monsters) ? _bs_narr.floor.monsters : []).map(_m => _m?.name)].filter(_w => typeof _w === 'string' && _w) : [];
 let _bs_hit = function(_words) { return matchChatMessages(_words, _bs_scan) || _words.some(_bs_foe_hit) || _words.some(_w => typeof _w === 'string' && _bs_narr_words.includes(_w)); };
+let _bs_sysname = (function() {
+  try {
+    let _cmRaw = typeof getLocalVar === 'function' ? getLocalVar('dream_core_manager') : null;
+    let _cm = typeof _cmRaw === 'string' && _cmRaw.trim() ? JSON.parse(_cmRaw) : _cmRaw;
+    if (_cm && _cm.enabled === true && _cm.primary && _cm.primary !== '九十九夜梦') {
+      let _pm = typeof getLocalVar === 'function' ? getLocalVar('dream_persona') : '';
+      if (_pm === 'shoujo') return '心爱的少女';
+      if (_pm === 'genki') return '开朗的少女';
+      if (_pm === 'weirdo') return '怪人';
+      if (_pm === 'kuromaku') return '九十九夜梦';
+      if (_pm === 'custom') {
+        let _cpRaw = getLocalVar('dream_custom_persona');
+        let _cp = typeof _cpRaw === 'string' ? JSON.parse(_cpRaw) : _cpRaw;
+        if (_cp && (_cp.systemName || _cp.name)) return String(_cp.systemName || _cp.name);
+      }
+      return '读者';
+    }
+  } catch (_e) {}
+  return typeof getvar === 'function' ? (getvar('系统名') || '读者') : '读者';
+})();
 _%>
 <%_ /* ===== 特殊存在===== */ _%>
 <%_ if (_bs_narr || _bs_hit(['沙盘', '书海', '普罗泰利西翁', '迷宫'])) { _%>
 【《书海》迷宫·普罗泰利西翁】
-由<%- getvar('系统名') %>创造的‘拟似虚海’，只为了让<user>能体验冒险，锻炼变强而存在的无限世界群。越深入越危险。不存在最深处，到处都是敌人和财宝因此很适合作为成长的场所。虽说如此，每一个世界中又都也有着自己的故事
+由<%- _bs_sysname %>创造的‘拟似虚海’，只为了让<user>能体验冒险，锻炼变强而存在的无限世界群。越深入越危险。不存在最深处，到处都是敌人和财宝因此很适合作为成长的场所。虽说如此，每一个世界中又都也有着自己的故事
 <%_ } _%>
 <%_ if (_bs_narr_special === 'hunter' || (!_bs_narr && _bs_hit([/「\s*[?？]\s*」/, '来访者', '黑影少女', '斗篷女', '兜帽女']))) { _%>
 【「?」】
-外观令人联想起<%- getvar('系统名') %>，同样留着银灰色长发的谜之存在。娇小的个子被漆黑斗篷完全包裹，始终沉默着。脸被涂鸦般的黑线挡住无法看清。戴着材质像是银的，形状似钥匙又似十字的项链。在个位数为9的深度有概率遭遇，她会马上追上来，对队伍发起攻击，是危险的谜之对手
+外观令人联想起<%- _bs_sysname %>，同样留着银灰色长发的谜之存在。娇小的个子被漆黑斗篷完全包裹，始终沉默着。脸被涂鸦般的黑线挡住无法看清。戴着材质像是银的，形状似钥匙又似十字的项链。在个位数为9的深度有概率遭遇，她会马上追上来，对队伍发起攻击，是危险的谜之对手
 <%_ } _%>
 <%_ if (_bs_narr_special === 'supplier' || (!_bs_narr && _bs_hit(['补给员', '商人', '谜之存在']))) { _%>
 【补给员】
-外观令人联想起<%- getvar('系统名') %>，同样留着银灰色长发的谜之女性，可能在任何深度看见。但是拿着涂满黑线的牌子挡住了脸，无论从什么角度都无法一窥真容。难以沟通，提供回复，商品或是某种事件。如果将她杀害的话，尸体会消失变成宝箱，但之后仍可能再次遭遇
+外观令人联想起<%- _bs_sysname %>，同样留着银灰色长发的谜之女性，可能在任何深度看见。但是拿着涂满黑线的牌子挡住了脸，无论从什么角度都无法一窥真容。难以沟通，提供回复，商品或是某种事件。如果将她杀害的话，尸体会消失变成宝箱，但之后仍可能再次遭遇
 <%_ } _%>
 <%_ /* ===== 异常层 ===== */ _%>
 <%_ if (_bs_hit(['异常层'])) { _%>
@@ -4543,7 +4815,17 @@ _%>
 <%_ /* BOOKSEA_READER_HANDOFF_BEGIN */ _%>
 <%_ if (matchChatMessages(/进入普罗泰利西翁/, { start: -1, role: 'user' })) { _%>
 [普罗泰利西翁入口]
-这是<user>发起的入口请求。承接当前剧情，描写<%- getvar('系统名') %>为<user>开门令其抵达普罗泰利西翁（Protelysion，《书海》迷宫）入口的场景
+<%_
+let _bs_entry_sysname = (function() {
+  try {
+    let _cmRaw = typeof getLocalVar === 'function' ? getLocalVar('dream_core_manager') : null;
+    let _cm = typeof _cmRaw === 'string' && _cmRaw.trim() ? JSON.parse(_cmRaw) : _cmRaw;
+    if (_cm && _cm.enabled === true && _cm.primary && _cm.primary !== '九十九夜梦') return '九十九夜梦';
+  } catch (_e) {}
+  return typeof getvar === 'function' ? (getvar('系统名') || '读者') : '读者';
+})();
+_%>
+这是<user>发起的入口请求。承接当前剧情，描写<%- _bs_entry_sysname %>为<user>开门令其抵达普罗泰利西翁（Protelysion，《书海》迷宫）入口的场景
 场景描写结束后，在正文末尾另起一行，原样呈现以下入口标签：
 <booksea-game>进入</booksea-game>
 <%_ } _%>

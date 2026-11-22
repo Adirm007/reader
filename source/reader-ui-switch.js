@@ -31,6 +31,7 @@
       persona: { id: safe(function () { return getCurrentPersona(); }, 'reader'), label: safe(function () { return dlbPersonaShort(); }, '读者') },
       appearance: { id: app, label: appName },
       address: safe(function () { return getUserAddress(); }, ''),
+      extraSetting: String(safe(function () { return dreamExtraSettingsLabel(); }, '未设置')),
       books: safe(function () { return dlbBookN; }, -2),
       juke: {
         playing: safe(function () { return !!(audio && !audio.paused); }, false),
@@ -56,6 +57,8 @@
         yuanStream: !!safe(function () { return getYuanPlusStreamEnabled(); }, false),
         yuanPref: String(safe(function () { return getYuanPlusPreference(); }, '')),
         api: String(safe(function () { return dreamApiLabel(); }, '')),
+        coreMgr: String(safe(function () { return dreamCoreManagerLabel(); }, '未启用')),
+        hasAgent: !!safe(function () { return dreamHasReaderIIAgent(); }, false),
         open: safe(function () { return dlbEggOpen; }, {})
       }
     };

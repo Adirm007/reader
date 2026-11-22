@@ -125,7 +125,10 @@ def main():
             return open(os.path.join(ROOT, 'source', name), encoding='utf-8').read()
         src['replaceString'] = ('```html\n<!doctype html><html lang="zh-CN"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><style>'
                                 + source('legacy-reader.css') + '</style></head><body>' + source('legacy-body.html').replace(PLACEHOLDER, '$1')
-                                + '<script>' + source('booksea-album.js') + '\n;' + source('legacy-reader.js')
+                                + '<script>' + source('booksea-album.js')
+                                + ('\n;' + source('core-manager.js') if os.path.isfile(os.path.join(ROOT, 'source', 'core-manager.js')) else '')
+                                + ('\n;' + source('extra-settings.js') if os.path.isfile(os.path.join(ROOT, 'source', 'extra-settings.js')) else '')
+                                + '\n;' + source('legacy-reader.js')
                                 + ('\n;' + source('template-system.js') if os.path.isfile(os.path.join(ROOT, 'source', 'template-system.js')) else '')
                                 + ('\n;' + source('reader-ui-switch.js') if os.path.isfile(os.path.join(ROOT, 'source', 'reader-ui-switch.js')) else '')
                                 + '</script></body></html>\n```')

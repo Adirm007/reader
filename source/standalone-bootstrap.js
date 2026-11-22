@@ -19,11 +19,17 @@
         if(typeof read==='function')variables=read.call(helper,{type:'chat'});
       }catch(e){}
       var core=variables&&variables['系统核心'];
+      var managedReader=false;
+      try{
+        var rawCm=variables&&variables['dream_core_manager'];
+        var cm=typeof rawCm==='string'&&rawCm.trim()?JSON.parse(rawCm):(rawCm&&typeof rawCm==='object'?rawCm:null);
+        if(cm&&cm.enabled===true&&(cm.primary==='九十九夜梦'||(Array.isArray(cm.activeCores)&&cm.activeCores.indexOf('九十九夜梦')>=0)))managedReader=true;
+      }catch(e){}
       var hasDream=Array.isArray(ctx.chat)&&ctx.chat.some(function(message){return typeof message.mes==='string'&&/<dream(?:\s|>)/i.test(message.mes);});
-      var eligible=!!avatar&&chat!=null&&(!core||core==='九十九夜梦')
-        &&(core==='九十九夜梦'||avatar===config.initialAvatar||config.scope==='global'&&hasDream)
+      var eligible=!!avatar&&chat!=null&&(!core||core==='九十九夜梦'||managedReader)
+        &&(core==='九十九夜梦'||managedReader||avatar===config.initialAvatar||config.scope==='global'&&hasDream)
         &&(config.scope!=='character'||avatar===config.initialAvatar);
-      return {key:JSON.stringify([ctx.characterId,avatar,chat,core||'']),eligible:eligible};
+      return {key:JSON.stringify([ctx.characterId,avatar,chat,core||'',managedReader?'m':'']),eligible:eligible};
     }
     function release(){var api=host.ReaderCore;if(owns(api)){try{api.stop();}catch(e){}}}
     function dispose(){
