@@ -78,6 +78,10 @@ test('CoreManager processLoadedWorldInfo intercepts secondary macro cores, scope
   });
   const cm = win.ReaderCoreManager;
 
+  const readerPrimaryEntry = {
+    comment: '读者核心',
+    content: '/* DREAM_WORLDBOOK reader-core */\n<% setLocalVar("系统核心", "九十九夜梦"); %>',
+  };
   const secondaryMacroEntry = {
     comment: '次核心条目',
     content: '{{setvar::系统核心::测试次核心}}{{setvar::系统名::观测者}}{{setvar::fp定义::测试能量}}\n你是{{getvar::系统名}}，核心是{{getvar::系统核心}}，消费{{getvar::fp定义}}。',
@@ -87,6 +91,7 @@ test('CoreManager processLoadedWorldInfo intercepts secondary macro cores, scope
     content: '<% setLocalVar("系统核心", "莉莉丝"); setLocalVar("系统名", "莉莉丝"); %>莉莉丝正文',
   };
   const payload = {
+    characterLore: [readerPrimaryEntry],
     globalLore: [secondaryMacroEntry, silentEjsEntry],
   };
 
@@ -102,7 +107,7 @@ test('CoreManager processLoadedWorldInfo intercepts secondary macro cores, scope
     comment: '莉莉丝核心',
     content: '<% setLocalVar("系统核心", "莉莉丝"); setLocalVar("系统名", "莉莉丝"); %>莉莉丝正文',
   };
-  cm.processLoadedWorldInfo({ globalLore: [wokenEjsEntry] }, win);
+  cm.processLoadedWorldInfo({ characterLore: [readerPrimaryEntry], globalLore: [wokenEjsEntry] }, win);
   assert.match(wokenEjsEntry.content, /莉莉丝正文/, 'wake keyword temporarily activates silent core');
   assert.match(wokenEjsEntry.content, /_dmcOwn/, 'woken secondary EJS core gets local macro scope wrapper');
 });
@@ -350,22 +355,28 @@ _%><%- _c %><% } %>`,
       },
     },
   });
-  const silentLore = [multiEntryCore, multiCompanionGuide, multiCompanionRule, protectedAnchor].map((e) => ({ ...e }));
+  const readerStub = {
+    comment: '读者核心',
+    disable: false,
+    world: '命定之诗',
+    content: '/* DREAM_WORLDBOOK reader-core */\n<% setLocalVar("系统核心", "九十九夜梦"); %>',
+  };
+  const silentLore = [readerStub, multiEntryCore, multiCompanionGuide, multiCompanionRule, protectedAnchor].map((e) => ({ ...e }));
   cm.processLoadedWorldInfo({ characterLore: silentLore }, win);
-  assert.equal(silentLore[0].disable, true);
-  assert.equal(silentLore[1].disable, true, 'companion guide silenced');
-  assert.equal(silentLore[2].disable, true, 'companion rule silenced');
-  assert.equal(silentLore[3].disable, false, 'history anchor protected');
+  assert.equal(silentLore[1].disable, true);
+  assert.equal(silentLore[2].disable, true, 'companion guide silenced');
+  assert.equal(silentLore[3].disable, true, 'companion rule silenced');
+  assert.equal(silentLore[4].disable, false, 'history anchor protected');
 
   stCtx.chat[0].mes = '开启星盘占卜';
-  const wokenLore = [multiEntryCore, multiCompanionGuide, multiCompanionRule, protectedAnchor].map((e) => ({ ...e }));
+  const wokenLore = [readerStub, multiEntryCore, multiCompanionGuide, multiCompanionRule, protectedAnchor].map((e) => ({ ...e }));
   cm.processLoadedWorldInfo({ characterLore: wokenLore }, win);
-  assert.equal(wokenLore[0].disable, false);
-  assert.doesNotMatch(wokenLore[0].content, /\{\{setvar::系统核心说明::/);
   assert.equal(wokenLore[1].disable, false);
-  assert.match(wokenLore[1].content, /参考星月仪/, 'companion entry gets secondary core ownMacros scoped');
+  assert.doesNotMatch(wokenLore[1].content, /\{\{setvar::系统核心说明::/);
+  assert.equal(wokenLore[2].disable, false);
+  assert.match(wokenLore[2].content, /参考星月仪/, 'companion entry gets secondary core ownMacros scoped');
   const localBag = {};
-  const mainOut = await ejs.render(wokenLore[0].content.replace(/\{\{user\}\}|<user>/gi, 'Alice "Q"'), {
+  const mainOut = await ejs.render(wokenLore[1].content.replace(/\{\{user\}\}|<user>/gi, 'Alice "Q"'), {
     getChatMessage: () => '开启星盘占卜',
     getvar: () => '',
     getLocalVar: (k) => localBag[k] || '',
@@ -390,4 +401,97 @@ _%><%- _c %><% } %>`,
   }, { async: true });
   assert.equal(fpWiped, false);
   assert.equal(toastFired, false);
+});
+
+test('CoreManager review regressions: stale primary bypass, unmanaged core bypass, empty wakeKeywords, @@ decorator preservation, and secondary EJS macro substitution', async () => {
+  const staleVars = {
+    dream_core_manager: JSON.stringify({
+      enabled: true,
+      primary: '九十九夜梦',
+      activeCores: ['九十九夜梦', '阿米娅核心'],
+      cores: {
+        阿米娅核心: { silent: true, wakeKeywords: [] },
+      },
+    }),
+  };
+  const stCtx = {
+    chat: [{ is_user: true, mes: '阿米娅，打开源石终端' }],
+    chatMetadata: { variables: staleVars },
+    saveMetadata() {},
+    substituteParams: (s) => String(s).replace(/\{\{user\}\}|<user>/gi, '旅人'),
+  };
+  const { win } = loadModule(coreManagerSrc, { SillyTavern: { getContext: () => stCtx } });
+  const cm = win.ReaderCoreManager;
+
+  // H1: primary Reader is disabled/absent, only Merlin is enabled -> bypass stale config completely
+  const merlin = {
+    comment: '梅林核心',
+    disable: false,
+    content: '{{setvar::系统核心::梅林核心}}{{setvar::系统名::梅林}}正文',
+  };
+  const staleRes = cm.processLoadedWorldInfo({ characterLore: [merlin] }, win);
+  assert.equal(staleRes.length, 0);
+  assert.match(merlin.content, /\{\{setvar::系统核心::梅林核心\}\}/, 'Merlin must keep shared setvars when stale primary is absent');
+
+  // H1: even when primary Reader IS present, unmanaged core outside activeCores is left alone
+  const readerStub = { comment: '读者核心', disable: false, content: '/* DREAM_WORLDBOOK reader-core */\n<% setLocalVar("系统核心", "九十九夜梦"); %>' };
+  const merlin2 = { comment: '梅林核心', disable: false, content: '{{setvar::系统核心::梅林核心}}{{setvar::系统名::梅林}}正文' };
+  const amiya = { comment: '阿米娅核心', disable: false, content: '{{setvar::系统核心::阿米娅核心}}{{setvar::系统名::阿米娅}}正文' };
+  cm.processLoadedWorldInfo({ characterLore: [readerStub, merlin2, amiya] }, win);
+  assert.match(merlin2.content, /\{\{setvar::系统核心::梅林核心\}\}/, 'unmanaged core must not be stripped');
+  // M4: explicit wakeKeywords: [] must NOT fall back to default wake keywords
+  assert.equal(amiya.disable, true, 'explicit empty wakeKeywords must stay silent');
+
+  // Low: primary-silent preserves leading @@ decorators
+  const decoEntry = {
+    comment: '装饰核',
+    disable: false,
+    content: '@@activate\n@@if true\n{{setvar::系统核心::装饰核}}{{setvar::系统名::装饰}}正文',
+  };
+  cm.transformWorldbookEntry(decoEntry, {
+    enabled: true,
+    primary: '装饰核',
+    activeCores: ['装饰核', '九十九夜梦'],
+    cores: { 装饰核: { silent: true, wakeKeywords: ['唤醒'] } },
+  }, '继续', win);
+  assert.ok(decoEntry.content.startsWith('@@activate\n@@if true\n'), 'primary-silent must preserve leading @@ decorators');
+
+  // Low: secondary EJS getvar returns substituted <user>/{{user}} when ST substituteParams is available
+  const escEntry = {
+    comment: '转义核',
+    disable: false,
+    content: '{{setvar::系统核心::转义核}}{{setvar::复活机制::保护{{user}}与<user>}}\n<%- getvar("复活机制") %>',
+  };
+  cm.transformWorldbookEntry(escEntry, {
+    enabled: true,
+    primary: '九十九夜梦',
+    activeCores: ['九十九夜梦', '转义核'],
+    cores: {},
+  }, '', win);
+  const prevST = globalThis.SillyTavern;
+  globalThis.SillyTavern = { getContext: () => stCtx };
+  try {
+    const out = await ejs.render(escEntry.content, { getvar: () => '', getLocalVar: () => '', setLocalVar: () => '', setvar: () => '' }, { async: true });
+    assert.equal(out.trim(), '保护旅人与旅人');
+  } finally {
+    if (prevST === undefined) delete globalThis.SillyTavern;
+    else globalThis.SillyTavern = prevST;
+  }
+});
+
+test('ExtraSettings compiler aligns with worldbook inline compiler on trailing semicolons, raw <%= output, getMessageVar, and whitespace slurp', () => {
+  const { win } = loadModule(extraSettingsSrc);
+  const es = win.ReaderExtraSettings;
+  const list = es.normalizeList([
+    { name: '分号', kind: 'mechanism', content: '人格=<%- persona; %>', enabled: true },
+    { name: '原样', kind: 'mechanism', content: "<%= '<b>粗</b>' %>", enabled: true },
+    { name: '读变量', kind: 'mechanism', content: "<%- getMessageVar('stat_data.命运点数') %>", enabled: true },
+    { name: '吞空白', kind: 'mechanism', content: 'A   <%_ if (true) { _%>   B   <%_ } _%>   C', enabled: true },
+  ]);
+  const res = es.renderItems(list, { stat_data: { 命运点数: 77 }, persona: 'reader' });
+  assert.equal(res.errors.length, 0);
+  assert.equal(res.mechanisms[0].text, '人格=reader');
+  assert.equal(res.mechanisms[1].text, '<b>粗</b>');
+  assert.equal(res.mechanisms[2].text, '77');
+  assert.equal(res.mechanisms[3].text, 'ABC');
 });

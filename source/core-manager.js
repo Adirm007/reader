@@ -53,7 +53,7 @@
   var NON_CORE_NAME_RE = /(?:公共函数|命运抽卡|variables|变量更新|状态栏|地图|目录|说明文档)/i;
   var PAYLOAD_VAR_NAME_RE = /(?:payload|prompt|content|core|combo|bundle|template|system|lore)/i;
   var MAIN_BOOK_INFRA_RE = /(?:公共函数|destinyWiVar|➡️系统开始|\[本体\]\[变量\])/;
-  var ANCHOR_PROTECT_RE = /(?:butterfly_anchor|history_anchor|记忆总结|事件日志|摘要归档)/i;
+  var ANCHOR_PROTECT_RE = /(?:_anchor\b|anchor_log|记忆总结|事件日志|摘要归档)/i;
 
   function escHtml(value) {
     return String(value == null ? '' : value)
@@ -683,21 +683,30 @@
       + EJS_OPEN + '_ } _' + EJS_CLOSE;
   }
 
-  function wrapEjsScope(content, ownMacros, blocksFpWipe, dynamicPayloadVar) {
-    var lines = content.split(/\r?\n/);
+  function splitLeadingDecorators(content) {
+    var lines = String(content == null ? '' : content).split(/\r?\n/);
     var head = [];
     var idx = 0;
     while (idx < lines.length && /^@@[A-Za-z0-9_]+(?:\s|$)/.test(lines[idx])) {
       head.push(lines[idx]);
       idx++;
     }
-    var body = lines.slice(idx).join('\n');
+    return {
+      prefix: head.length ? head.join('\n') + '\n' : '',
+      body: lines.slice(idx).join('\n')
+    };
+  }
+
+  function wrapEjsScope(content, ownMacros, blocksFpWipe, dynamicPayloadVar) {
+    var split = splitLeadingDecorators(content);
+    var body = split.body;
     var ownJson = escapeJsonForEjs(ownMacros);
     var sharedJson = escapeJsonForEjs(SHARED_SET);
     var dynJson = dynamicPayloadVar ? escapeJsonForEjs(dynamicPayloadVar) : '""';
     var prelude = EJS_OPEN + '_ {\n'
       + 'const _dmcOwn = ' + ownJson + ';\n'
       + 'const _dmcShared = ' + sharedJson + ';\n'
+      + '(function(){ try { const _c = globalThis.SillyTavern && globalThis.SillyTavern.getContext && globalThis.SillyTavern.getContext(); if (_c && typeof _c.substituteParams === "function") { Object.keys(_dmcOwn).forEach(function(k){ if (typeof _dmcOwn[k] === "string") _dmcOwn[k] = _c.substituteParams(_dmcOwn[k]); }); } } catch (_) {} })();\n'
       + (dynamicPayloadVar ? 'const _dmcDynVar = ' + dynJson + ';\n' + buildDynamicScopeHelperCode() : '')
       + 'const _dmcOrigGetvar = typeof getvar === "function" ? getvar : null;\n'
       + 'const _dmcOrigGetLocal = typeof getLocalVar === "function" ? getLocalVar : null;\n'
@@ -721,7 +730,15 @@
         : '')
       + '_' + EJS_CLOSE + '\n';
     var epilogue = '\n' + EJS_OPEN + '_ } } _' + EJS_CLOSE;
-    return (head.length ? head.join('\n') + '\n' : '') + prelude + body + epilogue;
+    return split.prefix + prelude + body + epilogue;
+  }
+
+  function isManagedCore(coreKey, config) {
+    if (!coreKey || !config) return false;
+    if (config.primary && coreKey === config.primary) return true;
+    if (Array.isArray(config.activeCores) && config.activeCores.indexOf(coreKey) >= 0) return true;
+    if (config.cores && Object.prototype.hasOwnProperty.call(config.cores, coreKey)) return true;
+    return false;
   }
 
   function transformWorldbookEntry(entry, rawConfig, lastUserMessage, win) {
@@ -731,13 +748,16 @@
     }
     var core = detectCoreFromEntry(entry, entry.world, win);
     if (!core || core.isReader) {
-      return { changed: false, mode: core && core.isReader ? 'reader-self' : 'not-core' };
+      return { changed: false, mode: core && core.isReader ? 'reader-self' : 'not-core', core: core ? core.key : '' };
+    }
+    if (Array.isArray(config.activeCores) && config.activeCores.length > 0 && !isManagedCore(core.key, config)) {
+      return { changed: false, mode: 'unmanaged', core: core.key };
     }
 
     var isPrimary = !!config.primary && core.key === config.primary;
     var coreCfg = config.cores[core.key] || null;
     var isSilent = !!(coreCfg && coreCfg.silent === true);
-    var wakeKeywords = coreCfg && coreCfg.wakeKeywords && coreCfg.wakeKeywords.length
+    var wakeKeywords = coreCfg && Array.isArray(coreCfg.wakeKeywords)
       ? coreCfg.wakeKeywords
       : core.defaultWakeKeywords;
     var isWoken = isSilent ? matchesWakeKeywords(lastUserMessage, wakeKeywords) : false;
@@ -749,16 +769,17 @@
     }
 
     if (isPrimary && isSilent && !isWoken) {
+      var deco = splitLeadingDecorators(entry.content);
       if (core.isDynamicPayload && core.payloadVar) {
         var dynLabel = (core.payloadLabel || core.sharedMap['系统名'] || core.name || core.key).trim();
-        entry.content = buildDynamicPrimarySilentEjs(core.payloadVar, dynLabel, core.fallbackMacros);
+        entry.content = deco.prefix + buildDynamicPrimarySilentEjs(core.payloadVar, dynLabel, core.fallbackMacros);
         return { changed: true, mode: 'primary-silent', core: core.key };
       }
-      var spans = extractSetvars(entry.content);
+      var spans = extractSetvars(deco.body);
       var kept = [];
       for (var i = 0; i < spans.length; i++) {
         if (SHARED_SET[spans[i].name]) {
-          kept.push(entry.content.slice(spans[i].start, spans[i].end));
+          kept.push(deco.body.slice(spans[i].start, spans[i].end));
         }
       }
       if (kept.length === 0 && core.sharedMap) {
@@ -769,7 +790,7 @@
         });
       }
       var label = (core.sharedMap['系统名'] || core.name || core.key).trim();
-      entry.content = kept.join('') + '\n<' + label + '>\n'
+      entry.content = deco.prefix + kept.join('') + '\n<' + label + '>\n'
         + label + '当前处于静默观察状态，本轮不主动发言或进行干涉。\n</' + label + '>';
       return { changed: true, mode: 'primary-silent', core: core.key };
     }
@@ -841,6 +862,26 @@
     if (!config.enabled) return [];
     var lastUser = getLatestUserText(hostWin);
     var buckets = ['globalLore', 'characterLore', 'chatLore', 'personaLore'];
+
+    // Pre-scan loaded enabled cores across all buckets: if the configured primary core is no longer enabled
+    // (e.g. user switched to a different core from the card home page or World Info), bypass stale multi-core config.
+    var loadedCoreKeys = {};
+    var hasLoadedCore = false;
+    for (var sb = 0; sb < buckets.length; sb++) {
+      var sList = data[buckets[sb]];
+      if (!Array.isArray(sList)) continue;
+      for (var si = 0; si < sList.length; si++) {
+        var det = detectCoreFromEntry(sList[si], sList[si] && sList[si].world, hostWin);
+        if (det) {
+          loadedCoreKeys[det.key] = true;
+          hasLoadedCore = true;
+        }
+      }
+    }
+    if (config.primary && hasLoadedCore && !loadedCoreKeys[config.primary]) {
+      return [];
+    }
+
     var results = [];
     var coreEntryRefs = [];
     var coreOwnMacros = {};
@@ -850,7 +891,7 @@
     Object.keys(config.cores || {}).forEach(function (k) {
       var c = config.cores[k];
       if (!c || c.silent !== true) return;
-      var wake = c.wakeKeywords && c.wakeKeywords.length ? c.wakeKeywords : (DEFAULT_WAKE_MAP[k] || [extractCoreStem(k)]);
+      var wake = Array.isArray(c.wakeKeywords) ? c.wakeKeywords : (DEFAULT_WAKE_MAP[k] || [extractCoreStem(k)]);
       if (!matchesWakeKeywords(lastUser, wake)) silencedCores[k] = true;
     });
 
@@ -966,10 +1007,12 @@
         books.push(name.trim());
       }
     }
+    var primaryBookName = '';
     try {
       if (TH && typeof TH.getCharWorldbookNames === 'function') {
         var charWb = await TH.getCharWorldbookNames('current');
         if (charWb) {
+          if (typeof charWb.primary === 'string' && charWb.primary.trim()) primaryBookName = charWb.primary.trim();
           pushBook(charWb.primary);
           if (Array.isArray(charWb.additional)) charWb.additional.forEach(pushBook);
         }
@@ -986,7 +1029,10 @@
     var ctx = getSTContext(hostWin);
     if (ctx) {
       var ch = ctx.characters && ctx.characters[ctx.characterId];
-      if (ch && ch.data && ch.data.extensions && ch.data.extensions.world) pushBook(ch.data.extensions.world);
+      if (ch && ch.data && ch.data.extensions && ch.data.extensions.world) {
+        if (!primaryBookName && typeof ch.data.extensions.world === 'string') primaryBookName = ch.data.extensions.world.trim();
+        pushBook(ch.data.extensions.world);
+      }
       if (ctx.chatMetadata && ctx.chatMetadata.world_info) pushBook(ctx.chatMetadata.world_info);
       var stGlobals = (ctx.worldInfo && Array.isArray(ctx.worldInfo.selected_world_info) ? ctx.worldInfo.selected_world_info : null)
         || (Array.isArray(hostWin.selected_world_info) ? hostWin.selected_world_info : null);
@@ -1049,6 +1095,7 @@
 
       for (var k = 0; k < enabledCoresInBook.length; k++) {
         var info = enabledCoresInBook[k];
+        info.inPrimaryBook = !!(primaryBookName && bookName === primaryBookName);
         if (seenKey[info.key]) continue;
         seenKey[info.key] = true;
         found.push(info);
@@ -1057,11 +1104,18 @@
     return found;
   }
 
+  function formatDisplayKey(key) {
+    var s = String(key || '').trim();
+    if (s.indexOf('payload:') === 0) return s.slice(8);
+    if (s.indexOf('entry:') === 0) return s.slice(6);
+    return s;
+  }
+
   function statusSummary(win) {
     var cfg = loadConfig(win);
     if (!cfg.enabled) return '未启用';
     var n = cfg.activeCores.length;
-    var p = (cfg.primary && cfg.cores[cfg.primary] && cfg.cores[cfg.primary].name) || cfg.primary || '未设';
+    var p = (cfg.primary && cfg.cores[cfg.primary] && cfg.cores[cfg.primary].name) || formatDisplayKey(cfg.primary) || '未设';
     return (n > 1 ? n + ' 核 · ' : '') + '主:' + p.slice(0, 6);
   }
 
@@ -1171,6 +1225,7 @@
       }
       var primaryDetected = detected.find(function (d) { return d.key === draft.primary; });
       if (primaryDetected && !primaryDetected.isReader && !primaryDetected.isDynamicPayload
+        && !primaryDetected.inPrimaryBook
         && primaryDetected.sharedMap && Object.keys(primaryDetected.sharedMap).length > 0) {
         draft.primaryMacros = Object.assign({}, primaryDetected.sharedMap);
       } else {
@@ -1219,13 +1274,13 @@
           html += '<label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:12.5px;">'
             + '<input type="radio" name="dcm-primary" value="' + escHtml(item.key) + '"' + (isPrimary ? ' checked' : '') + ' />'
             + '<span>设为主核心</span></label></div>';
-          html += '<div class="dcm-meta">来源：' + escHtml(item.bookName || '当前世界书') + ' / ' + escHtml(item.entryName || item.key)
+          html += '<div class="dcm-meta">来源：' + escHtml(item.bookName || '当前世界书') + ' / ' + escHtml(item.entryName || item.name || formatDisplayKey(item.key))
             + ' · 宏：' + escHtml(item.macros.slice(0, 5).join('、')) + (item.macros.length > 5 ? ' 等 ' + item.macros.length + ' 项' : '') + '</div>';
           html += '<div class="dcm-ctrl">'
             + '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;">'
             + '<input type="checkbox" data-dcm-silent="1"' + (c.silent ? ' checked' : '') + ' />'
             + '<span>静默此核心（平时大幅降低 token / 不主动发言）</span></label></div>';
-          html += '<div><div class="dcm-meta" style="margin-bottom:4px;">临时唤起关键词（逗号或换行分隔；用户最新输入含任一词时本轮临时激活）</div>'
+          html += '<div><div class="dcm-meta" style="margin-bottom:4px;">临时唤起关键词（逗号或换行分隔，留空则不自动唤起；用户最新输入含任一词时本轮临时激活）</div>'
             + '<input type="text" class="dcm-kw" data-dcm-kw="1" value="' + escHtml((c.wakeKeywords || []).join(', ')) + '" placeholder="例如：' + escHtml(item.defaultWakeKeywords.join(', ')) + '" /></div>';
           html += '</div>';
         }
@@ -1278,7 +1333,7 @@
         installWorldInfoHook(hostWin);
         if (typeof root.dlbSyncEggs === 'function') try { root.dlbSyncEggs(); } catch (_) {}
         if (root.__readerHostApi && typeof root.__readerHostApi.refresh === 'function') root.__readerHostApi.refresh();
-        var primaryLabel = (draft.primary && draft.cores[draft.primary] && draft.cores[draft.primary].name) || draft.primary || '未指定';
+        var primaryLabel = (draft.primary && draft.cores[draft.primary] && draft.cores[draft.primary].name) || formatDisplayKey(draft.primary) || '未指定';
         toast(draft.enabled ? ('核心管理已生效 · 主核心：' + primaryLabel) : '核心管理已保存（当前未启用）');
         close();
       }

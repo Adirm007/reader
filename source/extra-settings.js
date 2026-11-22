@@ -122,38 +122,59 @@
 
   function compileEjsBody(template) {
     var src = String(template == null ? '' : template);
-    var text = src
-      .replace(new RegExp('[ \\t]*' + EJS_OPEN + '_', 'g'), EJS_OPEN + '_')
-      .replace(new RegExp('_' + EJS_CLOSE + '[ \\t]*', 'g'), '_' + EJS_CLOSE);
-    var tag = new RegExp(EJS_OPEN + '([_\\-=#]?)([\\s\\S]*?)([_\\-]?)' + EJS_CLOSE, 'g');
-    var code = 'with (__locals) {\nvar __o = [];\n';
-    var last = 0;
-    var trim = false;
-    function pushLiteral(chunk) {
-      if (trim) chunk = chunk.replace(/^\r?\n/, '');
-      trim = false;
-      if (chunk) code += '__o.push(' + JSON.stringify(chunk) + ');\n';
+    var code = ['var __o = [];', 'with (__locals) {'];
+    var pos = 0;
+    var stripNextWs = '';
+    while (pos < src.length) {
+      var idx = src.indexOf(EJS_OPEN, pos);
+      if (idx < 0) {
+        var tail = src.slice(pos);
+        if (stripNextWs === '_') tail = tail.replace(/^[ \t]*(?:\r?\n)?/, '');
+        else if (stripNextWs === '-') tail = tail.replace(/^\r?\n/, '');
+        stripNextWs = '';
+        if (tail) code.push('__o.push(' + JSON.stringify(tail) + ');');
+        break;
+      }
+      var text = src.slice(pos, idx);
+      if (stripNextWs === '_') text = text.replace(/^[ \t]*(?:\r?\n)?/, '');
+      else if (stripNextWs === '-') text = text.replace(/^\r?\n/, '');
+      stripNextWs = '';
+      var after = idx + 2;
+      var ch = src.charAt(after);
+      var mode = '';
+      if (ch === '_' || ch === '-' || ch === '=' || ch === '#') { mode = ch; after++; }
+      if (mode === '_') text = text.replace(/[ \t]+$/, '');
+      if (text) code.push('__o.push(' + JSON.stringify(text) + ');');
+      var end = src.indexOf(EJS_CLOSE, after);
+      if (end < 0) {
+        code.push('__o.push(' + JSON.stringify(src.slice(idx)) + ');');
+        break;
+      }
+      var inner = src.slice(after, end);
+      var closeTail = inner.slice(-1);
+      if (closeTail === '_' || closeTail === '-') {
+        stripNextWs = closeTail;
+        inner = inner.slice(0, -1);
+      }
+      pos = end + 2;
+      if (mode === '#') continue;
+      if (mode === '-' || mode === '=') {
+        var expr = inner.trim().replace(/;\s*$/, '');
+        if (expr) code.push('__o.push((function(){ var __v = (' + expr + '); return __v == null ? "" : String(__v); })());');
+      } else {
+        code.push(inner);
+      }
     }
-    var match;
-    while ((match = tag.exec(text)) !== null) {
-      pushLiteral(text.slice(last, match.index));
-      var open = match[1], body = match[2], close = match[3];
-      if (open === '-') code += '__o.push(' + body.replace(/;\s*$/, '') + ');\n';
-      else if (open === '=') code += '__o.push(__esc(' + body.replace(/;\s*$/, '') + '));\n';
-      else if (open !== '#') code += body + '\n';
-      trim = close === '_' || close === '-';
-      last = match.index + match[0].length;
-    }
-    pushLiteral(text.slice(last));
-    return code + 'return __o.join("");\n}';
+    code.push('}', 'return __o.join("");');
+    return code.join('\n');
   }
 
   function evalEjs(template, locals) {
     var src = String(template == null ? '' : template);
     if (src.indexOf(EJS_OPEN) < 0) return src;
     var body = compileEjsBody(src);
-    var fn = new Function('__locals', '__esc', body);
-    return String(fn(locals || {}, escHtml) || '');
+    var fn = new Function('__locals', body);
+    return String(fn(locals || {}) || '');
   }
 
   function readPath(obj, pathStr) {
@@ -255,10 +276,42 @@
     };
   }
 
+  function withDefaultHelpers(locals) {
+    var base = locals && typeof locals === 'object' ? Object.assign({}, locals) : {};
+    var statObj = base.stat_data && typeof base.stat_data === 'object' ? base.stat_data : {};
+    var msgRoot = { stat_data: statObj };
+    if (typeof base.getMessageVar !== 'function') {
+      base.getMessageVar = function (key, opts) {
+        var val = readPath(msgRoot, key);
+        return val === undefined ? (opts || {}).defaults : val;
+      };
+    }
+    if (typeof base.getLocalVar !== 'function') {
+      base.getLocalVar = function (key, opts) {
+        var val = readPath(base, key);
+        return val === undefined ? (opts || {}).defaults : val;
+      };
+    }
+    if (typeof base.getvar !== 'function') {
+      base.getvar = function (key, opts) {
+        var val = readPath(msgRoot, key);
+        if (val === undefined) val = readPath(base, key);
+        return val === undefined ? (opts || {}).defaults : val;
+      };
+    }
+    if (typeof base.setLocalVar !== 'function') base.setLocalVar = function (_k, v) { return v; };
+    if (typeof base.setMessageVar !== 'function') base.setMessageVar = function (_k, v) { return v; };
+    if (typeof base.setvar !== 'function') base.setvar = function (_k, v) { return v; };
+    if (typeof base.getChatMessage !== 'function') base.getChatMessage = function () { return String(base.lastUserMessage || ''); };
+    if (typeof base.matchChatMessages !== 'function') base.matchChatMessages = function () { return false; };
+    return base;
+  }
+
   function renderItems(list, locals, options) {
     var opts = options || {};
     var items = normalizeList(list);
     var silent = opts.silent === true;
+    var evalLocals = withDefaultHelpers(locals);
     var mechanisms = [];
     var appearances = [];
     var personalities = [];
@@ -272,7 +325,7 @@
       var text = raw;
       if (raw.indexOf(EJS_OPEN) >= 0) {
         try {
-          text = String(evalEjs(raw, locals) || '').trim();
+          text = String(evalEjs(raw, evalLocals) || '').trim();
         } catch (err) {
           errors.push({ id: item.id, name: item.name, error: String(err && err.message || err) });
           continue;

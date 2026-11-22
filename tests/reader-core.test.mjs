@@ -422,3 +422,49 @@ test('unlimited dream_banlist renders all 15 banned books in [书目展示]', as
     assert.ok(prompt.includes(title), `banlist must include ${title}`);
   }
 });
+
+test('regex metacharacters in wakeKeywords never crash rendering and match literally case-insensitively', async () => {
+  for (const kw of [':)', 'C++', '*', '(读者']) {
+    const host = createReaderHost({
+      local: {
+        dream_persona: 'reader',
+        dream_core_manager: JSON.stringify({
+          enabled: true,
+          primary: '九十九夜梦',
+          activeCores: ['九十九夜梦'],
+          cores: { 九十九夜梦: { silent: true, wakeKeywords: [kw] } },
+        }),
+      },
+      userMessage: '普通消息',
+      statData: makeStatData(),
+    });
+    const silentOut = await host.render();
+    assert.match(silentOut, /保持完全静默/);
+    assert.doesNotMatch(silentOut, /<%|%>/);
+
+    host.setUserMessage(`测试触发 ${kw.toLowerCase()} 完成`);
+    const wokenOut = await host.render();
+    assert.doesNotMatch(wokenOut, /保持完全静默/);
+    assert.match(wokenOut, /<读者>/);
+  }
+});
+
+test('extra personality with $& / $\' does not duplicate kuromaku persona line and inline EJS compiler matches preview semantics', async () => {
+  const items = [
+    { id: '1', name: '', kind: 'personality', enabled: true, content: "价格写作$&与$'" },
+    { id: '2', name: '分号', kind: 'mechanism', enabled: true, content: '人格=<%- persona; %>' },
+    { id: '3', name: '原样', kind: 'mechanism', enabled: true, content: "<%= '<b>粗</b>' %>" },
+    { id: '4', name: '吞空白', kind: 'mechanism', enabled: true, content: 'A   <%_ if (true) { _%>   B   <%_ } _%>   C' },
+  ];
+  const host = createReaderHost({
+    local: { dream_persona: 'kuromaku', dream_extra_settings: JSON.stringify(items) },
+    statData: makeStatData({ relations: { [target]: makeRelation() } }),
+  });
+  const prompt = await host.render();
+  const line = prompt.split(/\r?\n/).find((l) => /性格:/.test(l) && l.includes('价格写作')) || '';
+  assert.ok(line.includes("价格写作$&与$'"), 'literal $& and $\' must be preserved verbatim');
+  assert.equal((line.match(/性格:/g) || []).length, 1, '$& must not duplicate 性格: prefix');
+  assert.ok(prompt.includes('【分号】: 人格=kuromaku'));
+  assert.ok(prompt.includes('【原样】: <b>粗</b>'));
+  assert.ok(prompt.includes('【吞空白】: ABC'));
+});
