@@ -1,3 +1,11 @@
+# 2026.11.24.1 世界书新条目改用[本体]命名
+
+已正式发布 [v2026.11.24.1](https://github.com/Adirm007/reader/releases/tag/v2026.11.24.1)，GitHub 确认 `immutable=true`、`draft=false`，发布证明与 `fixed-updates` 更新清单已完成。源提交 C 为 `eaca81dfd16af48fb87d1f36b78dbd9b7e939ee7`，分发提交 D 为 `7634d33e18e7f6be022b2135c5871e4d0c4f5b82`；固定正则附件 28,451 字节，SHA-256 为 `33a772f2e7ef5358cacdf36c7a105415465231dfe363dc01c47a8faa8fbbf18c`。
+
+「检查更新」写入的新世界书条目由 `命定系统-读者核心(Angtuck)` 改名为 `[本体][命定系统]读者核心(Angtuck)`，以便被开局选择正则捕获。只改 `worldbook/entries.json` 与 `worldbook/manifest.json` 中的条目名；条目正文、版本标记（仍为 v2026.11.22.3）、旧版识别规则与插入设置不变。已是 v2026.11.22.3 的条目不会因本版提示更新，更旧的条目更新后即采用新名。
+
+`npm test` **356/356 通过，0 失败、0 跳过**；未做真实酒馆实机游玩。
+
 # 2026.11.22.3 多核心陈旧配置回退、唤醒词安全匹配与编译对齐
 
 已正式发布 [v2026.11.22.3](https://github.com/Adirm007/reader/releases/tag/v2026.11.22.3)，GitHub 确认 `immutable=true`、`draft=false`，发布证明与 `fixed-updates` 更新清单已完成。源提交 C 为 `7dc143973e273ce231463038d96abbaaeba5bc82`，分发提交 D 为 `fa9aa6fbf0906abb87a71a4891b94409817afbc5`；固定正则附件 28,451 字节，SHA-256 为 `0738e00e38a4808db9ff73197ca4dc2e07cf820a48cdecb2ac9cf4fea6650b88`。
