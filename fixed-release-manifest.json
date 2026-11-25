@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "name": "dream-reader-render-fixed",
-  "version": "2026.11.22.3",
+  "version": "2026.11.24.1",
   "license": "LICENSE",
   "files": {
     "reader.css": {
@@ -22,12 +22,12 @@
     "reader-runtime.js": {
       "path": "dist/reader-runtime.js",
       "bytes": 1732923,
-      "sha256": "b0f52726dd6c67cfe10389dd9df68249c6f0873dbeb7cc01b8dd501b1ae266f4"
+      "sha256": "0d7d718210f7bbc808ce477ee1e72604e19bb29ae961e43274c1d279463ca028"
     },
     "reader-letter.json": {
       "path": "regex/读者对话渲染-脚本版.json",
       "bytes": 169258,
-      "sha256": "87306cb5d6b8e5cc5c07d7acd419cb78880ba98c09b820a81f8d350d114e9882"
+      "sha256": "7fbf524244f206b34f2678ade3e8871b0b3608f78cde0ed69bd497e6cbc05a04"
     }
   },
   "installMode": "script",
@@ -902,20 +902,10 @@
       "bytes": 2057083,
       "sha256": "c5c23a1a624c2e742ed8250ebf55174151f6353e3fdc09ecd6fce248a84bf0e3"
     },
-    "gallery/index.json": {
-      "path": "gallery/index.json",
-      "bytes": 7373,
-      "sha256": "71c9468765ebb422934b92550adac5a9503b0badd708fddbde297d033d854777"
-    },
     "gallery/INKWELL ASCENT.png": {
       "path": "gallery/INKWELL ASCENT.png",
       "bytes": 1663627,
       "sha256": "95438a4d27e08288d11d33d97a96ac0ab4aa98bdaee4ac12a901b715a3894d61"
-    },
-    "gallery/joker.png": {
-      "path": "gallery/joker.png",
-      "bytes": 1662244,
-      "sha256": "a1b96db50eaf5c96459ad866b317ea2056d0a3ce2583ac0d01684911f244ee9f"
     },
     "gallery/KEY TURN.png": {
       "path": "gallery/KEY TURN.png",
@@ -926,11 +916,6 @@
       "path": "gallery/KOI GATE.png",
       "bytes": 1651660,
       "sha256": "cd78a5e719b47209e9640d8df7ac46cdf4a69eb9830667fa8b07edd4ab97426c"
-    },
-    "gallery/links.txt": {
-      "path": "gallery/links.txt",
-      "bytes": 208,
-      "sha256": "3ac52658a8d7847e2d6129004aec183ec1d98fc1951eb61b4d46ad9f542d77d5"
     },
     "gallery/LOOP.png": {
       "path": "gallery/LOOP.png",
@@ -1011,6 +996,21 @@
       "path": "gallery/T.png",
       "bytes": 1753810,
       "sha256": "9822d2081d539b87b7322f5f6a304ac3a40ba8053b7d4f58766cf357dd05b2f4"
+    },
+    "gallery/index.json": {
+      "path": "gallery/index.json",
+      "bytes": 7373,
+      "sha256": "71c9468765ebb422934b92550adac5a9503b0badd708fddbde297d033d854777"
+    },
+    "gallery/joker.png": {
+      "path": "gallery/joker.png",
+      "bytes": 1662244,
+      "sha256": "a1b96db50eaf5c96459ad866b317ea2056d0a3ce2583ac0d01684911f244ee9f"
+    },
+    "gallery/links.txt": {
+      "path": "gallery/links.txt",
+      "bytes": 208,
+      "sha256": "3ac52658a8d7847e2d6129004aec183ec1d98fc1951eb61b4d46ad9f542d77d5"
     },
     "gallery/♠J.png": {
       "path": "gallery/♠J.png",
@@ -1502,40 +1502,40 @@
       "bytes": 1766003,
       "sha256": "9021ef7df30a8024d871e4bfec78a7d5321db3db0725452b52ad003161fecd87"
     },
-    "personas/index.json": {
-      "path": "personas/index.json",
-      "bytes": 513,
-      "sha256": "e3c7dfad02919881f2c31fe435655af2db3092114b24ba30b09c58474247bc65"
-    },
     "personas/README.md": {
       "path": "personas/README.md",
       "bytes": 1279,
       "sha256": "db1eb1b239b1cce25edf720b5fb9ca0f10d0eabaf631d65d7e0962f326b60b70"
+    },
+    "personas/index.json": {
+      "path": "personas/index.json",
+      "bytes": 513,
+      "sha256": "e3c7dfad02919881f2c31fe435655af2db3092114b24ba30b09c58474247bc65"
     },
     "personas/缀诗的少女.json": {
       "path": "personas/缀诗的少女.json",
       "bytes": 5946,
       "sha256": "46d3568dac97f4a86629a75aa726b8c93136e1ec0e3da1c76399c5b106ce142c"
     },
+    "worldbook/README.md": {
+      "path": "worldbook/README.md",
+      "bytes": 1544,
+      "sha256": "590bff840d9de2f6299b0b4195e425e3f8b2d6facff740e28371e58f9ad4c7a3"
+    },
     "worldbook/entries.json": {
       "path": "worldbook/entries.json",
-      "bytes": 981,
-      "sha256": "d0611b988c3314a0568ddb1629fb0abb30803fd184d4c8eea267973fecc9ecd3"
+      "bytes": 990,
+      "sha256": "fa859cbbc9416e65efcfc3f64a84e40a775805eeec93c62acecb6475c5ecc475"
     },
     "worldbook/manifest.json": {
       "path": "worldbook/manifest.json",
-      "bytes": 3512,
-      "sha256": "f15a9b3d67d77dc2aec813694acb0f9eb0f6e5a308ff5208f722515c45bd41ca"
+      "bytes": 3521,
+      "sha256": "fccd4d5725578810dcaf1a229b9d2e49929dd5faee00598d7650e40b9990fba9"
     },
     "worldbook/notes.txt": {
       "path": "worldbook/notes.txt",
       "bytes": 2036,
       "sha256": "37781ed1d6e30e31826e0aa4e98afe956e6f7d1cf3187f4f3ca3f1e9deb5a809"
-    },
-    "worldbook/README.md": {
-      "path": "worldbook/README.md",
-      "bytes": 1544,
-      "sha256": "590bff840d9de2f6299b0b4195e425e3f8b2d6facff740e28371e58f9ad4c7a3"
     },
     "worldbook/读者核心本体.txt": {
       "path": "worldbook/读者核心本体.txt",

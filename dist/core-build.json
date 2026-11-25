@@ -1,14 +1,14 @@
 {
   "runtime": {
-    "sha256": "b0f52726dd6c67cfe10389dd9df68249c6f0873dbeb7cc01b8dd501b1ae266f4",
+    "sha256": "0d7d718210f7bbc808ce477ee1e72604e19bb29ae961e43274c1d279463ca028",
     "bytes": 1732923
   },
   "cardRuntime": {
-    "sha256": "d24e5ebce8ed6518ad0bf989122fdef930f7031277af59beb5774110d9e29e7e",
+    "sha256": "c8b4a01a65b409e68d441451673c485d5d8ec52b43e55a07b2f64fb1e8e7c07a",
     "bytes": 1748493
   },
   "letter": {
-    "sha256": "3c230793e0d28cfbd93e39eca8361d980cb30937138457613e88d5a0b1a06ec4",
+    "sha256": "c0f73c15efdc073f7f431bb60c2a46bc714816a4ca3f79689ad0622e5996aeeb",
     "bytes": 165229
   }
 }
