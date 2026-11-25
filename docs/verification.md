@@ -1,3 +1,11 @@
+# 2026.11.25.1 多核心同槽渲染隔离、@@activate 兼容与本轮加载状态
+
+已正式发布 [v2026.11.25.1](https://github.com/Adirm007/reader/releases/tag/v2026.11.25.1)，GitHub 确认 `immutable=true`、`draft=false`，发布证明与 `fixed-updates` 更新清单已完成。源提交 C 为 `00887c89193a5f36b82d747156cd8f3e86f9dab2`，分发提交 D 为 `2ba33272752583ef566ab0b453f13e13cee00903`；固定正则附件 28,451 字节，SHA-256 为 `ad89947a11c618bdc9d2b1ae32dbf54c5614221d0e5c8dceef79f699fdfb44a0`。
+
+按 SillyTavern 1.19.0 与 ST-Prompt-Template 1.17.9 源码核实的执行顺序修复多核心共存的工程问题：模板插件把同一位置（角色定义前后、每个深度与角色）合并的条目当作一个模板渲染，任一条目抛错整段都以 EJS 原文进入提示词，受管核心条目现各自带异常保护，只跳过出错的核心（丢弃其半截输出、控制台保留原错误、同一错误一分钟内只提示一次）；主核心与配套条目仅在不改变作用域时加保护（顶层声明 const/let/class/function 的条目保持原样，`@@private` 条目照常保护）。改写过的条目把 `@@activate` 换成同等的强制激活，避免模板插件换回世界书原文而撤销次核心隔离与主核心静默。配置里的动态载荷核心按读取的载荷变量识别，新聊天首轮或载荷出错时不再被当成主核心缺失而整套放行。每轮世界书加载后只在宿主页面内存里留下本轮主核心是否加载与外挂主核心当前共享宏（不写聊天、不存盘），读者核心在主核心本轮未加载时按单核心写共享宏，命定之诗 `destinyWiVar` 当轮读取外挂主核心的最新值。世界书版本标记升至 v2026.11.25.1。
+
+`npm test` **362/362 通过，0 失败、0 跳过**（含真实 Chromium 运行时回归）；新增 `tests/core-manager-pipeline.test.mjs` 按核实的顺序重放世界书加载、装饰器处理、宏替换与合并渲染。
+
 # 2026.11.24.1 世界书新条目改用[本体]命名
 
 已正式发布 [v2026.11.24.1](https://github.com/Adirm007/reader/releases/tag/v2026.11.24.1)，GitHub 确认 `immutable=true`、`draft=false`，发布证明与 `fixed-updates` 更新清单已完成。源提交 C 为 `eaca81dfd16af48fb87d1f36b78dbd9b7e939ee7`，分发提交 D 为 `7634d33e18e7f6be022b2135c5871e4d0c4f5b82`；固定正则附件 28,451 字节，SHA-256 为 `33a772f2e7ef5358cacdf36c7a105415465231dfe363dc01c47a8faa8fbbf18c`。
