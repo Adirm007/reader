@@ -361,6 +361,35 @@ test('multi-core secondary mode prevents global macro writes while preserving lo
   assert.match(wokenPrompt, /<读者>/);
 });
 
+test('when this generation did not load the configured primary, the Reader writes the shared macros like a single core', async () => {
+  const config = JSON.stringify({ enabled: true, primary: '外挂主核', activeCores: ['外挂主核', '九十九夜梦'], cores: {} });
+  const hostKey = '__dreamCoreManagerWorldInfoHook';
+  const previous = globalThis[hostKey];
+  try {
+    // The core manager bypasses a stale configuration for the whole generation; the Reader must not stay mute.
+    globalThis[hostKey] = { round: { chatId: undefined, primary: '外挂主核', primaryLoaded: false, stale: true } };
+    const stale = createReaderHost({ local: { dream_persona: 'reader', 系统核心: '外挂主核', dream_core_manager: config }, statData: makeStatData() });
+    await stale.render();
+    assert.equal(stale.local.系统核心, '九十九夜梦');
+    assert.equal(stale.local.系统核心名, '不明存在');
+
+    // Loaded primary, another chat's state, or no state at all: the Reader stays a secondary core.
+    for (const round of [
+      { chatId: undefined, primary: '外挂主核', primaryLoaded: true, stale: false },
+      { chatId: 'another-chat', primary: '外挂主核', primaryLoaded: false, stale: true },
+      null,
+    ]) {
+      globalThis[hostKey] = { round };
+      const host = createReaderHost({ local: { dream_persona: 'reader', 系统核心: '外挂主核', dream_core_manager: config }, statData: makeStatData() });
+      await host.render();
+      assert.equal(host.local.系统核心, '外挂主核');
+    }
+  } finally {
+    if (previous === undefined) delete globalThis[hostKey];
+    else globalThis[hostKey] = previous;
+  }
+});
+
 test('dream_extra_settings blends mechanism/appearance/personality directly into native prompt fields across all personas', async () => {
   const items = [
     { id: '1', name: '口癖', kind: 'personality', enabled: true, applyWhenSilent: false, content: '句尾偶尔轻声加一句“别翻页太快哦”。' },

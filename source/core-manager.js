@@ -697,7 +697,209 @@
     };
   }
 
-  function wrapEjsScope(content, ownMacros, blocksFpWipe, dynamicPayloadVar) {
+  function decoratorNames(prefix) {
+    return String(prefix || '').split('\n').map(function (line) {
+      return line.trim().split(/\s+/)[0];
+    }).filter(Boolean);
+  }
+
+  // ST-Prompt-Template answers `@@activate` after this hook by re-reading the entry from its book and swapping
+  // that raw copy back into the list, which would undo any rewrite made here. A rewritten entry therefore drops
+  // the decorator and takes the same forced activation on this per-generation clone instead.
+  function adaptRewrittenPrefix(prefix, entry) {
+    var names = decoratorNames(prefix);
+    if (names.indexOf('@@activate') < 0 || names.indexOf('@@dont_activate') >= 0) return prefix;
+    if (entry && typeof entry === 'object') {
+      entry.constant = true;
+      entry.ignoreBudget = true;
+      entry.group = '';
+      entry.cooldown = 0;
+      entry.delay = 0;
+      entry.triggers = [];
+      entry.vectorized = false;
+      entry.delayUntilRecursion = false;
+    }
+    return String(prefix).split('\n').filter(function (line) {
+      return line.trim().split(/\s+/)[0] !== '@@activate';
+    }).join('\n');
+  }
+
+  function setRewrittenContent(entry, content) {
+    if (/^@@/.test(content)) {
+      var split = splitLeadingDecorators(content);
+      if (decoratorNames(split.prefix).indexOf('@@activate') >= 0) {
+        entry.content = adaptRewrittenPrefix(split.prefix, entry) + split.body;
+        return;
+      }
+    }
+    entry.content = content;
+  }
+
+  // Scriptlet code of an EJS body in source order (output and comment tags carry no declarations).
+  function collectEjsCode(body) {
+    var src = String(body == null ? '' : body);
+    var parts = [];
+    var pos = 0;
+    while (pos < src.length) {
+      var open = src.indexOf(EJS_OPEN, pos);
+      if (open < 0) break;
+      var mark = src.charAt(open + 2);
+      if (mark === '%') { pos = open + 3; continue; }
+      var close = src.indexOf(EJS_CLOSE, open + 2);
+      if (close < 0) return null;
+      if (mark !== '=' && mark !== '-' && mark !== '#') {
+        var code = src.slice(open + (mark === '_' ? 3 : 2), close);
+        var last = code.charAt(code.length - 1);
+        if (last === '-' || last === '_') code = code.slice(0, -1);
+        parts.push(code);
+      }
+      pos = close + 2;
+    }
+    return parts.join('\n;\n');
+  }
+
+  function skipQuoted(code, i, quote) {
+    for (i++; i < code.length; i++) {
+      var ch = code.charAt(i);
+      if (ch === '\\') { i++; continue; }
+      if (ch === quote) return i + 1;
+      if (ch === '\n') return -1;
+    }
+    return -1;
+  }
+
+  function skipTemplateLiteral(code, i) {
+    for (i++; i < code.length; i++) {
+      var ch = code.charAt(i);
+      if (ch === '\\') { i++; continue; }
+      if (ch === '`') return i + 1;
+      if (ch === '$' && code.charAt(i + 1) === '{') {
+        var depth = 1;
+        i += 2;
+        while (i < code.length && depth > 0) {
+          var c = code.charAt(i);
+          if (c === '"' || c === "'") { i = skipQuoted(code, i, c); if (i < 0) return -1; continue; }
+          if (c === '`') { i = skipTemplateLiteral(code, i); if (i < 0) return -1; continue; }
+          if (c === '{') depth++;
+          else if (c === '}') depth--;
+          i++;
+        }
+        i--;
+      }
+    }
+    return -1;
+  }
+
+  function skipRegexLiteral(code, i) {
+    var inClass = false;
+    for (i++; i < code.length; i++) {
+      var ch = code.charAt(i);
+      if (ch === '\\') { i++; continue; }
+      if (ch === '\n') return -1;
+      if (inClass) { if (ch === ']') inClass = false; continue; }
+      if (ch === '[') { inClass = true; continue; }
+      if (ch === '/') {
+        i++;
+        while (i < code.length && /[a-z]/i.test(code.charAt(i))) i++;
+        return i;
+      }
+    }
+    return -1;
+  }
+
+  var REGEX_AFTER_WORDS = { 'return': 1, 'typeof': 1, 'instanceof': 1, 'in': 1, 'of': 1, 'new': 1, 'delete': 1, 'void': 1, 'throw': 1, 'case': 1, 'do': 1, 'else': 1, 'await': 1, 'yield': 1 };
+
+  // True when the code declares const/let/class/function bindings outside every brace, bracket and parenthesis.
+  // Such an entry may share them with later entries of the same merged prompt, so it must not be put in a block.
+  // Anything the scan cannot follow counts as a declaration.
+  function hasTopLevelDeclaration(code) {
+    var depth = 0;
+    var prev = '';
+    var prevWord = '';
+    var i = 0;
+    while (i < code.length) {
+      var ch = code.charAt(i);
+      if (ch === '/' && code.charAt(i + 1) === '/') {
+        var nl = code.indexOf('\n', i);
+        i = nl < 0 ? code.length : nl;
+        continue;
+      }
+      if (ch === '/' && code.charAt(i + 1) === '*') {
+        var endComment = code.indexOf('*/', i + 2);
+        if (endComment < 0) return true;
+        i = endComment + 2;
+        continue;
+      }
+      if (ch === '"' || ch === "'" || ch === '`'
+        || (ch === '/' && (prev === '' || '(,=:[!&|?{};+-*%<>~^'.indexOf(prev) >= 0 || REGEX_AFTER_WORDS[prevWord]))) {
+        i = ch === '`' ? skipTemplateLiteral(code, i) : (ch === '/' ? skipRegexLiteral(code, i) : skipQuoted(code, i, ch));
+        if (i < 0) return true;
+        prev = ch;
+        prevWord = '';
+        continue;
+      }
+      if (/[A-Za-z_$]/.test(ch)) {
+        var j = i + 1;
+        while (j < code.length && /[\w$]/.test(code.charAt(j))) j++;
+        var word = code.slice(i, j);
+        if (depth === 0) {
+          var binds = /^\s*[\w$[{*]/.test(code.slice(j, j + 40));
+          if (binds && (word === 'const' || word === 'let' || word === 'class')) return true;
+          if (binds && word === 'function'
+            && (prev === '' || prev === ';' || prev === '{' || prev === '}' || prevWord === 'async')) return true;
+        }
+        prev = 'w';
+        prevWord = word;
+        i = j;
+        continue;
+      }
+      if (ch === '{' || ch === '(' || ch === '[') depth++;
+      else if (ch === '}' || ch === ')' || ch === ']') {
+        depth--;
+        if (depth < 0) return true;
+      }
+      if (!/\s/.test(ch)) {
+        prev = ch;
+        prevWord = '';
+      }
+      i++;
+    }
+    return depth !== 0;
+  }
+
+  function isScopeSafeEjs(body) {
+    var code = collectEjsCode(body);
+    return code !== null && !hasTopLevelDeclaration(code);
+  }
+
+  // Prompt-Template compiles every entry merged into one prompt slot (before/after character, each depth and
+  // role) as a single template and leaves the whole slot unrendered when any part throws. The guard keeps a
+  // failing core inside its own entry: its partial output is dropped, the error is logged and reported once.
+  function buildGuardOpen() {
+    return EJS_OPEN + ' { const _dmcGuardMark = typeof __output === "string" ? __output.length : -1; try { ' + EJS_CLOSE;
+  }
+
+  function buildGuardClose(meta) {
+    return EJS_OPEN + ' } catch (_dmcGuardErr) {\n'
+      + 'if (_dmcGuardMark >= 0 && typeof __output === "string") __output = __output.slice(0, _dmcGuardMark);\n'
+      + 'try { const _dmcHook = globalThis.' + HOOK_KEY + '; if (_dmcHook && typeof _dmcHook.report === "function") _dmcHook.report(_dmcGuardErr, '
+      + escapeJsonForEjs(meta || {}) + '); else console.error("[ReaderCoreManager] 核心条目渲染出错，已单独跳过", _dmcGuardErr); } catch (_dmcReportErr) {}\n'
+      + '} } ' + EJS_CLOSE;
+  }
+
+  // Guards an entry that keeps its own scope (primary core, companion entry). Entries with top-level bindings
+  // stay untouched unless `@@private` already gives them a function scope.
+  function guardManagedEntry(entry, meta) {
+    if (!entry || typeof entry.content !== 'string' || entry.content.indexOf(EJS_OPEN) < 0) return false;
+    if (entry.content.indexOf('_dmcGuardMark') >= 0) return false;
+    var split = splitLeadingDecorators(entry.content);
+    if (split.body.indexOf(EJS_OPEN) < 0) return false;
+    if (decoratorNames(split.prefix).indexOf('@@private') < 0 && !isScopeSafeEjs(split.body)) return false;
+    entry.content = adaptRewrittenPrefix(split.prefix, entry) + buildGuardOpen() + split.body + buildGuardClose(meta);
+    return true;
+  }
+
+  function wrapEjsScope(content, ownMacros, blocksFpWipe, dynamicPayloadVar, guardMeta) {
     var split = splitLeadingDecorators(content);
     var body = split.body;
     var ownJson = escapeJsonForEjs(ownMacros);
@@ -730,7 +932,7 @@
         : '')
       + '_' + EJS_CLOSE + '\n';
     var epilogue = '\n' + EJS_OPEN + '_ } } _' + EJS_CLOSE;
-    return split.prefix + prelude + body + epilogue;
+    return split.prefix + prelude + buildGuardOpen() + body + buildGuardClose(guardMeta) + epilogue;
   }
 
   function isManagedCore(coreKey, config) {
@@ -741,12 +943,70 @@
     return false;
   }
 
-  function transformWorldbookEntry(entry, rawConfig, lastUserMessage, win) {
+  function configuredPayloadKeys(config) {
+    var keys = [];
+    function add(k) {
+      var s = typeof k === 'string' ? k.trim() : '';
+      if (s.indexOf('payload:') === 0 && s.length > 8 && keys.indexOf(s) < 0) keys.push(s);
+    }
+    if (config) {
+      add(config.primary);
+      (Array.isArray(config.activeCores) ? config.activeCores : []).forEach(add);
+      Object.keys(config.cores || {}).forEach(add);
+    }
+    return keys;
+  }
+
+  // A configured dynamic-payload core keeps its identity while its runtime has no usable payload yet (fresh chat,
+  // failed or late composition): it is then neither taken for a missing primary nor left unmanaged and unguarded.
+  function detectManagedCore(entry, win, config) {
+    var core = detectCoreFromEntry(entry, entry && entry.world, win);
+    var keys = configuredPayloadKeys(config);
+    if (!keys.length || !entry || typeof entry !== 'object' || typeof entry.content !== 'string') return core;
+    if (core && (!core.isDynamicPayload || keys.indexOf(core.key) >= 0)) return core;
+    var enabled = typeof entry.enabled === 'boolean' ? entry.enabled : entry.disable !== true;
+    if (!enabled || entry.content.indexOf(EJS_OPEN) < 0) return core;
+    var reads = extractEjsVarReads(entry.content);
+    for (var i = 0; i < keys.length; i++) {
+      var payloadVar = keys[i].slice(8);
+      if (reads.indexOf(payloadVar) < 0) continue;
+      var entryName = String(entry.name || entry.comment || '').trim();
+      var cfgCore = config.cores && config.cores[keys[i]];
+      var label = (cfgCore && cfgCore.name) || extractCoreStem(entryName) || cleanEntryTitle(entryName) || payloadVar;
+      return {
+        key: keys[i],
+        name: label,
+        entryName: entryName,
+        bookName: String(entry.world || ''),
+        uid: entry.uid != null ? entry.uid : null,
+        coreType: 'dynamic-payload',
+        isReader: false,
+        isNullCore: false,
+        blocksFpWipe: false,
+        isScriptCore: false,
+        isDynamicPayload: true,
+        payloadVar: payloadVar,
+        payloadLabel: label,
+        fallbackMacros: {},
+        macros: SHARED_MACROS.slice(),
+        sharedMap: {},
+        aliases: deriveCoreAliases(keys[i], label, entryName, {}),
+        defaultWakeKeywords: deriveDefaultWakeKeywords(keys[i], {}, entryName, entry.content, [])
+      };
+    }
+    return core;
+  }
+
+  function coreLabelOf(core, coreCfg) {
+    return String((coreCfg && coreCfg.name) || (core && (core.name || formatDisplayKey(core.key))) || '').trim();
+  }
+
+  function transformWorldbookEntry(entry, rawConfig, lastUserMessage, win, preDetected) {
     var config = normalizeConfig(rawConfig);
     if (!config.enabled || !entry || entry.disable === true || typeof entry.content !== 'string') {
       return { changed: false, mode: 'bypass' };
     }
-    var core = detectCoreFromEntry(entry, entry.world, win);
+    var core = preDetected !== undefined ? preDetected : detectManagedCore(entry, win, config);
     if (!core || core.isReader) {
       return { changed: false, mode: core && core.isReader ? 'reader-self' : 'not-core', core: core ? core.key : '' };
     }
@@ -761,6 +1021,12 @@
       ? coreCfg.wakeKeywords
       : core.defaultWakeKeywords;
     var isWoken = isSilent ? matchesWakeKeywords(lastUserMessage, wakeKeywords) : false;
+    var guardMeta = {
+      core: core.key,
+      label: coreLabelOf(core, coreCfg),
+      entry: String(entry.name || entry.comment || ''),
+      role: isPrimary ? 'primary' : 'secondary'
+    };
 
     if (!isPrimary && isSilent && !isWoken) {
       entry.disable = true;
@@ -770,9 +1036,10 @@
 
     if (isPrimary && isSilent && !isWoken) {
       var deco = splitLeadingDecorators(entry.content);
+      var silentPrefix = adaptRewrittenPrefix(deco.prefix, entry);
       if (core.isDynamicPayload && core.payloadVar) {
         var dynLabel = (core.payloadLabel || core.sharedMap['系统名'] || core.name || core.key).trim();
-        entry.content = deco.prefix + buildDynamicPrimarySilentEjs(core.payloadVar, dynLabel, core.fallbackMacros);
+        entry.content = silentPrefix + buildDynamicPrimarySilentEjs(core.payloadVar, dynLabel, core.fallbackMacros);
         return { changed: true, mode: 'primary-silent', core: core.key };
       }
       var spans = extractSetvars(deco.body);
@@ -790,14 +1057,14 @@
         });
       }
       var label = (core.sharedMap['系统名'] || core.name || core.key).trim();
-      entry.content = deco.prefix + kept.join('') + '\n<' + label + '>\n'
+      entry.content = silentPrefix + kept.join('') + '\n<' + label + '>\n'
         + label + '当前处于静默观察状态，本轮不主动发言或进行干涉。\n</' + label + '>';
       return { changed: true, mode: 'primary-silent', core: core.key };
     }
 
     if (!isPrimary) {
       if (core.isDynamicPayload && core.payloadVar) {
-        entry.content = wrapEjsScope(entry.content, core.sharedMap || {}, false, core.payloadVar);
+        setRewrittenContent(entry, wrapEjsScope(entry.content, core.sharedMap || {}, false, core.payloadVar, guardMeta));
         return { changed: true, mode: 'secondary-scoped', core: core.key, ownMacros: core.sharedMap || {}, dynamicPayload: core.payloadVar };
       }
       var allSetvars = extractSetvars(entry.content);
@@ -814,13 +1081,14 @@
       pieces.push(entry.content.slice(cursor));
       var rewritten = replaceLocalGetvars(pieces.join(''), ownMacros);
       if (rewritten.indexOf(EJS_OPEN) >= 0) {
-        rewritten = wrapEjsScope(rewritten, ownMacros, core.blocksFpWipe, '');
+        rewritten = wrapEjsScope(rewritten, ownMacros, core.blocksFpWipe, '', guardMeta);
       }
-      entry.content = rewritten;
+      setRewrittenContent(entry, rewritten);
       return { changed: true, mode: 'secondary-scoped', core: core.key, ownMacros: ownMacros };
     }
 
-    return { changed: false, mode: 'primary-active', core: core.key };
+    var guarded = guardManagedEntry(entry, guardMeta);
+    return { changed: guarded, mode: 'primary-active', core: core.key, guarded: guarded };
   }
 
   function findCompanionOwner(entry, config, activeCoreStems) {
@@ -855,30 +1123,73 @@
     return false;
   }
 
+  function currentChatId(ctx) {
+    try {
+      if (ctx && typeof ctx.getCurrentChatId === 'function') return ctx.getCurrentChatId();
+    } catch (_) {}
+    return ctx ? ctx.chatId : undefined;
+  }
+
+  function sharedMacrosOnly(map) {
+    var out = {};
+    Object.keys(map || {}).forEach(function (k) {
+      if (SHARED_SET[k] && typeof map[k] === 'string') out[k] = map[k];
+    });
+    return out;
+  }
+
+  // What this generation actually loaded, for templates that read it while rendering (the Reader core entry and
+  // the card's destinyWiVar both render after this event). It lives only on the host window: every
+  // WORLDINFO_ENTRIES_LOADED replaces or clears it, and nothing is written to the chat or saved.
+  function publishRound(hostWin, round) {
+    var slot = ensureHookSlot(hostWin);
+    if (slot) slot.round = round;
+  }
+
   function processLoadedWorldInfo(data, win) {
     if (!data || typeof data !== 'object') return [];
     var hostWin = win || getHostWindow();
     var config = loadConfig(hostWin);
-    if (!config.enabled) return [];
+    if (!config.enabled) {
+      publishRound(hostWin, null);
+      return [];
+    }
     var lastUser = getLatestUserText(hostWin);
     var buckets = ['globalLore', 'characterLore', 'chatLore', 'personaLore'];
 
     // Pre-scan loaded enabled cores across all buckets: if the configured primary core is no longer enabled
     // (e.g. user switched to a different core from the card home page or World Info), bypass stale multi-core config.
+    var detections = typeof Map === 'function' ? new Map() : null;
     var loadedCoreKeys = {};
     var hasLoadedCore = false;
+    var primaryCore = null;
     for (var sb = 0; sb < buckets.length; sb++) {
       var sList = data[buckets[sb]];
       if (!Array.isArray(sList)) continue;
       for (var si = 0; si < sList.length; si++) {
-        var det = detectCoreFromEntry(sList[si], sList[si] && sList[si].world, hostWin);
+        var det = detectManagedCore(sList[si], hostWin, config);
+        if (detections && sList[si] && typeof sList[si] === 'object') detections.set(sList[si], det);
         if (det) {
           loadedCoreKeys[det.key] = true;
           hasLoadedCore = true;
+          if (!primaryCore && det.key === config.primary) primaryCore = det;
         }
       }
     }
-    if (config.primary && hasLoadedCore && !loadedCoreKeys[config.primary]) {
+    var primaryLoaded = !!(config.primary && loadedCoreKeys[config.primary]);
+    var stale = !!(config.primary && hasLoadedCore && !primaryLoaded);
+    publishRound(hostWin, {
+      chatId: currentChatId(getSTContext(hostWin)),
+      primary: config.primary,
+      primaryLoaded: primaryLoaded,
+      stale: stale,
+      // Live shared macros of a primary written as static setvars (any book); null where the card reads the
+      // payload variable or the Reader's own variables directly.
+      primaryMacros: primaryCore && !primaryCore.isReader && !primaryCore.isDynamicPayload
+        ? sharedMacrosOnly(primaryCore.sharedMap)
+        : null
+    });
+    if (stale) {
       return [];
     }
 
@@ -912,7 +1223,8 @@
       if (!Array.isArray(list)) continue;
       for (var i = 0; i < list.length; i++) {
         var entry = list[i];
-        var res = transformWorldbookEntry(entry, config, lastUser, hostWin);
+        var res = transformWorldbookEntry(entry, config, lastUser, hostWin,
+          detections && detections.has(entry) ? detections.get(entry) : undefined);
         if (res.mode !== 'not-core' && res.mode !== 'bypass') {
           coreEntryRefs.push(entry);
           if (res.core) {
@@ -935,24 +1247,77 @@
         if (coreEntryRefs.indexOf(comp) >= 0) continue;
         var ownerKey = findCompanionOwner(comp, config, activeCoreStems);
         if (!ownerKey) continue;
+        var compName = String(comp.name || comp.comment || '');
         if (silencedCores[ownerKey]) {
           comp.disable = true;
           comp.content = '';
-          results.push({ changed: true, mode: 'companion-silent', core: ownerKey, entryName: String(comp.name || comp.comment || '') });
-        } else if (ownerKey !== config.primary && coreOwnMacros[ownerKey] && hasSharedMacroReference(comp.content)) {
+          results.push({ changed: true, mode: 'companion-silent', core: ownerKey, entryName: compName });
+          continue;
+        }
+        var ownerCfg = config.cores[ownerKey] || null;
+        var compMeta = {
+          core: ownerKey,
+          label: String((ownerCfg && ownerCfg.name) || formatDisplayKey(ownerKey)),
+          entry: compName,
+          role: 'companion'
+        };
+        if (ownerKey !== config.primary && coreOwnMacros[ownerKey] && hasSharedMacroReference(comp.content)) {
           var scoped = replaceLocalGetvars(comp.content, coreOwnMacros[ownerKey]);
           if (scoped.indexOf(EJS_OPEN) >= 0) {
-            scoped = wrapEjsScope(scoped, coreOwnMacros[ownerKey], false, '');
+            scoped = wrapEjsScope(scoped, coreOwnMacros[ownerKey], false, '', compMeta);
           }
           if (scoped !== comp.content) {
-            comp.content = scoped;
-            results.push({ changed: true, mode: 'companion-scoped', core: ownerKey, entryName: String(comp.name || comp.comment || '') });
+            setRewrittenContent(comp, scoped);
+            results.push({ changed: true, mode: 'companion-scoped', core: ownerKey, entryName: compName });
+            continue;
           }
+        }
+        if (guardManagedEntry(comp, compMeta)) {
+          results.push({ changed: true, mode: 'companion-guarded', core: ownerKey, entryName: compName });
         }
       }
     }
 
     return results;
+  }
+
+  function reportIsolatedError(hostWin, err, meta) {
+    var info = meta && typeof meta === 'object' ? meta : {};
+    var label = String(info.label || formatDisplayKey(info.core) || '未知核心');
+    var entryName = String(info.entry || '');
+    var message = err && err.message ? String(err.message) : String(err);
+    try {
+      console.error('[ReaderCoreManager] 核心「' + label + '」' + (entryName ? '的条目「' + entryName + '」' : '')
+        + '本轮渲染出错，已单独跳过，同一位置的其他条目照常渲染：', err);
+    } catch (_) {}
+    var slot = hostWin && hostWin[HOOK_KEY];
+    var now = Date.now();
+    if (slot && typeof slot === 'object') {
+      slot.errors = (Array.isArray(slot.errors) ? slot.errors : []).slice(-9);
+      slot.errors.push({ at: now, core: String(info.core || ''), entry: entryName, message: message });
+      if (!slot.toasted || typeof slot.toasted !== 'object') slot.toasted = {};
+      var toastKey = String(info.core || '') + '|' + entryName + '|' + message;
+      if (slot.toasted[toastKey] && now - slot.toasted[toastKey] < 60000) return;
+      slot.toasted[toastKey] = now;
+    }
+    try {
+      var toastr = hostWin && hostWin.toastr;
+      if (toastr && typeof toastr.warning === 'function') {
+        toastr.warning(escHtml('「' + label + '」本轮没能渲染（' + message.slice(0, 120) + '），已单独跳过，其他核心照常。详情见浏览器控制台。'), '核心管理');
+      }
+    } catch (_) {}
+  }
+
+  function ensureHookSlot(hostWin) {
+    if (!hostWin || (typeof hostWin !== 'object' && typeof hostWin !== 'function')) return null;
+    var slot = hostWin[HOOK_KEY];
+    if (!slot || typeof slot !== 'object') {
+      try { slot = hostWin[HOOK_KEY] = { run: null, detached: true }; } catch (_) { return null; }
+    }
+    if (typeof slot.report !== 'function') {
+      slot.report = function (err, meta) { reportIsolatedError(hostWin, err, meta); };
+    }
+    return slot;
   }
 
   function installWorldInfoHook(win) {
@@ -963,23 +1328,37 @@
     var eventName = types && types.WORLDINFO_ENTRIES_LOADED;
     if (!source || !eventName) return false;
     var slot = hostWin[HOOK_KEY];
-    if (!slot) {
-      slot = hostWin[HOOK_KEY] = { run: null };
+    // A slot left by an earlier Reader already owns a listener; one created only to publish state does not.
+    if (!slot || slot.detached === true) {
+      slot = ensureHookSlot(hostWin);
+      if (!slot) return false;
+      slot.detached = false;
       var listener = function (data) {
-        if (typeof slot.run === 'function') {
-          try { slot.run(data); } catch (err) { console.warn('[ReaderCoreManager] 世界书拦截出错:', err); }
+        // Every load replaces or clears the round state, so templates never read a previous generation's.
+        if (typeof slot.run !== 'function') {
+          slot.round = null;
+          return;
+        }
+        try { slot.run(data); } catch (err) {
+          slot.round = null;
+          console.warn('[ReaderCoreManager] 世界书拦截出错:', err);
         }
       };
       if (typeof source.makeFirst === 'function') source.makeFirst(eventName, listener);
       else if (typeof source.on === 'function') source.on(eventName, listener);
     }
+    slot.report = function (err, meta) { reportIsolatedError(hostWin, err, meta); };
     slot.run = function (data) { return processLoadedWorldInfo(data, hostWin); };
     return true;
   }
 
   function uninstallWorldInfoHook(win) {
     var hostWin = win || getHostWindow();
-    if (hostWin && hostWin[HOOK_KEY]) hostWin[HOOK_KEY].run = null;
+    var slot = hostWin && hostWin[HOOK_KEY];
+    if (slot) {
+      slot.run = null;
+      slot.round = null;
+    }
   }
 
   function isDedicatedSingleCoreBook(entries, allCoresCount, enabledCoresInBook) {
@@ -1357,6 +1736,8 @@
     SCRIPT_RUNTIME_CORES: Object.assign({}, SCRIPT_RUNTIME_CORES),
     extractSetvars: extractSetvars,
     detectCoreFromEntry: detectCoreFromEntry,
+    detectManagedCore: detectManagedCore,
+    isScopeSafeEjs: isScopeSafeEjs,
     normalizeConfig: normalizeConfig,
     loadConfig: loadConfig,
     saveConfig: saveConfig,

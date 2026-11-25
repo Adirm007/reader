@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "name": "dream-reader-render-fixed",
-  "version": "2026.11.24.1",
+  "version": "2026.11.25.1",
   "license": "LICENSE",
   "files": {
     "reader.css": {
@@ -15,19 +15,19 @@
       "sha256": "8197775e596d03a57b7488289efff07e8992398643ef4dff6cddc089d2942d5d"
     },
     "reader.js": {
-      "path": "dist/reader.c52209175787.js",
-      "bytes": 1430227,
-      "sha256": "c52209175787358aef50269ab37a8a885630d05402769d6da1b72f9d51f2b99c"
+      "path": "dist/reader.094a311f363c.js",
+      "bytes": 1446105,
+      "sha256": "094a311f363c4892126a4f4a8b48f335d7a4ad2ca5a43cdc61625ea84936e3f3"
     },
     "reader-runtime.js": {
       "path": "dist/reader-runtime.js",
-      "bytes": 1732923,
-      "sha256": "0d7d718210f7bbc808ce477ee1e72604e19bb29ae961e43274c1d279463ca028"
+      "bytes": 1749219,
+      "sha256": "2443bf0ac3209dfc114e431c6362e70fb4e177b74adb407fdef001cbd18c1618"
     },
     "reader-letter.json": {
       "path": "regex/读者对话渲染-脚本版.json",
       "bytes": 169258,
-      "sha256": "7fbf524244f206b34f2678ade3e8871b0b3608f78cde0ed69bd497e6cbc05a04"
+      "sha256": "c0085460c3fe8ba22ffd17c7c44479c53c546c4e8c72404dbf8143e5601f7cf9"
     }
   },
   "installMode": "script",
@@ -1530,7 +1530,7 @@
     "worldbook/manifest.json": {
       "path": "worldbook/manifest.json",
       "bytes": 3521,
-      "sha256": "fccd4d5725578810dcaf1a229b9d2e49929dd5faee00598d7650e40b9990fba9"
+      "sha256": "29f712d95eb1f25042b819e7416b49a3d8ec0b89e8ef7717a17292a9261d694d"
     },
     "worldbook/notes.txt": {
       "path": "worldbook/notes.txt",
@@ -1539,8 +1539,8 @@
     },
     "worldbook/读者核心本体.txt": {
       "path": "worldbook/读者核心本体.txt",
-      "bytes": 338711,
-      "sha256": "baa85aee38ee07cd190eb711965584a754081ac73f88eccf85e5300e508eadcb"
+      "bytes": 339564,
+      "sha256": "5be74500c82da75dd3c3c9be34d71008a4e751d3b6c48ff7b541dfc6b6c63da8"
     },
     "vendor/reader-art/cafe-default.bac5af7884aa.png": {
       "path": "vendor/reader-art/cafe-default.bac5af7884aa.png",

@@ -1,4 +1,4 @@
-<%_ /* DREAM_WORLDBOOK reader-core v2026.11.22.3 */ _%>
+<%_ /* DREAM_WORLDBOOK reader-core v2026.11.25.1 */ _%>
 <%_ { _%>
 <%_
 let _dream_theme_value = getLocalVar('dream_visual_theme');
@@ -63,7 +63,17 @@ try {
   if (typeof _dream_cm_raw === 'string' && _dream_cm_raw.trim().length > 0) _dream_cm = JSON.parse(_dream_cm_raw);
   else if (_dream_cm_raw && typeof _dream_cm_raw === 'object') _dream_cm = _dream_cm_raw;
 } catch (_dream_cm_err) { _dream_cm = null; }
-let _dream_cm_on = !!(_dream_cm && _dream_cm.enabled === true);
+// 核心管理每次加载世界书时在宿主页面留下本轮实际加载的情况（只在内存里，不写进聊天）。
+// 所配主核心本轮没有加载时，核心管理整轮放行旧配置，读者也按单核心照常写共享宏，避免没人写。
+let _dream_cm_round = null;
+try {
+  const _dream_cm_hook = globalThis.__dreamCoreManagerWorldInfoHook;
+  const _dream_cm_live = _dream_cm_hook && typeof _dream_cm_hook === 'object' ? _dream_cm_hook.round : null;
+  if (_dream_cm_live && typeof _dream_cm_live === 'object'
+    && _dream_cm_live.chatId === globalThis.SillyTavern?.getContext?.()?.getCurrentChatId?.()) _dream_cm_round = _dream_cm_live;
+} catch (_dream_cm_round_err) { _dream_cm_round = null; }
+let _dream_cm_on = !!(_dream_cm && _dream_cm.enabled === true)
+  && !(_dream_cm_round && _dream_cm_round.primary === _dream_cm.primary && _dream_cm_round.primaryLoaded === false);
 let _dream_is_primary_core = !_dream_cm_on || !_dream_cm.primary || _dream_cm.primary === '九十九夜梦';
 let _dream_cm_self = (_dream_cm_on && _dream_cm.cores && typeof _dream_cm.cores['九十九夜梦'] === 'object') ? _dream_cm.cores['九十九夜梦'] : null;
 let _dream_self_sysname = '读者';

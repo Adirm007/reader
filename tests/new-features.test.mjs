@@ -454,7 +454,11 @@ test('CoreManager review regressions: stale primary bypass, unmanaged core bypas
     activeCores: ['装饰核', '九十九夜梦'],
     cores: { 装饰核: { silent: true, wakeKeywords: ['唤醒'] } },
   }, '继续', win);
-  assert.ok(decoEntry.content.startsWith('@@activate\n@@if true\n'), 'primary-silent must preserve leading @@ decorators');
+  assert.ok(decoEntry.content.startsWith('@@if true\n'), 'primary-silent must preserve leading @@ decorators');
+  // @@activate would make Prompt-Template swap the raw entry back in; the clone is force-activated instead.
+  assert.doesNotMatch(decoEntry.content, /^@@activate/m);
+  assert.equal(decoEntry.constant, true);
+  assert.equal(decoEntry.ignoreBudget, true);
 
   // Low: secondary EJS getvar returns substituted <user>/{{user}} when ST substituteParams is available
   const escEntry = {
